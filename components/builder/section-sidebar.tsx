@@ -3,6 +3,7 @@ import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useState } from "react";
+import { AuthControls } from "@/components/auth-controls";
 import { pageTypeLabels, pageTypes } from "@/lib/templater/page-defaults";
 import { sectionRegistry } from "@/lib/templater/registry";
 import type { PageType, SectionType, StoreTemplate, TemplatePage, TemplateSection } from "@/lib/templater/schema";
@@ -52,6 +53,8 @@ export function SectionSidebar({
   updatePageField: <K extends "name" | "slug" | "seoTitle" | "status">(pageId: string, key: K, value: TemplatePage[K]) => void;
 }) {
   const [isStarterPickerOpen, setIsStarterPickerOpen] = useState(false);
+  const [isPageSettingsOpen, setIsPageSettingsOpen] = useState(false);
+  const [isSectionLibraryOpen, setIsSectionLibraryOpen] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const sectionIds = sections.map((section) => section.id);
   const selectedPage = pages.find((page) => page.id === selectedPageId);
@@ -86,9 +89,12 @@ export function SectionSidebar({
             <p className="text-[11px] text-[#64748b]">Template workspace</p>
           </div>
         </div>
-        <Link className="mt-3 inline-flex rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]" href="/templates">
-          Manage templates
-        </Link>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <Link className="inline-flex rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]" href="/templates">
+            Manage templates
+          </Link>
+          <AuthControls />
+        </div>
       </div>
 
       <div className="shrink-0 border-[#e2e8f0] border-b px-4 py-3">
@@ -180,7 +186,19 @@ export function SectionSidebar({
               );
             })}
           </div>
-          {selectedPage ? <PageSettings page={selectedPage} updatePageField={updatePageField} /> : null}
+          {selectedPage ? (
+            <div className="mt-3">
+              <button
+                className="flex w-full items-center justify-between rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-left text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                onClick={() => setIsPageSettingsOpen((isOpen) => !isOpen)}
+                type="button"
+              >
+                <span>Page settings</span>
+                <span className="text-[#94a3b8]">{isPageSettingsOpen ? "Hide" : "Show"}</span>
+              </button>
+              {isPageSettingsOpen ? <PageSettings page={selectedPage} updatePageField={updatePageField} /> : null}
+            </div>
+          ) : null}
         </section>
 
         <section className="px-3 py-4">
@@ -195,7 +213,7 @@ export function SectionSidebar({
               <p className="mt-0.5 truncate text-xs text-[#64748b]">{sectionPreviewLabel(selectedSection)}</p>
             </div>
           ) : null}
-          <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
+          <DndContext id="section-sidebar-sortable" onDragEnd={handleDragEnd} sensors={sensors}>
             <SortableContext items={sectionIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-1">
                 {sections.map((section) => (
@@ -218,28 +236,42 @@ export function SectionSidebar({
               Inserts after {selectedSection ? sectionRegistry[selectedSection.type].label : "the selected block"}.
             </p>
           </div>
-          <div className="space-y-3">
-            {sectionGroups.map((group) => (
-              <div key={group.label}>
-                <p className="mb-1.5 px-1 text-[11px] font-semibold uppercase text-[#94a3b8]">{group.label}</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {group.sections.map((type) => (
-                    <button
-                      className="min-h-20 rounded-md border border-[#e2e8f0] bg-white px-2.5 py-2 text-left shadow-sm hover:border-[#93c5fd] hover:bg-[#eff6ff]"
-                      key={type}
-                      onClick={() => addSection(type)}
-                      type="button"
-                    >
-                      <span className="block text-xs font-semibold text-[#334155]">{sectionRegistry[type].label}</span>
-                      <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-[#64748b]">
-                        {sectionRegistry[type].description}
-                      </span>
-                    </button>
-                  ))}
+          <button
+            className="w-full rounded-md bg-[#111827] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1f2937]"
+            onClick={() => setIsSectionLibraryOpen((isOpen) => !isOpen)}
+            type="button"
+          >
+            {isSectionLibraryOpen ? "Hide section library" : "Add a section"}
+          </button>
+          {isSectionLibraryOpen ? (
+            <div className="mt-3 space-y-3">
+              {sectionGroups.map((group) => (
+                <div key={group.label}>
+                  <p className="mb-1.5 px-1 text-[11px] font-semibold uppercase text-[#94a3b8]">{group.label}</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {group.sections.map((type) => (
+                      <button
+                        className="min-h-20 rounded-md border border-[#e2e8f0] bg-white px-2.5 py-2 text-left shadow-sm hover:border-[#93c5fd] hover:bg-[#eff6ff]"
+                        key={type}
+                        onClick={() => {
+                          addSection(type);
+                          setIsSectionLibraryOpen(false);
+                        }}
+                        type="button"
+                      >
+                        <span className="block text-xs font-semibold text-[#334155]">{sectionRegistry[type].label}</span>
+                        <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-[#64748b]">
+                          {sectionRegistry[type].description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 px-1 text-xs leading-5 text-[#64748b]">Open this only when you need another storefront block.</p>
+          )}
         </section>
       </div>
       {isStarterPickerOpen ? (

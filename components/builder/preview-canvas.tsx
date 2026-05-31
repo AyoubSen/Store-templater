@@ -2,36 +2,53 @@
 
 import Link from "next/link";
 import { StorefrontPreview } from "@/components/storefront-preview";
+import type { PreviewCartItem } from "@/components/storefront-preview";
 import { sectionRegistry } from "@/lib/templater/registry";
 import type { StoreTemplate, TemplatePage, TemplateSection } from "@/lib/templater/schema";
 
 export type Device = "desktop" | "tablet" | "mobile";
 
 export function PreviewCanvas({
+  activeProductId,
+  addCartItem,
   canRedo,
   canUndo,
+  cartItems,
   device,
+  exportNextProject,
+  exportStaticStorefront,
+  exportTemplatePackage,
+  openProduct,
   previewStyle,
   redoTemplateChange,
   resetTemplate,
   selectedPage,
   selectedSection,
   selectedSectionId,
+  selectPage,
   setDevice,
   setZoom,
   template,
   undoTemplateChange,
   zoom,
 }: {
+  activeProductId?: string;
+  addCartItem: (productId: string) => void;
   canRedo: boolean;
   canUndo: boolean;
+  cartItems: PreviewCartItem[];
   device: Device;
+  exportNextProject: () => void;
+  exportStaticStorefront: () => void;
+  exportTemplatePackage: () => void;
+  openProduct: (productId: string) => void;
   previewStyle: React.CSSProperties;
   redoTemplateChange: () => void;
   resetTemplate: () => void;
   selectedPage?: TemplatePage;
   selectedSection?: TemplateSection;
   selectedSectionId: string;
+  selectPage: (pageId: string) => void;
   setDevice: (device: Device) => void;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
   template: StoreTemplate;
@@ -83,6 +100,29 @@ export function PreviewCanvas({
           >
             Preview
           </Link>
+          <div className="flex rounded-md border border-[#d8dde5] bg-white p-0.5">
+            <button
+              className="rounded px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+              onClick={exportTemplatePackage}
+              type="button"
+            >
+              Package
+            </button>
+            <button
+              className="rounded bg-[#eff6ff] px-2.5 py-1.5 text-xs font-medium text-[#1d4ed8] hover:bg-[#dbeafe]"
+              onClick={exportStaticStorefront}
+              type="button"
+            >
+              Site
+            </button>
+            <button
+              className="rounded bg-[#f0fdf4] px-2.5 py-1.5 text-xs font-medium text-[#15803d] hover:bg-[#dcfce7]"
+              onClick={exportNextProject}
+              type="button"
+            >
+              Next app
+            </button>
+          </div>
           <button
             className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
             onClick={resetTemplate}
@@ -135,7 +175,12 @@ export function PreviewCanvas({
           </div>
           <StorePreview
             device={device}
+            activeProductId={activeProductId}
+            addCartItem={addCartItem}
+            cartItems={cartItems}
+            openProduct={openProduct}
             pageId={selectedPage?.id}
+            selectPage={selectPage}
             selectedSectionId={selectedSectionId}
             style={previewStyle}
             template={template}
@@ -158,15 +203,25 @@ function deviceLabel(device: Device) {
 }
 
 function StorePreview({
+  activeProductId,
+  addCartItem,
+  cartItems,
   device,
+  openProduct,
   pageId,
+  selectPage,
   selectedSectionId,
   style,
   template,
   zoom,
 }: {
+  activeProductId?: string;
+  addCartItem: (productId: string) => void;
+  cartItems: PreviewCartItem[];
   device: Device;
+  openProduct: (productId: string) => void;
   pageId?: string;
+  selectPage: (pageId: string) => void;
   selectedSectionId: string;
   style: React.CSSProperties;
   template: StoreTemplate;
@@ -189,7 +244,17 @@ function StorePreview({
         }}
       >
         <div style={style}>
-          <StorefrontPreview pageId={pageId} previewDevice={device} selectedSectionId={selectedSectionId} template={template} />
+          <StorefrontPreview
+            activeProductId={activeProductId}
+            cartItems={cartItems}
+            onAddToCart={addCartItem}
+            onNavigatePage={selectPage}
+            onOpenProduct={openProduct}
+            pageId={pageId}
+            previewDevice={device}
+            selectedSectionId={selectedSectionId}
+            template={template}
+          />
         </div>
       </div>
     </div>

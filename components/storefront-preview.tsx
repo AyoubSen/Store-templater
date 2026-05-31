@@ -1,14 +1,29 @@
 "use client";
 
 import { useEffect } from "react";
-import type { Product, StoreTemplate, TemplateSection } from "@/lib/templater/schema";
+import type { PageType, Product, StoreTemplate, TemplatePage, TemplateSection } from "@/lib/templater/schema";
+
+export type PreviewCartItem = {
+  productId: string;
+  quantity: number;
+};
 
 export function StorefrontPreview({
+  activeProductId,
+  cartItems = [],
+  onAddToCart,
+  onNavigatePage,
+  onOpenProduct,
   pageId,
   previewDevice,
   selectedSectionId,
   template,
 }: {
+  activeProductId?: string;
+  cartItems?: PreviewCartItem[];
+  onAddToCart?: (productId: string) => void;
+  onNavigatePage?: (pageId: string) => void;
+  onOpenProduct?: (productId: string) => void;
   pageId?: string;
   previewDevice?: "desktop" | "tablet" | "mobile";
   selectedSectionId?: string;
@@ -56,6 +71,12 @@ export function StorefrontPreview({
             isSelected={section.id === selectedSectionId}
             section={section}
             template={template}
+            activeProductId={activeProductId}
+            cartItems={cartItems}
+            currentPage={page}
+            onAddToCart={onAddToCart}
+            onNavigatePage={onNavigatePage}
+            onOpenProduct={onOpenProduct}
           />
         </div>
       ))}
@@ -64,15 +85,27 @@ export function StorefrontPreview({
 }
 
 function PreviewSection({
+  activeProductId,
+  cartItems,
+  currentPage,
   isForcedMobile,
   isForcedTablet,
   isSelected,
+  onAddToCart,
+  onNavigatePage,
+  onOpenProduct,
   section,
   template,
 }: {
+  activeProductId?: string;
+  cartItems: PreviewCartItem[];
+  currentPage?: TemplatePage;
   isForcedMobile: boolean;
   isForcedTablet: boolean;
   isSelected: boolean;
+  onAddToCart?: (productId: string) => void;
+  onNavigatePage?: (pageId: string) => void;
+  onOpenProduct?: (productId: string) => void;
   section: TemplateSection;
   template: StoreTemplate;
 }) {
@@ -82,6 +115,7 @@ function PreviewSection({
   const density = styleValue(settings.layoutDensity, "comfortable");
   const densityGapClass = densityGap(density);
   const primaryButtonClass = buttonClass(settings);
+  const cartQuantity = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   if (section.type === "announcement") {
     return (
@@ -92,17 +126,35 @@ function PreviewSection({
   }
 
   if (section.type === "header") {
+    const navPages = customerPages(template).filter((page) => page.type !== "checkout");
+    const cartPage = findPageByType(template, "cart");
+
     return (
       <div className={`sticky top-0 z-[1] border-[var(--store-border)] border-b bg-[var(--store-surface)]/95 backdrop-blur ${selectedClass}`}>
         <div className="mx-auto flex max-w-[var(--store-max-width)] items-center justify-between gap-5 px-5 py-4 md:px-8">
           <div className="text-base font-black tracking-[0.16em] text-[var(--store-text)]">{String(settings.logo)}</div>
           <div className={`${isForcedMobile ? "hidden" : "hidden md:flex"} gap-6 text-sm font-medium text-[var(--store-muted)]`}>
-            {(settings.links as string[]).map((link) => (
-              <span key={link}>{link}</span>
+            {navPages.map((page) => (
+              <button
+                className={`font-medium hover:text-[var(--store-text)] ${currentPage?.id === page.id ? "text-[var(--store-text)]" : ""}`}
+                key={page.id}
+                onClick={() => onNavigatePage?.(page.id)}
+                type="button"
+              >
+                {page.name}
+              </button>
             ))}
           </div>
-          <button className="rounded-full border border-[var(--store-border)] px-4 py-2 text-xs font-semibold text-[var(--store-text)]">
-            Cart 0
+          <button
+            className="rounded-full border border-[var(--store-border)] px-4 py-2 text-xs font-semibold text-[var(--store-text)]"
+            onClick={() => {
+              if (cartPage) {
+                onNavigatePage?.(cartPage.id);
+              }
+            }}
+            type="button"
+          >
+            Cart {cartQuantity}
           </button>
         </div>
       </div>
@@ -138,10 +190,14 @@ function PreviewSection({
               {String(settings.copy)}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <button className={primaryButtonClass}>
+              <button className={primaryButtonClass} onClick={() => navigateToPageType(template, "collection", onNavigatePage)} type="button">
                 {String(settings.cta)}
               </button>
-              <button className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-5 py-3 text-sm font-bold text-[var(--store-text)]">
+              <button
+                className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-5 py-3 text-sm font-bold text-[var(--store-text)]"
+                onClick={() => navigateToPageType(template, "about", onNavigatePage)}
+                type="button"
+              >
                 View lookbook
               </button>
             </div>
@@ -212,7 +268,11 @@ function PreviewSection({
               <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">Selected for you</p>
               <h2 className="mt-2 text-[calc(1.875rem*var(--store-heading-scale))] font-black text-[var(--store-text)]">{String(settings.title)}</h2>
             </div>
-            <button className="rounded-full border border-[var(--store-border)] px-4 py-2 text-sm font-bold text-[var(--store-text)]">
+            <button
+              className="rounded-full border border-[var(--store-border)] px-4 py-2 text-sm font-bold text-[var(--store-text)]"
+              onClick={() => navigateToPageType(template, "collection", onNavigatePage)}
+              type="button"
+            >
               Shop all
             </button>
           </div>
@@ -223,6 +283,8 @@ function PreviewSection({
                 isForcedMobile={isForcedMobile}
                 isForcedTablet={isForcedTablet}
                 key={product.id}
+                onAddToCart={onAddToCart}
+                onOpenProduct={onOpenProduct}
                 product={product}
                 showQuickAdd={showQuickAdd}
                 variant={productCardStyle}
@@ -314,6 +376,8 @@ function PreviewSection({
                   isForcedMobile={isForcedMobile}
                   isForcedTablet={isForcedTablet}
                   key={product.id}
+                  onAddToCart={onAddToCart}
+                  onOpenProduct={onOpenProduct}
                   product={product}
                   showQuickAdd={showQuickAdd}
                   variant={productCardStyle}
@@ -327,7 +391,7 @@ function PreviewSection({
   }
 
   if (section.type === "productDetail") {
-    const product = template.products[0];
+    const product = template.products.find((item) => item.id === activeProductId) ?? template.products[0];
     const variants = settings.variants as string[];
     const details = settings.details as string[];
     const socialProof = stringArraySetting(settings.socialProof, ["★★★★★ 4.9", "128 reviews", "Low stock"]);
@@ -381,7 +445,16 @@ function PreviewSection({
               <div className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-4 py-3 text-center text-sm font-black text-[var(--store-text)]">
                 1
               </div>
-              <button className={primaryButtonClass} type="button">
+              <button
+                className={primaryButtonClass}
+                onClick={() => {
+                  if (product) {
+                    onAddToCart?.(product.id);
+                    navigateToPageType(template, "cart", onNavigatePage);
+                  }
+                }}
+                type="button"
+              >
                 Add to cart
               </button>
             </div>
@@ -407,8 +480,10 @@ function PreviewSection({
   }
 
   if (section.type === "cartSummary") {
-    const cartProducts = template.products.slice(0, 2);
-    const subtotal = cartProducts.reduce((total, product) => total + product.price, 0);
+    const cartProducts = cartItems
+      .map((item) => ({ item, product: template.products.find((product) => product.id === item.productId) }))
+      .filter((entry): entry is { item: PreviewCartItem; product: Product } => Boolean(entry.product));
+    const subtotal = cartProducts.reduce((total, entry) => total + entry.product.price * entry.item.quantity, 0);
     const perks = settings.perks as string[];
 
     return (
@@ -428,7 +503,7 @@ function PreviewSection({
               {String(settings.incentive)}
             </div>
             <div className={`mt-6 ${densityStack(density)}`}>
-              {cartProducts.map((product) => (
+              {cartProducts.length > 0 ? cartProducts.map(({ item, product }) => (
                 <div
                   className={`grid grid-cols-[72px_minmax(0,1fr)] gap-3 border-[var(--store-border)] border-t pt-4 ${
                     isForcedMobile ? "" : "sm:grid-cols-[88px_minmax(0,1fr)_auto] sm:gap-4"
@@ -449,12 +524,23 @@ function PreviewSection({
                     <p className="font-black text-[var(--store-text)]">{product.name}</p>
                     <p className="mt-1 text-sm text-[var(--store-muted)]">{product.category}</p>
                     <div className="mt-3 inline-flex rounded-full border border-[var(--store-border)] px-3 py-1 text-xs font-bold text-[var(--store-text)]">
-                      Qty 1
+                      Qty {item.quantity}
                     </div>
                   </div>
-                  <p className={`col-start-2 font-black text-[var(--store-text)] ${isForcedMobile ? "" : "sm:col-start-auto"}`}>${product.price}</p>
+                  <p className={`col-start-2 font-black text-[var(--store-text)] ${isForcedMobile ? "" : "sm:col-start-auto"}`}>${product.price * item.quantity}</p>
                 </div>
-              ))}
+              )) : (
+                <div className="border-[var(--store-border)] border-t pt-5">
+                  <p className="text-sm font-semibold text-[var(--store-muted)]">Your preview cart is empty.</p>
+                  <button
+                    className={`${primaryButtonClass} mt-4`}
+                    onClick={() => navigateToPageType(template, "collection", onNavigatePage)}
+                    type="button"
+                  >
+                    Browse products
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           <aside className={`rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-5 shadow-xl shadow-black/5 ${isForcedMobile ? "" : "md:sticky md:top-24 md:self-start"}`}>
@@ -469,7 +555,12 @@ function PreviewSection({
               <span>Total</span>
               <span>${subtotal + 12}</span>
             </div>
-            <button className={`${primaryButtonClass} mt-5 w-full`} type="button">
+            <button
+              className={`${primaryButtonClass} mt-5 w-full`}
+              disabled={cartProducts.length === 0}
+              onClick={() => navigateToPageType(template, "checkout", onNavigatePage)}
+              type="button"
+            >
               Checkout
             </button>
             <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-[var(--store-muted)]">
@@ -493,7 +584,10 @@ function PreviewSection({
   if (section.type === "checkoutSummary") {
     const steps = settings.steps as string[];
     const paymentMethods = stringArraySetting(settings.paymentMethods, ["Shop Pay", "Apple Pay", "Card"]);
-    const firstProduct = template.products[0];
+    const checkoutProducts = cartItems
+      .map((item) => ({ item, product: template.products.find((product) => product.id === item.productId) }))
+      .filter((entry): entry is { item: PreviewCartItem; product: Product } => Boolean(entry.product));
+    const checkoutSubtotal = checkoutProducts.reduce((total, entry) => total + entry.product.price * entry.item.quantity, 0);
 
     return (
       <section className={sectionShell(settings, "surface", "balanced", selectedClass)}>
@@ -545,27 +639,31 @@ function PreviewSection({
           </div>
           <aside className={`rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-5 ${isForcedMobile ? "" : "md:sticky md:top-24 md:self-start"}`}>
             <p className="text-lg font-black text-[var(--store-text)]">Order</p>
-            {firstProduct ? (
-              <div className={`mt-5 grid grid-cols-[64px_minmax(0,1fr)] gap-3 ${isForcedMobile ? "" : "sm:grid-cols-[72px_minmax(0,1fr)_auto]"}`}>
+            {checkoutProducts.length > 0 ? checkoutProducts.map(({ item, product }) => (
+              <div className={`mt-5 grid grid-cols-[64px_minmax(0,1fr)] gap-3 ${isForcedMobile ? "" : "sm:grid-cols-[72px_minmax(0,1fr)_auto]"}`} key={product.id}>
                 <div
                   className="aspect-square rounded-[var(--store-radius)] border border-[var(--store-border)] bg-cover bg-center"
                   style={{
                     backgroundColor: "#f8fafc",
-                    backgroundImage: firstProduct.image,
-                    backgroundPosition: `${firstProduct.imagePositionX ?? 50}% ${firstProduct.imagePositionY ?? 50}%`,
+                    backgroundImage: product.image,
+                    backgroundPosition: `${product.imagePositionX ?? 50}% ${product.imagePositionY ?? 50}%`,
                     backgroundRepeat: "no-repeat",
-                    backgroundSize: `${firstProduct.imageZoom ?? 100}%`,
+                    backgroundSize: `${product.imageZoom ?? 100}%`,
                   }}
                 />
                 <div>
-                  <p className="text-sm font-black text-[var(--store-text)]">{firstProduct.name}</p>
-                  <p className="mt-1 text-xs text-[var(--store-muted)]">Qty 1</p>
+                  <p className="text-sm font-black text-[var(--store-text)]">{product.name}</p>
+                  <p className="mt-1 text-xs text-[var(--store-muted)]">Qty {item.quantity}</p>
                 </div>
-                <p className={`col-start-2 text-sm font-black text-[var(--store-text)] ${isForcedMobile ? "" : "sm:col-start-auto"}`}>${firstProduct.price}</p>
+                <p className={`col-start-2 text-sm font-black text-[var(--store-text)] ${isForcedMobile ? "" : "sm:col-start-auto"}`}>${product.price * item.quantity}</p>
               </div>
-            ) : null}
+            )) : (
+              <div className="mt-5 rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-4 py-3 text-sm font-semibold text-[var(--store-muted)]">
+                Add a product before checking out.
+              </div>
+            )}
             <div className="mt-5 space-y-3 border-[var(--store-border)] border-t pt-5 text-sm">
-              <SummaryRow label="Subtotal" value={`$${firstProduct?.price ?? 0}`} />
+              <SummaryRow label="Subtotal" value={`$${checkoutSubtotal}`} />
               <SummaryRow label="Shipping" value="$0" />
               <SummaryRow label="Tax" value="$8" />
             </div>
@@ -743,13 +841,31 @@ function PreviewSection({
           </p>
         </div>
         <div className="flex flex-wrap gap-5 text-sm font-semibold text-white/70">
-          {(settings.columns as string[]).map((column) => (
-            <span key={column}>{column}</span>
+          {customerPages(template).map((page) => (
+            <button className="hover:text-white" key={page.id} onClick={() => onNavigatePage?.(page.id)} type="button">
+              {page.name}
+            </button>
           ))}
         </div>
       </div>
     </footer>
   );
+}
+
+function customerPages(template: StoreTemplate) {
+  return template.pages.filter((page) => page.status === "published");
+}
+
+function findPageByType(template: StoreTemplate, type: PageType) {
+  return customerPages(template).find((page) => page.type === type);
+}
+
+function navigateToPageType(template: StoreTemplate, type: PageType, onNavigatePage?: (pageId: string) => void) {
+  const page = findPageByType(template, type);
+
+  if (page) {
+    onNavigatePage?.(page.id);
+  }
 }
 
 function typographyScale(scale: "compact" | "balanced" | "editorial") {
@@ -981,6 +1097,8 @@ function ProductCard({
   density,
   isForcedMobile,
   isForcedTablet,
+  onAddToCart,
+  onOpenProduct,
   product,
   showQuickAdd,
   variant,
@@ -988,6 +1106,8 @@ function ProductCard({
   density: string;
   isForcedMobile: boolean;
   isForcedTablet: boolean;
+  onAddToCart?: (productId: string) => void;
+  onOpenProduct?: (productId: string) => void;
   product: Product;
   showQuickAdd: boolean;
   variant: string;
@@ -1006,7 +1126,16 @@ function ProductCard({
       }`}
     >
       <div
+        aria-label={`Open ${product.name}`}
         className={`relative overflow-hidden bg-cover bg-center ${isEditorial ? "aspect-[3/4]" : "aspect-[4/5]"}`}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOpenProduct?.(product.id);
+          }
+        }}
+        onClick={() => onOpenProduct?.(product.id)}
+        role="button"
         style={{
           backgroundColor: "#f8fafc",
           backgroundImage: product.image,
@@ -1014,6 +1143,7 @@ function ProductCard({
           backgroundRepeat: "no-repeat",
           backgroundSize: `${product.imageZoom ?? 100}%`,
         }}
+        tabIndex={0}
       >
         {product.badge ? (
           <span className="absolute left-3 top-3 rounded-full bg-white/92 px-3 py-1 text-xs font-black text-[var(--store-text)] shadow">
@@ -1025,6 +1155,10 @@ function ProductCard({
             className={`absolute bottom-3 left-3 right-3 rounded-full bg-white/94 px-4 py-2 text-xs font-black text-[var(--store-text)] opacity-100 shadow-lg transition ${
               isForcedMobile || isForcedTablet ? "" : "lg:translate-y-2 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100"
             }`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onAddToCart?.(product.id);
+            }}
             type="button"
           >
             Quick add
@@ -1033,11 +1167,17 @@ function ProductCard({
       </div>
       <div className={isMinimal ? "px-1 py-3" : productCardPadding(density)}>
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--store-muted)]">{product.category}</p>
-        <h3 className={`${isEditorial ? "text-lg" : "text-base"} mt-2 font-black text-[var(--store-text)]`}>{product.name}</h3>
+        <button className="mt-2 block text-left" onClick={() => onOpenProduct?.(product.id)} type="button">
+          <h3 className={`${isEditorial ? "text-lg" : "text-base"} font-black text-[var(--store-text)]`}>{product.name}</h3>
+        </button>
         <div className="mt-4 flex items-center justify-between gap-3">
           <p className="font-black text-[var(--store-text)]">${product.price}</p>
           {showQuickAdd ? (
-            <button className="rounded-full bg-[var(--store-text)] px-3 py-2 text-xs font-bold text-white" type="button">
+            <button
+              className="rounded-full bg-[var(--store-text)] px-3 py-2 text-xs font-bold text-white"
+              onClick={() => onAddToCart?.(product.id)}
+              type="button"
+            >
               Add
             </button>
           ) : null}

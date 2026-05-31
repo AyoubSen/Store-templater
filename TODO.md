@@ -2,16 +2,22 @@
 
 ## Current Milestone
 
-Move from local editor prototype to project-level workflow: dashboard, export/import, validation, and eventual backend/auth.
+Move from local editor prototype to exportable project workflow: package exports, dashboard library management, and eventual backend/auth.
 
 For broader non-binding product direction, see `PRODUCT_MAP.md`.
 
 ## Next
 
+- Continue simplifying first-use UX with clearer primary actions and fewer visible controls by default.
+- Improve the public landing page with stronger examples once generated/storefront visuals settle.
 - Continue polishing storefront visuals so templates feel sellable, not just functional.
+- Deepen mock storefront interactions beyond navigation/cart, including filter state and checkout step state.
+- Add richer static export interactions beyond linked pages, such as optional lightweight cart JavaScript.
+- Harden generated Next storefront output with an extracted fixture build check and closer parity with the live preview renderer.
 - Polish the `/templates` dashboard for larger local template libraries.
 - Add hosted/shareable preview URLs.
 - Add richer controls for responsive layout variants beyond visibility.
+- Connect Clerk user identity to real template persistence once database storage is added.
 
 ## Soon
 
@@ -24,15 +30,16 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 
 - Add hosted preview URLs.
 - Add database persistence.
-- Add auth and user dashboards.
+- Expand auth from Clerk sign-in to user dashboards, account-owned templates, and team/org workflows.
 - Add Shopify/WooCommerce export or mapping.
+- Expand generated Next storefront projects toward production integrations.
 
 ## Open Decisions
 
 - Editor state: keep React state for now, or introduce Zustand when section editing grows.
 - Validation: introduce Zod before or after persistence.
 - Database layer: Drizzle vs Prisma.
-- Backend/auth/storage: Clerk + custom DB/storage, Supabase, or mixed Clerk + R2/Postgres.
+- Backend/storage: Drizzle or Prisma with Postgres, plus image storage such as R2/S3.
 - Export target: static Next template first, Shopify first, or hosted storefront first.
 
 ## Known Gaps

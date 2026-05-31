@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AuthControls } from "@/components/auth-controls";
+import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport, parseTemplateExport } from "@/lib/templater/export";
 import type { StoreTemplate } from "@/lib/templater/schema";
 import { createTemplateFromStarter, starterTemplates } from "@/lib/templater/starter-templates";
 import {
@@ -10,7 +12,6 @@ import {
   writeActiveTemplateId,
   writeStoredTemplates,
 } from "@/lib/templater/storage";
-import { parseTemplate } from "@/lib/templater/validation";
 
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState<StoreTemplate[]>([]);
@@ -71,14 +72,15 @@ export default function TemplatesPage() {
   }
 
   function exportTemplate(template: StoreTemplate) {
-    const blob = new Blob([JSON.stringify(template, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    downloadTemplateExport(template);
+  }
 
-    link.href = url;
-    link.download = `${slugify(template.name)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+  function exportStatic(template: StoreTemplate) {
+    downloadStaticStorefront(template);
+  }
+
+  function exportNext(template: StoreTemplate) {
+    downloadNextProject(template);
   }
 
   function importTemplate(file: File) {
@@ -86,10 +88,10 @@ export default function TemplatesPage() {
 
     reader.onload = () => {
       try {
-        const parsedTemplate = parseTemplate(JSON.parse(String(reader.result)));
+        const parsedTemplate = parseTemplateExport(JSON.parse(String(reader.result)));
 
         if (!parsedTemplate) {
-          window.alert("This file does not look like a Store Templater template.");
+          window.alert("This file does not look like a Store Templater export.");
           return;
         }
 
@@ -120,9 +122,9 @@ export default function TemplatesPage() {
             <p className="text-xs font-semibold uppercase text-[#64748b]">Store Templater</p>
             <h1 className="mt-1 text-2xl font-semibold">Templates</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <label className="cursor-pointer rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]">
-              Import JSON
+              Import export
               <input
                 accept="application/json,.json"
                 className="sr-only"
@@ -143,14 +145,31 @@ export default function TemplatesPage() {
             >
               New template
             </button>
-            <Link className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]" href="/">
+            <Link className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]" href="/builder">
               Open builder
             </Link>
+            <AuthControls />
           </div>
         </div>
       </header>
 
       <section className="mx-auto max-w-6xl px-5 py-6">
+        <div className="mb-5 rounded-lg border border-[#d8dde5] bg-white p-4 shadow-sm">
+          <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <h2 className="text-sm font-semibold text-[#111827]">Local export workflow</h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#64748b]">
+                Export a validated editing package, download a multi-page static storefront, or generate a runnable Next storefront project.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <Metric label="Templates" value={templates.length} />
+              <Metric label="Products" value={templates.reduce((total, template) => total + template.products.length, 0)} />
+              <Metric label="Targets" value="3" />
+            </div>
+          </div>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {templates.map((template) => (
             <article className="rounded-lg border border-[#d8dde5] bg-white p-4 shadow-sm" key={template.id}>
@@ -184,15 +203,15 @@ export default function TemplatesPage() {
                   <dd className="mt-1">{template.products.length}</dd>
                 </div>
                 <div>
-                  <dt className="font-medium text-[#475569]">Preview</dt>
-                  <dd className="mt-1">Local</dd>
+                  <dt className="font-medium text-[#475569]">Exports</dt>
+                  <dd className="mt-1">3 targets</dd>
                 </div>
               </dl>
 
               <div className="mt-5 grid grid-cols-2 gap-2">
                 <Link
                   className="rounded-md bg-[#111827] px-3 py-2 text-center text-sm font-medium text-white hover:bg-[#1f2937]"
-                  href="/"
+                  href="/builder"
                   onClick={() => openTemplate(template.id)}
                 >
                   Edit
@@ -216,7 +235,21 @@ export default function TemplatesPage() {
                   onClick={() => exportTemplate(template)}
                   type="button"
                 >
-                  Export
+                  Package
+                </button>
+                <button
+                  className="rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2 text-sm font-medium text-[#1d4ed8] hover:bg-[#dbeafe]"
+                  onClick={() => exportStatic(template)}
+                  type="button"
+                >
+                  Static site
+                </button>
+                <button
+                  className="rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-2 text-sm font-medium text-[#15803d] hover:bg-[#dcfce7]"
+                  onClick={() => exportNext(template)}
+                  type="button"
+                >
+                  Next app
                 </button>
                 <button
                   aria-disabled={templates.length <= 1}
@@ -239,13 +272,12 @@ export default function TemplatesPage() {
   );
 }
 
-function slugify(value: string) {
+function Metric({ label, value }: { label: string; value: number | string }) {
   return (
-    value
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "template"
+    <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2">
+      <p className="font-semibold text-[#111827]">{value}</p>
+      <p className="mt-0.5 text-[#64748b]">{label}</p>
+    </div>
   );
 }
 

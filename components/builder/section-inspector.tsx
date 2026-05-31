@@ -271,16 +271,6 @@ function SectionStyleControls({
           value={styleSetting(settings.spacing, "balanced")}
         />
         <SelectControl
-          label="Density"
-          onChange={(value) => setValue("layoutDensity", value)}
-          options={[
-            { label: "Compact", value: "compact" },
-            { label: "Comfortable", value: "comfortable" },
-            { label: "Spacious", value: "spacious" },
-          ]}
-          value={styleSetting(settings.layoutDensity, "comfortable")}
-        />
-        <SelectControl
           label="Background"
           onChange={(value) => setValue("background", value)}
           options={[
@@ -292,42 +282,57 @@ function SectionStyleControls({
           ]}
           value={styleSetting(settings.background, "default")}
         />
-        <SelectControl
-          label="Alignment"
-          onChange={(value) => setValue("alignment", value)}
-          options={[
-            { label: "Left", value: "left" },
-            { label: "Center", value: "center" },
-          ]}
-          value={styleSetting(settings.alignment, "left")}
-        />
-        <SelectControl
-          label="Button style"
-          onChange={(value) => setValue("buttonStyle", value)}
-          options={[
-            { label: "Solid", value: "solid" },
-            { label: "Dark", value: "dark" },
-            { label: "Outline", value: "outline" },
-          ]}
-          value={styleSetting(settings.buttonStyle, "solid")}
-        />
-        <div className="grid grid-cols-3 gap-2">
-          <VisibilityControl
-            label="Desktop"
-            onChange={(value) => setValue("visibleOnDesktop", value)}
-            value={settings.visibleOnDesktop !== false}
-          />
-          <VisibilityControl
-            label="Tablet"
-            onChange={(value) => setValue("visibleOnTablet", value)}
-            value={settings.visibleOnTablet !== false}
-          />
-          <VisibilityControl
-            label="Mobile"
-            onChange={(value) => setValue("visibleOnMobile", value)}
-            value={settings.visibleOnMobile !== false}
-          />
-        </div>
+        <details className="border-[#e2e8f0] border-t pt-3">
+          <summary className="cursor-pointer list-none text-xs font-semibold text-[#475569]">Advanced layout</summary>
+          <div className="mt-3 space-y-3">
+            <SelectControl
+              label="Density"
+              onChange={(value) => setValue("layoutDensity", value)}
+              options={[
+                { label: "Compact", value: "compact" },
+                { label: "Comfortable", value: "comfortable" },
+                { label: "Spacious", value: "spacious" },
+              ]}
+              value={styleSetting(settings.layoutDensity, "comfortable")}
+            />
+            <SelectControl
+              label="Alignment"
+              onChange={(value) => setValue("alignment", value)}
+              options={[
+                { label: "Left", value: "left" },
+                { label: "Center", value: "center" },
+              ]}
+              value={styleSetting(settings.alignment, "left")}
+            />
+            <SelectControl
+              label="Button style"
+              onChange={(value) => setValue("buttonStyle", value)}
+              options={[
+                { label: "Solid", value: "solid" },
+                { label: "Dark", value: "dark" },
+                { label: "Outline", value: "outline" },
+              ]}
+              value={styleSetting(settings.buttonStyle, "solid")}
+            />
+            <div className="grid grid-cols-3 gap-2">
+              <VisibilityControl
+                label="Desktop"
+                onChange={(value) => setValue("visibleOnDesktop", value)}
+                value={settings.visibleOnDesktop !== false}
+              />
+              <VisibilityControl
+                label="Tablet"
+                onChange={(value) => setValue("visibleOnTablet", value)}
+                value={settings.visibleOnTablet !== false}
+              />
+              <VisibilityControl
+                label="Mobile"
+                onChange={(value) => setValue("visibleOnMobile", value)}
+                value={settings.visibleOnMobile !== false}
+              />
+            </div>
+          </div>
+        </details>
       </div>
     </div>
   );

@@ -375,6 +375,17 @@ export function InspectorPanel({
             <SectionInspector section={selectedSection} updateSetting={updateSectionSetting} />
           </section>
         ) : null}
+
+        {inspectorTab === "section" && !selectedSection ? (
+          <section className="px-4 py-4">
+            <div className="rounded-md border border-dashed border-[#cbd5e1] bg-white p-4">
+              <h3 className="text-sm font-semibold text-[#111827]">No section selected</h3>
+              <p className="mt-2 text-sm leading-6 text-[#64748b]">
+                Select a section from the left sidebar to edit its copy, layout, visibility, and storefront behavior.
+              </p>
+            </div>
+          </section>
+        ) : null}
       </div>
       {imageProduct ? (
         <ImageImportModal
