@@ -1,0 +1,142 @@
+"use server";
+
+import { auth } from "@clerk/nextjs/server";
+import { eq, and } from "drizzle-orm";
+import { getDb, hasDatabaseUrl } from "@/lib/db";
+import { templates } from "@/lib/db/schema";
+import type { StoreTemplate } from "@/lib/templater/schema";
+import { parseTemplate, versionTemplate } from "@/lib/templater/validation";
+
+type TemplateActionResult<T> = {
+  data?: T;
+  error?: string;
+  isDatabaseConfigured: boolean;
+};
+
+async function getUserId() {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("You must be signed in.");
+  }
+
+  return userId;
+}
+
+export async function listAccountTemplatesAction(): Promise<TemplateActionResult<StoreTemplate[]>> {
+  if (!hasDatabaseUrl()) {
+    return { data: [], isDatabaseConfigured: false };
+  }
+
+  try {
+    const userId = await getUserId();
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(templates)
+      .where(eq(templates.userId, userId))
+      .orderBy(templates.updatedAt);
+
+    return {
+      data: rows.map((row) => row.templateJson),
+      isDatabaseConfigured: true,
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not load templates.",
+      isDatabaseConfigured: true,
+    };
+  }
+}
+
+export async function getAccountTemplateAction(templateId: string): Promise<TemplateActionResult<StoreTemplate | null>> {
+  if (!hasDatabaseUrl()) {
+    return { data: null, isDatabaseConfigured: false };
+  }
+
+  try {
+    const userId = await getUserId();
+    const db = getDb();
+    const [row] = await db
+      .select()
+      .from(templates)
+      .where(and(eq(templates.id, templateId), eq(templates.userId, userId)))
+      .limit(1);
+
+    return {
+      data: row?.templateJson ?? null,
+      isDatabaseConfigured: true,
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not load the template.",
+      isDatabaseConfigured: true,
+    };
+  }
+}
+
+export async function saveAccountTemplateAction(template: StoreTemplate): Promise<TemplateActionResult<StoreTemplate>> {
+  if (!hasDatabaseUrl()) {
+    return { data: versionTemplate(template), isDatabaseConfigured: false };
+  }
+
+  try {
+    const userId = await getUserId();
+    const parsedTemplate = parseTemplate(template);
+
+    if (!parsedTemplate) {
+      return { error: "Template data is invalid.", isDatabaseConfigured: true };
+    }
+
+    const versionedTemplate = versionTemplate(parsedTemplate);
+    const db = getDb();
+    const now = new Date();
+
+    await db
+      .insert(templates)
+      .values({
+        id: versionedTemplate.id,
+        userId,
+        name: versionedTemplate.name,
+        category: versionedTemplate.category,
+        templateJson: versionedTemplate,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [templates.id, templates.userId],
+        set: {
+          name: versionedTemplate.name,
+          category: versionedTemplate.category,
+          templateJson: versionedTemplate,
+          updatedAt: now,
+        },
+      });
+
+    return { data: versionedTemplate, isDatabaseConfigured: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not save the template.",
+      isDatabaseConfigured: true,
+    };
+  }
+}
+
+export async function deleteAccountTemplateAction(templateId: string): Promise<TemplateActionResult<{ templateId: string }>> {
+  if (!hasDatabaseUrl()) {
+    return { data: { templateId }, isDatabaseConfigured: false };
+  }
+
+  try {
+    const userId = await getUserId();
+    const db = getDb();
+
+    await db.delete(templates).where(and(eq(templates.id, templateId), eq(templates.userId, userId)));
+
+    return { data: { templateId }, isDatabaseConfigured: true };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not delete the template.",
+      isDatabaseConfigured: true,
+    };
+  }
+}

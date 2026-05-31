@@ -28,6 +28,7 @@ Core user flow:
 - TypeScript
 - Tailwind CSS 4
 - Clerk auth
+- Neon Postgres with Drizzle ORM for account-owned template persistence
 - pnpm
 
 Current scripts:
@@ -65,6 +66,9 @@ Important files:
 - `lib/templater/zip.ts`: dependency-free zip writer used by export targets
 - `lib/templater/export-utils.ts`: shared export validation, filename, HTML, and CSS helpers
 - `scripts/verify-exports.cjs`: lightweight generated export file-list/content verification
+- `lib/db/schema.ts`: Drizzle schema for account-owned templates
+- `lib/db/index.ts`: Neon/Drizzle database client factory
+- `app/actions/templates.ts`: Clerk-authenticated server actions for template list/load/save/delete
 - `lib/templater/storage.ts`: localStorage persistence for active template and local template library
 - `components/builder/section-sidebar.tsx`: template switcher, page list, section list, section library, drag reorder
 - `components/builder/preview-canvas.tsx`: editor toolbar, device controls, zoom, preview canvas
@@ -110,6 +114,7 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Independent scrolling for left sidebar, center canvas, and inspector
 - Radix Popover for the custom color picker dropdown
 - Clerk sign-in/sign-up pages with proxy-level route protection for the editor and dashboard
+- Account template persistence actions backed by `DATABASE_URL`, with localStorage fallback when the database is not configured
 - First-run welcome checklist with compact guidance for section, theme, item, device, and preview workflows
 - Progressive disclosure in the builder: page settings, section library, and advanced section layout controls stay collapsed until needed
 
@@ -167,9 +172,12 @@ Expected section types over time:
   - `@dnd-kit` for section reorder
   - `@radix-ui/react-popover` for floating color picker UI
   - `zod` for template validation and migration
+- Database dependencies:
+  - `drizzle-orm` for typed Postgres access
+  - `@neondatabase/serverless` for the Neon serverless driver
+  - `drizzle-kit` for migration generation/application
 - Likely future dependencies:
   - Zustand for editor state
-  - Drizzle or Prisma with PostgreSQL for persistence
 
 ## Visual Constraints
 

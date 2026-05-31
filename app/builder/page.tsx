@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { listAccountTemplatesAction, saveAccountTemplateAction } from "@/app/actions/templates";
 import type { PreviewCartItem } from "@/components/storefront-preview";
 import { InspectorPanel, type InspectorTab } from "@/components/builder/inspector-panel";
 import { PreviewCanvas, type Device } from "@/components/builder/preview-canvas";
@@ -13,6 +14,7 @@ import type { PageType, SectionType, StoreTemplate, TemplatePage, ThemeTokens } 
 import { createTemplateFromStarter } from "@/lib/templater/starter-templates";
 import {
   clearStoredTemplate,
+  readActiveTemplateId,
   readStoredTemplate,
   readStoredTemplates,
   writeActiveTemplateId,
@@ -77,6 +79,24 @@ export default function Home() {
       setIsWelcomeOpen(window.localStorage.getItem(welcomeStorageKey) !== "true");
       setSaveState("saved");
     }, 0);
+
+    listAccountTemplatesAction().then((result) => {
+      if (!result.isDatabaseConfigured || !result.data?.length) {
+        return;
+      }
+
+      const activeTemplateId = readActiveTemplateId();
+      const activeTemplate = result.data.find((accountTemplate) => accountTemplate.id === activeTemplateId) ?? result.data[0];
+
+      writeStoredTemplates(result.data);
+      writeActiveTemplateId(activeTemplate.id);
+      setTemplates(result.data);
+      setTemplate(activeTemplate);
+      selectFirstSection(activeTemplate);
+      setHistory({ past: [], future: [] });
+      hasLoadedStoredTemplate.current = true;
+      setSaveState("saved");
+    });
   }, []);
 
   useEffect(() => {
@@ -85,6 +105,7 @@ export default function Home() {
     }
 
     writeStoredTemplate(template);
+    void saveAccountTemplateAction(template);
     setTemplates((current) =>
       current.some((storedTemplate) => storedTemplate.id === template.id)
         ? current.map((storedTemplate) => (storedTemplate.id === template.id ? template : storedTemplate))

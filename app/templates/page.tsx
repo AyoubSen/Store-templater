@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { deleteAccountTemplateAction, listAccountTemplatesAction, saveAccountTemplateAction } from "@/app/actions/templates";
 import { AuthControls } from "@/components/auth-controls";
 import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport, parseTemplateExport } from "@/lib/templater/export";
 import type { StoreTemplate } from "@/lib/templater/schema";
@@ -23,6 +24,23 @@ export default function TemplatesPage() {
       setTemplates(readStoredTemplates());
       setActiveTemplateId(readActiveTemplateId());
     }, 0);
+
+    listAccountTemplatesAction().then((result) => {
+      if (!result.isDatabaseConfigured || !result.data?.length) {
+        return;
+      }
+
+      const storedActiveTemplateId = readActiveTemplateId();
+      const nextActiveTemplateId =
+        result.data.find((template) => template.id === storedActiveTemplateId)?.id ?? result.data[0]?.id ?? "";
+
+      writeStoredTemplates(result.data);
+      if (nextActiveTemplateId) {
+        writeActiveTemplateId(nextActiveTemplateId);
+      }
+      setTemplates(result.data);
+      setActiveTemplateId(nextActiveTemplateId);
+    });
   }, []);
 
   function openTemplate(templateId: string) {
@@ -36,6 +54,7 @@ export default function TemplatesPage() {
 
     writeStoredTemplates(nextTemplates);
     writeActiveTemplateId(template.id);
+    void saveAccountTemplateAction(template);
     setTemplates(nextTemplates);
     setActiveTemplateId(template.id);
     setIsStarterPickerOpen(false);
@@ -51,6 +70,7 @@ export default function TemplatesPage() {
 
     writeStoredTemplates(nextTemplates);
     writeActiveTemplateId(copy.id);
+    void saveAccountTemplateAction(copy);
     setTemplates(nextTemplates);
     setActiveTemplateId(copy.id);
   }
@@ -64,6 +84,7 @@ export default function TemplatesPage() {
     const nextActiveTemplateId = activeTemplateId === templateId ? nextTemplates[0]?.id : activeTemplateId;
 
     writeStoredTemplates(nextTemplates);
+    void deleteAccountTemplateAction(templateId);
     if (nextActiveTemplateId) {
       writeActiveTemplateId(nextActiveTemplateId);
       setActiveTemplateId(nextActiveTemplateId);
@@ -104,6 +125,7 @@ export default function TemplatesPage() {
 
         writeStoredTemplates(nextTemplates);
         writeActiveTemplateId(importedTemplate.id);
+        void saveAccountTemplateAction(importedTemplate);
         setTemplates(nextTemplates);
         setActiveTemplateId(importedTemplate.id);
       } catch {

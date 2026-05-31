@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
+import { getAccountTemplateAction } from "@/app/actions/templates";
 import { StorefrontPreview } from "@/components/storefront-preview";
 import type { PreviewCartItem } from "@/components/storefront-preview";
 import { sampleTemplate } from "@/lib/templater/sample-template";
@@ -36,6 +37,19 @@ export default function TemplatePreviewPage({
       setActiveProductId(nextTemplate.products[0]?.id ?? "");
       setWasFound(Boolean(storedTemplate));
     }, 0);
+
+    getAccountTemplateAction(templateId).then((result) => {
+      if (!result.isDatabaseConfigured || !result.data) {
+        return;
+      }
+
+      const page = findPreviewPage(result.data, pageParam);
+
+      setTemplate(result.data);
+      setSelectedPageId(page?.id ?? result.data.pages[0]?.id ?? "");
+      setActiveProductId(result.data.products[0]?.id ?? "");
+      setWasFound(true);
+    });
   }, [pageParam, templateId]);
 
   function navigatePage(pageId: string) {
