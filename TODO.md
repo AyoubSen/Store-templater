@@ -17,8 +17,7 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 - Polish the `/templates` dashboard for larger local template libraries.
 - Add hosted/shareable preview URLs.
 - Add richer controls for responsive layout variants beyond visibility.
-- Connect Clerk user identity to real template persistence once database storage is added.
-- Add Neon `DATABASE_URL`, apply the initial `templates` SQL migration, then verify account persistence on Vercel.
+- Improve account persistence polish with manual retry controls and last-synced timestamps.
 
 ## Soon
 
@@ -30,7 +29,7 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 ## Later
 
 - Add hosted preview URLs.
-- Harden database persistence UX with explicit saving/error states and local-to-account import prompts.
+- Add a stronger local-to-account import review flow for selecting which local templates to import.
 - Expand auth from Clerk sign-in to user dashboards, account-owned templates, and team/org workflows.
 - Add Shopify/WooCommerce export or mapping.
 - Expand generated Next storefront projects toward production integrations.
@@ -45,7 +44,7 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 
 ## Known Gaps
 
-- Templates are localStorage-only.
+- Templates sync to account storage when `DATABASE_URL` is configured, with localStorage as a local draft/fallback cache.
 - Product images are stored as data URLs locally, which is not suitable for production.
 - `/preview/[templateId]` is local-only and not shareable across devices yet.
 - Saved template validation/migration exists and should grow with future schema versions.

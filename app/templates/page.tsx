@@ -13,20 +13,39 @@ import {
   writeActiveTemplateId,
   writeStoredTemplates,
 } from "@/lib/templater/storage";
+import { syncStatusClassName, syncStatusLabel, type TemplateSyncState } from "@/lib/templater/sync-status";
 
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState<StoreTemplate[]>([]);
   const [activeTemplateId, setActiveTemplateId] = useState("");
   const [isStarterPickerOpen, setIsStarterPickerOpen] = useState(false);
+  const [syncState, setSyncState] = useState<TemplateSyncState>("loading");
+  const [syncMessage, setSyncMessage] = useState("Loading templates.");
 
   useEffect(() => {
     window.setTimeout(() => {
       setTemplates(readStoredTemplates());
       setActiveTemplateId(readActiveTemplateId());
+      setSyncState("local-only");
+      setSyncMessage("Loaded local browser templates.");
     }, 0);
 
     listAccountTemplatesAction().then((result) => {
-      if (!result.isDatabaseConfigured || !result.data?.length) {
+      if (!result.isDatabaseConfigured) {
+        setSyncState("local-only");
+        setSyncMessage("Database is not configured. Changes stay in this browser.");
+        return;
+      }
+
+      if (result.error) {
+        setSyncState("failed");
+        setSyncMessage(result.error);
+        return;
+      }
+
+      if (!result.data?.length) {
+        setSyncState("local-only");
+        setSyncMessage("No account templates yet. New templates will sync to your account.");
         return;
       }
 
@@ -40,6 +59,8 @@ export default function TemplatesPage() {
       }
       setTemplates(result.data);
       setActiveTemplateId(nextActiveTemplateId);
+      setSyncState("saved");
+      setSyncMessage("Loaded templates from your account.");
     });
   }, []);
 
@@ -48,21 +69,22 @@ export default function TemplatesPage() {
     setActiveTemplateId(templateId);
   }
 
-  function createTemplate(starterId: string) {
+  async function createTemplate(starterId: string) {
     const template = createTemplateFromStarter(starterId);
     const nextTemplates = [...templates, template];
 
     writeStoredTemplates(nextTemplates);
     writeActiveTemplateId(template.id);
-    void saveAccountTemplateAction(template);
     setTemplates(nextTemplates);
     setActiveTemplateId(template.id);
     setIsStarterPickerOpen(false);
+    await reportTemplateSave(template, "Template created locally and saved to your account.");
   }
 
-  function duplicateTemplate(template: StoreTemplate) {
+  async function duplicateTemplate(template: StoreTemplate) {
     const copy = {
       ...structuredClone(template),
+      // eslint-disable-next-line react-hooks/purity -- Client event handler needs a unique local template id.
       id: `${template.id}-copy-${Date.now()}`,
       name: `${template.name} copy`,
     };
@@ -70,12 +92,12 @@ export default function TemplatesPage() {
 
     writeStoredTemplates(nextTemplates);
     writeActiveTemplateId(copy.id);
-    void saveAccountTemplateAction(copy);
     setTemplates(nextTemplates);
     setActiveTemplateId(copy.id);
+    await reportTemplateSave(copy, "Template duplicated locally and saved to your account.");
   }
 
-  function deleteTemplate(templateId: string) {
+  async function deleteTemplate(templateId: string) {
     if (templates.length <= 1) {
       return;
     }
@@ -84,12 +106,29 @@ export default function TemplatesPage() {
     const nextActiveTemplateId = activeTemplateId === templateId ? nextTemplates[0]?.id : activeTemplateId;
 
     writeStoredTemplates(nextTemplates);
-    void deleteAccountTemplateAction(templateId);
     if (nextActiveTemplateId) {
       writeActiveTemplateId(nextActiveTemplateId);
       setActiveTemplateId(nextActiveTemplateId);
     }
     setTemplates(nextTemplates);
+    setSyncState("saving");
+    setSyncMessage("Deleting from your account.");
+    const result = await deleteAccountTemplateAction(templateId);
+
+    if (!result.isDatabaseConfigured) {
+      setSyncState("local-only");
+      setSyncMessage("Deleted locally. Database is not configured.");
+      return;
+    }
+
+    if (result.error) {
+      setSyncState("failed");
+      setSyncMessage(result.error);
+      return;
+    }
+
+    setSyncState("saved");
+    setSyncMessage("Template deleted from your account.");
   }
 
   function exportTemplate(template: StoreTemplate) {
@@ -107,7 +146,7 @@ export default function TemplatesPage() {
   function importTemplate(file: File) {
     const reader = new FileReader();
 
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const parsedTemplate = parseTemplateExport(JSON.parse(String(reader.result)));
 
@@ -125,15 +164,36 @@ export default function TemplatesPage() {
 
         writeStoredTemplates(nextTemplates);
         writeActiveTemplateId(importedTemplate.id);
-        void saveAccountTemplateAction(importedTemplate);
         setTemplates(nextTemplates);
         setActiveTemplateId(importedTemplate.id);
+        await reportTemplateSave(importedTemplate, "Imported locally and saved to your account.");
       } catch {
         window.alert("Could not read this JSON file.");
       }
     };
 
     reader.readAsText(file);
+  }
+
+  async function reportTemplateSave(template: StoreTemplate, successMessage: string) {
+    setSyncState("saving");
+    setSyncMessage("Saving to your account.");
+    const result = await saveAccountTemplateAction(template);
+
+    if (!result.isDatabaseConfigured) {
+      setSyncState("local-only");
+      setSyncMessage("Saved locally. Database is not configured.");
+      return;
+    }
+
+    if (result.error) {
+      setSyncState("failed");
+      setSyncMessage(result.error);
+      return;
+    }
+
+    setSyncState("saved");
+    setSyncMessage(successMessage);
   }
 
   return (
@@ -183,6 +243,12 @@ export default function TemplatesPage() {
               <p className="mt-1 max-w-2xl text-sm leading-6 text-[#64748b]">
                 Export a validated editing package, download a multi-page static storefront, or generate a runnable Next storefront project.
               </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className={`rounded-md border px-2 py-1 text-xs font-medium ${syncStatusClassName(syncState)}`}>
+                  {syncStatusLabel(syncState)}
+                </span>
+                <span className="text-xs text-[#64748b]">{syncMessage}</span>
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
               <Metric label="Templates" value={templates.length} />

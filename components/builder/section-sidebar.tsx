@@ -7,6 +7,7 @@ import { AuthControls } from "@/components/auth-controls";
 import { pageTypeLabels, pageTypes } from "@/lib/templater/page-defaults";
 import { sectionRegistry } from "@/lib/templater/registry";
 import type { PageType, SectionType, StoreTemplate, TemplatePage, TemplateSection } from "@/lib/templater/schema";
+import { syncStatusClassName, syncStatusLabel, type TemplateSyncState } from "@/lib/templater/sync-status";
 import { starterTemplates } from "@/lib/templater/starter-templates";
 
 export function SectionSidebar({
@@ -20,6 +21,7 @@ export function SectionSidebar({
   pages,
   reorderSections,
   saveState,
+  saveStatusMessage,
   sectionGroups,
   sections,
   selectedPageId,
@@ -40,7 +42,8 @@ export function SectionSidebar({
   duplicateTemplate: () => void;
   pages: TemplatePage[];
   reorderSections: (sectionIds: string[]) => void;
-  saveState: "loading" | "saved";
+  saveState: TemplateSyncState;
+  saveStatusMessage?: string;
   sectionGroups: Array<{ label: string; sections: SectionType[] }>;
   sections: TemplateSection[];
   selectedPageId: string;
@@ -103,10 +106,11 @@ export function SectionSidebar({
             <p className="truncate text-sm font-medium">{template.name}</p>
             <p className="text-xs capitalize text-[#64748b]">{template.category} template</p>
           </div>
-          <span className="rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-2 py-1 text-[11px] font-medium text-[#15803d] capitalize">
-            {saveState}
+          <span className={`rounded-md border px-2 py-1 text-[11px] font-medium ${syncStatusClassName(saveState)}`} title={saveStatusMessage}>
+            {syncStatusLabel(saveState)}
           </span>
         </div>
+        {saveStatusMessage ? <p className="mt-2 text-[11px] leading-4 text-[#64748b]">{saveStatusMessage}</p> : null}
         <div className="mt-3 space-y-2">
           <select
             className="w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] shadow-sm"

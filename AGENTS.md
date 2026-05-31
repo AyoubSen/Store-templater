@@ -115,6 +115,9 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Radix Popover for the custom color picker dropdown
 - Clerk sign-in/sign-up pages with proxy-level route protection for the editor and dashboard
 - Account template persistence actions backed by `DATABASE_URL`, with localStorage fallback when the database is not configured
+- Builder sync status distinguishes loading, saving, saved-to-account, local-only, and failed account sync states
+- Local browser templates can be imported into the signed-in account from the builder sync prompt
+- `/templates` dashboard create, duplicate, delete, and import flows report account sync results instead of silently ignoring failures
 - First-run welcome checklist with compact guidance for section, theme, item, device, and preview workflows
 - Progressive disclosure in the builder: page settings, section library, and advanced section layout controls stay collapsed until needed
 
@@ -167,6 +170,7 @@ Expected section types over time:
 - Prefer small, focused changes that preserve the schema-first model.
 - Keep template data serializable as JSON.
 - Use CSS variables/theme tokens for storefront customization.
+- Keep localStorage as a draft/fallback cache, but account persistence should surface explicit status when `DATABASE_URL` is configured.
 - Introduce dependencies only when they solve a real product need.
 - Existing notable dependencies:
   - `@dnd-kit` for section reorder

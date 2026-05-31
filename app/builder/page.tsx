@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { listAccountTemplatesAction, saveAccountTemplateAction } from "@/app/actions/templates";
+import { deleteAccountTemplateAction, listAccountTemplatesAction, saveAccountTemplateAction } from "@/app/actions/templates";
 import type { PreviewCartItem } from "@/components/storefront-preview";
 import { InspectorPanel, type InspectorTab } from "@/components/builder/inspector-panel";
 import { PreviewCanvas, type Device } from "@/components/builder/preview-canvas";
@@ -12,6 +12,7 @@ import { sampleTemplate } from "@/lib/templater/sample-template";
 import { createSection } from "@/lib/templater/section-defaults";
 import type { PageType, SectionType, StoreTemplate, TemplatePage, ThemeTokens } from "@/lib/templater/schema";
 import { createTemplateFromStarter } from "@/lib/templater/starter-templates";
+import { syncStatusDescription, type TemplateSyncState } from "@/lib/templater/sync-status";
 import {
   clearStoredTemplate,
   readActiveTemplateId,
@@ -57,7 +58,10 @@ export default function Home() {
   const [device, setDevice] = useState<Device>("desktop");
   const [zoom, setZoom] = useState(90);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("section");
-  const [saveState, setSaveState] = useState<"loading" | "saved">("loading");
+  const [saveState, setSaveState] = useState<TemplateSyncState>("loading");
+  const [saveStatusMessage, setSaveStatusMessage] = useState(syncStatusDescription("loading"));
+  const [accountTemplates, setAccountTemplates] = useState<StoreTemplate[]>([]);
+  const [localImportStatus, setLocalImportStatus] = useState<"hidden" | "available" | "importing" | "failed" | "done">("hidden");
   const [history, setHistory] = useState<TemplateHistory>({ past: [], future: [] });
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
   const [previewProductId, setPreviewProductId] = useState(template.products[0]?.id ?? "");
@@ -77,11 +81,32 @@ export default function Home() {
       setHistory({ past: [], future: [] });
       hasLoadedStoredTemplate.current = true;
       setIsWelcomeOpen(window.localStorage.getItem(welcomeStorageKey) !== "true");
-      setSaveState("saved");
+      setSaveState("local-only");
+      setSaveStatusMessage(syncStatusDescription("local-only"));
     }, 0);
 
     listAccountTemplatesAction().then((result) => {
-      if (!result.isDatabaseConfigured || !result.data?.length) {
+      if (!result.isDatabaseConfigured) {
+        setSaveState("local-only");
+        setSaveStatusMessage(syncStatusDescription("local-only"));
+        return;
+      }
+
+      if (result.error) {
+        setSaveState("failed");
+        setSaveStatusMessage(result.error);
+        return;
+      }
+
+      const localTemplates = readStoredTemplates();
+      const accountTemplateIds = new Set((result.data ?? []).map((accountTemplate) => accountTemplate.id));
+      const importableLocalTemplates = localTemplates.filter((localTemplate) => !accountTemplateIds.has(localTemplate.id));
+      setAccountTemplates(result.data ?? []);
+      setLocalImportStatus(importableLocalTemplates.length ? "available" : "hidden");
+
+      if (!result.data?.length) {
+        setSaveState("local-only");
+        setSaveStatusMessage("Saved locally. Import local templates to save them to your account.");
         return;
       }
 
@@ -96,6 +121,7 @@ export default function Home() {
       setHistory({ past: [], future: [] });
       hasLoadedStoredTemplate.current = true;
       setSaveState("saved");
+      setSaveStatusMessage(syncStatusDescription("saved"));
     });
   }, []);
 
@@ -105,13 +131,29 @@ export default function Home() {
     }
 
     writeStoredTemplate(template);
-    void saveAccountTemplateAction(template);
+    setSaveState("saving");
+    setSaveStatusMessage(syncStatusDescription("saving"));
+    saveAccountTemplateAction(template).then((result) => {
+      if (!result.isDatabaseConfigured) {
+        setSaveState("local-only");
+        setSaveStatusMessage(syncStatusDescription("local-only"));
+        return;
+      }
+
+      if (result.error) {
+        setSaveState("failed");
+        setSaveStatusMessage(result.error);
+        return;
+      }
+
+      setSaveState("saved");
+      setSaveStatusMessage(syncStatusDescription("saved"));
+    });
     setTemplates((current) =>
       current.some((storedTemplate) => storedTemplate.id === template.id)
         ? current.map((storedTemplate) => (storedTemplate.id === template.id ? template : storedTemplate))
         : [...current, template],
     );
-    setSaveState("saved");
   }, [template]);
 
   const previewStyle = useMemo(
@@ -608,6 +650,24 @@ export default function Home() {
     writeActiveTemplateId(nextTemplate.id);
     setTemplates(nextTemplates);
     replaceTemplate(nextTemplate);
+    setSaveState("saving");
+    setSaveStatusMessage("Deleting template from your account.");
+    deleteAccountTemplateAction(templateId).then((result) => {
+      if (!result.isDatabaseConfigured) {
+        setSaveState("local-only");
+        setSaveStatusMessage(syncStatusDescription("local-only"));
+        return;
+      }
+
+      if (result.error) {
+        setSaveState("failed");
+        setSaveStatusMessage(result.error);
+        return;
+      }
+
+      setSaveState("saved");
+      setSaveStatusMessage("Template deleted from your account.");
+    });
   }
 
   function selectTemplate(templateId: string) {
@@ -633,6 +693,47 @@ export default function Home() {
     downloadNextProject(template);
   }
 
+  function importLocalTemplatesToAccount() {
+    const localTemplates = readStoredTemplates();
+    const accountTemplateIds = new Set(accountTemplates.map((accountTemplate) => accountTemplate.id));
+    const templatesToImport = localTemplates.filter((localTemplate) => !accountTemplateIds.has(localTemplate.id));
+
+    if (!templatesToImport.length) {
+      setLocalImportStatus("hidden");
+      return;
+    }
+
+    setLocalImportStatus("importing");
+    Promise.all(templatesToImport.map((localTemplate) => saveAccountTemplateAction(localTemplate))).then((results) => {
+      const failedResult = results.find((result) => result.error);
+
+      if (failedResult) {
+        setLocalImportStatus("failed");
+        setSaveState("failed");
+        setSaveStatusMessage(failedResult.error ?? "Could not import local templates.");
+        return;
+      }
+
+      if (results.some((result) => !result.isDatabaseConfigured)) {
+        setLocalImportStatus("failed");
+        setSaveState("local-only");
+        setSaveStatusMessage(syncStatusDescription("local-only"));
+        return;
+      }
+
+      const nextAccountTemplates = mergeTemplates(accountTemplates, templatesToImport);
+      setAccountTemplates(nextAccountTemplates);
+      setTemplates(mergeTemplates(templates, templatesToImport));
+      setLocalImportStatus("done");
+      setSaveState("saved");
+      setSaveStatusMessage(`Imported ${templatesToImport.length} local template${templatesToImport.length === 1 ? "" : "s"} to your account.`);
+    });
+  }
+
+  function dismissLocalImportPrompt() {
+    setLocalImportStatus("hidden");
+  }
+
   function dismissWelcome() {
     window.localStorage.setItem(welcomeStorageKey, "true");
     setIsWelcomeOpen(false);
@@ -654,6 +755,7 @@ export default function Home() {
           duplicateTemplate={duplicateTemplate}
           reorderSections={reorderSections}
           saveState={saveState}
+          saveStatusMessage={saveStatusMessage}
           sectionGroups={sectionGroups}
           addPage={addPage}
           deletePage={deletePage}
@@ -724,7 +826,67 @@ export default function Home() {
           onOpenTheme={() => openWelcomeTab("theme")}
         />
       ) : null}
+      {localImportStatus !== "hidden" ? (
+        <LocalImportPrompt
+          status={localImportStatus}
+          onDismiss={dismissLocalImportPrompt}
+          onImport={importLocalTemplatesToAccount}
+        />
+      ) : null}
     </main>
+  );
+}
+
+function mergeTemplates(baseTemplates: StoreTemplate[], incomingTemplates: StoreTemplate[]) {
+  const templateById = new Map(baseTemplates.map((baseTemplate) => [baseTemplate.id, baseTemplate]));
+
+  for (const incomingTemplate of incomingTemplates) {
+    templateById.set(incomingTemplate.id, incomingTemplate);
+  }
+
+  return [...templateById.values()];
+}
+
+function LocalImportPrompt({
+  onDismiss,
+  onImport,
+  status,
+}: {
+  onDismiss: () => void;
+  onImport: () => void;
+  status: "available" | "importing" | "failed" | "done";
+}) {
+  const copy = {
+    available: "Local templates found in this browser. Save them to your account so they are available on every device.",
+    done: "Local templates were saved to your account.",
+    failed: "Local templates are still safe in this browser, but account import failed.",
+    importing: "Saving local templates to your account.",
+  };
+
+  return (
+    <div className="fixed right-4 bottom-4 z-50 w-[min(360px,calc(100vw-32px))] rounded-lg border border-[#d8dde5] bg-white p-4 shadow-2xl shadow-slate-950/20">
+      <p className="text-sm font-semibold text-[#111827]">Account sync</p>
+      <p className="mt-1 text-sm leading-6 text-[#64748b]">{copy[status]}</p>
+      <div className="mt-3 flex justify-end gap-2">
+        {status === "available" || status === "failed" ? (
+          <button
+            className="rounded-md bg-[#111827] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1f2937]"
+            onClick={onImport}
+            type="button"
+          >
+            {status === "failed" ? "Try again" : "Save to account"}
+          </button>
+        ) : null}
+        <button
+          className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+          disabled={status === "importing"}
+          onClick={onDismiss}
+          type="button"
+        >
+          {status === "done" ? "Close" : "Not now"}
+        </button>
+      </div>
+    </div>
   );
 }
 
