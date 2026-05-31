@@ -78,7 +78,7 @@ export function PreviewCanvas({
           </div>
           <Link
             className="rounded-md bg-[#111827] px-3 py-2 text-xs font-medium text-white hover:bg-[#1f2937]"
-            href={`/preview/${template.id}`}
+            href={`/preview/${template.id}?page=${encodeURIComponent(selectedPage?.slug ?? selectedPage?.id ?? "")}`}
             target="_blank"
           >
             Preview
@@ -189,7 +189,7 @@ function StorePreview({
         }}
       >
         <div style={style}>
-          <StorefrontPreview pageId={pageId} selectedSectionId={selectedSectionId} template={template} />
+          <StorefrontPreview pageId={pageId} previewDevice={device} selectedSectionId={selectedSectionId} template={template} />
         </div>
       </div>
     </div>

@@ -8,16 +8,17 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 
 ## Next
 
-- Improve the storefront visual design so templates feel sellable, not just functional.
-- Add richer section controls for product count, media layout, and visibility rules.
+- Continue polishing storefront visuals so templates feel sellable, not just functional.
 - Polish the `/templates` dashboard for larger local template libraries.
 - Add hosted/shareable preview URLs.
+- Add richer controls for responsive layout variants beyond visibility.
 
 ## Soon
 
 - Improve product image handling:
   - replace data URLs with real upload storage later
-- Add page-level settings such as SEO title, slug, and page visibility.
+- Add navigation menu controls that can target page slugs.
+- Add more section-level layout controls for storefront density and media emphasis where section-specific variants are still missing.
 
 ## Later
 
@@ -39,4 +40,4 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 - Templates are localStorage-only.
 - Product images are stored as data URLs locally, which is not suitable for production.
 - `/preview/[templateId]` is local-only and not shareable across devices yet.
-- Saved template validation/migration is basic and should grow with future schema versions.
+- Saved template validation/migration exists and should grow with future schema versions.

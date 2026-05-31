@@ -70,15 +70,19 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 
 - Local multi-template library stored in localStorage
 - Starter template picker for new templates
-- Explicit `/preview/[templateId]` preview URLs
+- Explicit `/preview/[templateId]` preview URLs with selected-page query support
 - Store settings for name/category
 - Theme color tokens, theme presets, and typography presets
 - Product editing, add/duplicate/delete
 - Local product image import as data URLs
 - Product image repositioning, reset/remove, and zoom inside fixed `4/5` media frames
 - Basic page management for home, collection, product, cart, checkout, about, and contact pages
+- Page metadata for slug, SEO title, and draft/published status
 - Ecommerce page sections for collection grids, product details, cart summaries, and checkout summaries
-- Shared section style controls for spacing, background, alignment, and button style on main storefront sections
+- Shared section style controls for spacing, density, background, alignment, button style, and desktop/tablet/mobile visibility on main storefront sections
+- Richer ecommerce controls for product count, product card style, quick-add visibility, collection filter/sort visibility, product media layout, and product detail media emphasis
+- Page-specific ecommerce preview polish for editable collection description/status chips, filter states, editable product social proof/trust details, editable cart shipping incentives, and editable checkout express payment options
+- Mobile, tablet, and wide desktop storefront fixes for hero composition, product grids, collection filters, product detail pages, quick-add buttons, cart line items, sticky purchase panels, and checkout summaries
 - Section add/duplicate/delete/hide/show
 - Drag-and-drop section reorder using `@dnd-kit`
 - Undo/redo for template edits
@@ -126,10 +130,10 @@ Expected section types over time:
 
 ## Near-Term Priorities
 
-1. Improve the storefront visual design so templates feel sellable, not just functional.
-2. Add richer section controls for product count, media layout, and visibility rules.
-3. Polish the `/templates` dashboard for larger local libraries.
-4. Add hosted preview URLs.
+1. Continue polishing storefront visuals so templates feel sellable, not just functional.
+2. Polish the `/templates` dashboard for larger local libraries.
+3. Add hosted preview URLs.
+4. Add richer controls for responsive layout variants beyond visibility.
 5. Add real backend persistence and auth after local editor workflows settle.
 
 ## Implementation Notes

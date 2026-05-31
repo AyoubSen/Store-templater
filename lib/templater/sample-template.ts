@@ -57,6 +57,9 @@ export const sampleTemplate: StoreTemplate = {
       id: "home",
       type: "home",
       name: "Home",
+      slug: "/",
+      seoTitle: "Atelier Minimal storefront",
+      status: "published",
       sections: [
         {
           id: "announcement",

@@ -43,11 +43,13 @@ export function ColorTokenControl({
   }
 
   function pickColor(event: React.PointerEvent<HTMLDivElement>) {
+    event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
     const x = clamp(((event.clientX - rect.left) / rect.width) * 100, 0, 100);
     const y = clamp(((event.clientY - rect.top) / rect.height) * 100, 0, 100);
 
     event.currentTarget.setPointerCapture(event.pointerId);
+    window.getSelection()?.removeAllRanges();
     updateHsv({
       ...hsv,
       s: Math.round(x),
@@ -72,13 +74,14 @@ export function ColorTokenControl({
         <Popover.Content
           align="end"
           avoidCollisions
-          className="z-50 w-72 rounded-lg border border-[#d8dde5] bg-white p-3 shadow-xl shadow-slate-900/10"
+          className="z-50 w-72 select-none rounded-lg border border-[#d8dde5] bg-white p-3 shadow-xl shadow-slate-900/10"
           collisionPadding={8}
           side="bottom"
           sideOffset={6}
         >
           <div
             className="relative h-40 cursor-crosshair touch-none overflow-hidden rounded-md border border-black/10"
+            onDragStart={(event) => event.preventDefault()}
             onPointerDown={pickColor}
             onPointerMove={(event) => {
               if (event.buttons === 1) {

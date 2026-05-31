@@ -7,7 +7,7 @@ import { SectionSidebar } from "@/components/builder/section-sidebar";
 import { createPage } from "@/lib/templater/page-defaults";
 import { sampleTemplate } from "@/lib/templater/sample-template";
 import { createSection } from "@/lib/templater/section-defaults";
-import type { PageType, SectionType, StoreTemplate, ThemeTokens } from "@/lib/templater/schema";
+import type { PageType, SectionType, StoreTemplate, TemplatePage, ThemeTokens } from "@/lib/templater/schema";
 import { createTemplateFromStarter } from "@/lib/templater/starter-templates";
 import {
   clearStoredTemplate,
@@ -218,6 +218,13 @@ export default function Home() {
 
       return nextTemplate;
     });
+  }
+
+  function updatePageField<K extends "name" | "slug" | "seoTitle" | "status">(pageId: string, key: K, value: TemplatePage[K]) {
+    commitTemplateUpdate((current) => ({
+      ...current,
+      pages: current.pages.map((page) => (page.id === pageId ? { ...page, [key]: value } : page)),
+    }));
   }
 
   function updateColor(key: keyof ThemeTokens["colors"], value: string) {
@@ -586,6 +593,7 @@ export default function Home() {
           selectTemplate={selectTemplate}
           template={template}
           templates={templates}
+          updatePageField={updatePageField}
         />
 
         <PreviewCanvas

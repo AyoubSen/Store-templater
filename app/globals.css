@@ -36,6 +36,8 @@ input:focus-visible {
 .store-preview {
   background: var(--store-canvas);
   color: var(--store-text);
+  overflow-x: hidden;
+  overflow-wrap: break-word;
 }
 
 .color-slider-hue {

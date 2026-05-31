@@ -28,6 +28,7 @@ export function SectionSidebar({
   selectTemplate,
   template,
   templates,
+  updatePageField,
 }: {
   addSection: (type: SectionType) => void;
   activeTemplateId: string;
@@ -48,10 +49,13 @@ export function SectionSidebar({
   selectTemplate: (templateId: string) => void;
   template: StoreTemplate;
   templates: StoreTemplate[];
+  updatePageField: <K extends "name" | "slug" | "seoTitle" | "status">(pageId: string, key: K, value: TemplatePage[K]) => void;
 }) {
   const [isStarterPickerOpen, setIsStarterPickerOpen] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const sectionIds = sections.map((section) => section.id);
+  const selectedPage = pages.find((page) => page.id === selectedPageId);
+  const selectedSection = sections.find((section) => section.id === selectedSectionId);
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -146,7 +150,7 @@ export function SectionSidebar({
         <section className="px-3 py-4">
           <div className="mb-2 flex items-center justify-between px-1">
             <h2 className="text-xs font-semibold uppercase text-[#475569]">Pages</h2>
-            <span className="text-xs text-[#64748b]">{pages.length}</span>
+            <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#64748b]">{pages.length}</span>
           </div>
           <div className="space-y-1">
             {pages.map((page) => (
@@ -176,13 +180,21 @@ export function SectionSidebar({
               );
             })}
           </div>
+          {selectedPage ? <PageSettings page={selectedPage} updatePageField={updatePageField} /> : null}
         </section>
 
         <section className="px-3 py-4">
           <div className="mb-2 flex items-center justify-between px-1">
             <h2 className="text-xs font-semibold uppercase text-[#475569]">Sections</h2>
-            <span className="text-xs text-[#64748b]">{sections.length}</span>
+            <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#64748b]">{sections.length}</span>
           </div>
+          {selectedSection ? (
+            <div className="mb-3 rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase text-[#2563eb]">Selected section</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-[#1e293b]">{sectionRegistry[selectedSection.type].label}</p>
+              <p className="mt-0.5 truncate text-xs text-[#64748b]">{sectionPreviewLabel(selectedSection)}</p>
+            </div>
+          ) : null}
           <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
             <SortableContext items={sectionIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-1">
@@ -202,22 +214,24 @@ export function SectionSidebar({
         <section className="border-[#e2e8f0] border-t px-3 py-4">
           <div className="mb-2 px-1">
             <h2 className="text-xs font-semibold uppercase text-[#475569]">Add section</h2>
-            <p className="mt-1 text-xs leading-5 text-[#64748b]">New sections are inserted after the selected block.</p>
+            <p className="mt-1 text-xs leading-5 text-[#64748b]">
+              Inserts after {selectedSection ? sectionRegistry[selectedSection.type].label : "the selected block"}.
+            </p>
           </div>
           <div className="space-y-3">
             {sectionGroups.map((group) => (
               <div key={group.label}>
                 <p className="mb-1.5 px-1 text-[11px] font-semibold uppercase text-[#94a3b8]">{group.label}</p>
-                <div className="space-y-1">
+                <div className="grid grid-cols-2 gap-1.5">
                   {group.sections.map((type) => (
                     <button
-                      className="w-full rounded-md border border-transparent px-2.5 py-2 text-left hover:border-[#e2e8f0] hover:bg-white"
+                      className="min-h-20 rounded-md border border-[#e2e8f0] bg-white px-2.5 py-2 text-left shadow-sm hover:border-[#93c5fd] hover:bg-[#eff6ff]"
                       key={type}
                       onClick={() => addSection(type)}
                       type="button"
                     >
                       <span className="block text-xs font-semibold text-[#334155]">{sectionRegistry[type].label}</span>
-                      <span className="mt-0.5 block text-[11px] leading-4 text-[#64748b]">
+                      <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-[#64748b]">
                         {sectionRegistry[type].description}
                       </span>
                     </button>
@@ -261,8 +275,13 @@ function PageRow({
       }`}
     >
       <button className="min-w-0 px-3 py-2 text-left" onClick={onSelect} type="button">
-        <span className="block truncate text-sm font-medium text-[#1f2937]">{page.name}</span>
-        <span className="mt-0.5 block text-xs capitalize text-[#64748b]">{page.type}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="block truncate text-sm font-medium text-[#1f2937]">{page.name}</span>
+          {page.status === "draft" ? (
+            <span className="rounded-full bg-[#fef3c7] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[#92400e]">Draft</span>
+          ) : null}
+        </span>
+        <span className="mt-0.5 block truncate font-mono text-xs text-[#64748b]">{page.slug}</span>
       </button>
       <button
         aria-disabled={!canDelete}
@@ -280,6 +299,67 @@ function PageRow({
       </button>
     </div>
   );
+}
+
+function PageSettings({
+  page,
+  updatePageField,
+}: {
+  page: TemplatePage;
+  updatePageField: <K extends "name" | "slug" | "seoTitle" | "status">(pageId: string, key: K, value: TemplatePage[K]) => void;
+}) {
+  return (
+    <div className="mt-4 rounded-md border border-[#e2e8f0] bg-white p-3">
+      <p className="text-xs font-semibold uppercase text-[#475569]">Page settings</p>
+      <div className="mt-3 space-y-2">
+        <label className="block text-[11px] font-medium text-[#64748b]">
+          Name
+          <input
+            className="mt-1 w-full rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs text-[#111827]"
+            onChange={(event) => updatePageField(page.id, "name", event.target.value)}
+            value={page.name}
+          />
+        </label>
+        <label className="block text-[11px] font-medium text-[#64748b]">
+          Slug
+          <input
+            className="mt-1 w-full rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 font-mono text-xs text-[#111827]"
+            onChange={(event) => updatePageField(page.id, "slug", normalizeSlug(event.target.value))}
+            value={page.slug}
+          />
+        </label>
+        <label className="block text-[11px] font-medium text-[#64748b]">
+          SEO title
+          <input
+            className="mt-1 w-full rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs text-[#111827]"
+            onChange={(event) => updatePageField(page.id, "seoTitle", event.target.value)}
+            value={page.seoTitle}
+          />
+        </label>
+        <label className="block text-[11px] font-medium text-[#64748b]">
+          Status
+          <select
+            className="mt-1 w-full rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs text-[#111827]"
+            onChange={(event) => updatePageField(page.id, "status", event.target.value as TemplatePage["status"])}
+            value={page.status}
+          >
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function normalizeSlug(value: string) {
+  const trimmed = value.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-/]/g, "");
+
+  if (!trimmed || trimmed === "/") {
+    return "/";
+  }
+
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
 function StarterPickerModal({
@@ -342,6 +422,7 @@ function SortableSectionRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
   const registryItem = sectionRegistry[section.type];
+  const editableCount = registryItem.editableSettings.length;
 
   return (
     <div
@@ -372,13 +453,37 @@ function SortableSectionRow({
           </span>
           <span className="min-w-0 flex-1">
             <span className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium text-[#1f2937]">{registryItem.label}</span>
-              <span className={`h-2 w-2 rounded-full ${section.enabled ? "bg-[#16a34a]" : "bg-[#cbd5e1]"}`} />
+              <span className="truncate text-sm font-medium text-[#1f2937]">{registryItem.label}</span>
+              <span
+                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+                  section.enabled ? "bg-[#dcfce7] text-[#166534]" : "bg-[#e2e8f0] text-[#64748b]"
+                }`}
+              >
+                {section.enabled ? "On" : "Off"}
+              </span>
             </span>
-            <span className="mt-0.5 block text-xs leading-5 text-[#64748b]">{registryItem.description}</span>
+            <span className="mt-0.5 block truncate text-xs leading-5 text-[#64748b]">{sectionPreviewLabel(section)}</span>
+            <span className="mt-1 flex items-center gap-2 text-[11px] text-[#94a3b8]">
+              <span>{editableCount} controls</span>
+              <span aria-hidden="true">/</span>
+              <span>{registryItem.description}</span>
+            </span>
           </span>
         </span>
       </button>
     </div>
   );
+}
+
+function sectionPreviewLabel(section: TemplateSection) {
+  const candidates = [
+    section.settings.title,
+    section.settings.logo,
+    section.settings.text,
+    section.settings.eyebrow,
+    section.name,
+  ];
+  const value = candidates.find((candidate) => typeof candidate === "string" && candidate.trim());
+
+  return typeof value === "string" ? value : section.name;
 }

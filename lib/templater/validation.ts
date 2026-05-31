@@ -2,7 +2,7 @@ import { z } from "zod";
 import { sampleTemplate } from "./sample-template";
 import type { StoreTemplate } from "./schema";
 
-export const CURRENT_TEMPLATE_SCHEMA_VERSION = 1;
+export const CURRENT_TEMPLATE_SCHEMA_VERSION = 8;
 
 const storeCategorySchema = z.enum(["fashion", "beauty", "electronics", "home", "food", "digital"]);
 const pageTypeSchema = z.enum(["home", "collection", "product", "cart", "checkout", "about", "contact"]);
@@ -73,6 +73,9 @@ const pageSchema = z.object({
   id: z.string(),
   type: pageTypeSchema,
   name: z.string(),
+  slug: z.string(),
+  seoTitle: z.string(),
+  status: z.enum(["draft", "published"]),
   sections: z.array(sectionSchema),
 });
 
@@ -144,6 +147,82 @@ function migrateTemplate(value: unknown): unknown {
           imageZoom: product.imageZoom ?? 100,
         }))
       : sampleTemplate.products,
-    pages: Array.isArray(template.pages) ? template.pages : sampleTemplate.pages,
+    pages: Array.isArray(template.pages)
+      ? template.pages.map((page) => ({
+          ...page,
+          slug: page.slug ?? fallbackPageSlug(page.type),
+          seoTitle: page.seoTitle ?? `${page.name ?? "Store"} page`,
+          status: page.status ?? "published",
+          sections: Array.isArray(page.sections)
+            ? page.sections.map((section) => ({
+                ...section,
+                settings: migrateSectionSettings(section.type, section.settings),
+              }))
+            : [],
+        }))
+      : sampleTemplate.pages,
   };
+}
+
+function fallbackPageSlug(type: unknown) {
+  return type === "home" ? "/" : `/${typeof type === "string" ? type : "page"}`;
+}
+
+function migrateSectionSettings(type: unknown, settings: unknown) {
+  const currentSettings = {
+    visibleOnDesktop: true,
+    visibleOnTablet: true,
+    visibleOnMobile: true,
+    layoutDensity: "comfortable",
+    ...(settings && typeof settings === "object" ? settings : {}),
+  };
+
+  if (type === "productGrid") {
+    return {
+      productCount: 3,
+      productCardStyle: "elevated",
+      showQuickAdd: true,
+      ...currentSettings,
+    };
+  }
+
+  if (type === "collectionGrid") {
+    return {
+      description: "Browse a storefront-ready collection page with filters, sorting, and product cards.",
+      statusChips: ["In stock", "Ships in 2 days"],
+      productCount: 6,
+      productCardStyle: "elevated",
+      showQuickAdd: true,
+      showFilters: true,
+      showSort: true,
+      ...currentSettings,
+    };
+  }
+
+  if (type === "productDetail") {
+    return {
+      mediaLayout: "gallery",
+      mediaEmphasis: "balanced",
+      socialProof: ["★★★★★ 4.9", "128 reviews", "Low stock"],
+      trustItems: ["Secure checkout", "Free returns", "Ships tracked"],
+      ...currentSettings,
+    };
+  }
+
+  if (type === "cartSummary") {
+    return {
+      incentive: "Add one more item to unlock free express shipping and a launch gift.",
+      ...currentSettings,
+    };
+  }
+
+  if (type === "checkoutSummary") {
+    return {
+      subtitle: "Preview a conversion-focused checkout flow.",
+      paymentMethods: ["Shop Pay", "Apple Pay", "Card"],
+      ...currentSettings,
+    };
+  }
+
+  return currentSettings;
 }

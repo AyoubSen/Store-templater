@@ -28,6 +28,9 @@ export function createPage(type: PageType): TemplatePage {
     id: `${type}-${Date.now()}`,
     type,
     name: pageTypeLabels[type],
+    slug: type === "home" ? "/" : `/${type}`,
+    seoTitle: `${pageTypeLabels[type]} page`,
+    status: "published",
     sections: sectionTypesByPage[type].map((sectionType) => createSection(sectionType)),
   };
 }

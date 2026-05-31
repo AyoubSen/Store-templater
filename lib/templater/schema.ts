@@ -74,6 +74,9 @@ export type TemplatePage = {
   id: string;
   type: PageType;
   name: string;
+  slug: string;
+  seoTitle: string;
+  status: "draft" | "published";
   sections: TemplateSection[];
 };
 

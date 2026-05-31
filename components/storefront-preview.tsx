@@ -5,15 +5,20 @@ import type { Product, StoreTemplate, TemplateSection } from "@/lib/templater/sc
 
 export function StorefrontPreview({
   pageId,
+  previewDevice,
   selectedSectionId,
   template,
 }: {
   pageId?: string;
+  previewDevice?: "desktop" | "tablet" | "mobile";
   selectedSectionId?: string;
   template: StoreTemplate;
 }) {
   const page = template.pages.find((templatePage) => templatePage.id === pageId) ?? template.pages[0];
-  const enabledSections = page?.sections.filter((section) => section.enabled) ?? [];
+  const enabledSections =
+    page?.sections.filter((section) => section.enabled && isSectionVisibleForPreview(section, previewDevice)) ?? [];
+  const isForcedMobile = previewDevice === "mobile";
+  const isForcedTablet = previewDevice === "tablet";
 
   const previewStyle =
     {
@@ -44,8 +49,14 @@ export function StorefrontPreview({
   return (
     <div className="store-preview" style={previewStyle}>
       {enabledSections.map((section) => (
-        <div data-store-section-id={section.id} key={section.id}>
-          <PreviewSection isSelected={section.id === selectedSectionId} section={section} template={template} />
+        <div className={sectionVisibilityClass(section.settings)} data-store-section-id={section.id} key={section.id}>
+          <PreviewSection
+            isForcedMobile={isForcedMobile}
+            isForcedTablet={isForcedTablet}
+            isSelected={section.id === selectedSectionId}
+            section={section}
+            template={template}
+          />
         </div>
       ))}
     </div>
@@ -53,10 +64,14 @@ export function StorefrontPreview({
 }
 
 function PreviewSection({
+  isForcedMobile,
+  isForcedTablet,
   isSelected,
   section,
   template,
 }: {
+  isForcedMobile: boolean;
+  isForcedTablet: boolean;
   isSelected: boolean;
   section: TemplateSection;
   template: StoreTemplate;
@@ -64,6 +79,8 @@ function PreviewSection({
   const settings = section.settings;
   const selectedClass = isSelected ? "outline outline-2 outline-offset-[-2px] outline-[var(--store-primary)]" : "";
   const alignmentClass = sectionAlignment(settings);
+  const density = styleValue(settings.layoutDensity, "comfortable");
+  const densityGapClass = densityGap(density);
   const primaryButtonClass = buttonClass(settings);
 
   if (section.type === "announcement") {
@@ -79,7 +96,7 @@ function PreviewSection({
       <div className={`sticky top-0 z-[1] border-[var(--store-border)] border-b bg-[var(--store-surface)]/95 backdrop-blur ${selectedClass}`}>
         <div className="mx-auto flex max-w-[var(--store-max-width)] items-center justify-between gap-5 px-5 py-4 md:px-8">
           <div className="text-base font-black tracking-[0.16em] text-[var(--store-text)]">{String(settings.logo)}</div>
-          <div className="hidden gap-6 text-sm font-medium text-[var(--store-muted)] md:flex">
+          <div className={`${isForcedMobile ? "hidden" : "hidden md:flex"} gap-6 text-sm font-medium text-[var(--store-muted)]`}>
             {(settings.links as string[]).map((link) => (
               <span key={link}>{link}</span>
             ))}
@@ -95,15 +112,31 @@ function PreviewSection({
   if (section.type === "hero") {
     return (
       <section className={sectionShell(settings, "canvas", "spacious", selectedClass)}>
-        <div className="mx-auto grid max-w-[var(--store-max-width)] gap-8 px-5 py-14 md:grid-cols-[0.92fr_1.08fr] md:items-center md:px-8 md:py-20">
-          <div className={alignmentClass}>
+        <div
+          className={`mx-auto grid max-w-[var(--store-max-width)] gap-8 py-8 ${
+            isForcedMobile ? "" : `md:grid-cols-[0.92fr_1.08fr] md:items-center md:py-14 ${isForcedTablet ? "" : "xl:gap-12"}`
+          }`}
+        >
+          <div className={`min-w-0 ${alignmentClass}`}>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--store-primary)]">
               {String(settings.eyebrow)}
             </p>
-            <h2 className="mt-4 max-w-2xl text-[calc(2.25rem*var(--store-heading-scale))] font-black leading-[1.04] text-[var(--store-text)] md:text-[calc(3.75rem*var(--store-heading-scale))]">
+            <h2
+              className={`mt-4 max-w-2xl font-black leading-[1.04] text-[var(--store-text)] ${
+                isForcedMobile
+                  ? "text-[calc(2.25rem*var(--store-heading-scale))]"
+                  : "text-[calc(2.25rem*var(--store-heading-scale))] md:text-[calc(3.75rem*var(--store-heading-scale))]"
+              }`}
+            >
               {String(settings.title)}
             </h2>
-            <p className="mt-5 max-w-xl text-[calc(1rem*var(--store-body-scale))] leading-7 text-[var(--store-muted)] md:text-[calc(1.125rem*var(--store-body-scale))]">{String(settings.copy)}</p>
+            <p
+              className={`mt-5 max-w-xl text-[calc(1rem*var(--store-body-scale))] leading-7 text-[var(--store-muted)] ${
+                isForcedMobile ? "" : "md:text-[calc(1.125rem*var(--store-body-scale))]"
+              }`}
+            >
+              {String(settings.copy)}
+            </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <button className={primaryButtonClass}>
                 {String(settings.cta)}
@@ -112,7 +145,7 @@ function PreviewSection({
                 View lookbook
               </button>
             </div>
-            <div className="mt-8 grid max-w-md grid-cols-3 gap-4 border-[var(--store-border)] border-t pt-5 text-sm">
+            <div className={`mt-8 grid max-w-md gap-4 border-[var(--store-border)] border-t pt-5 text-sm ${isForcedMobile ? "" : "sm:grid-cols-3"}`}>
               <div>
                 <p className="font-black text-[var(--store-text)]">4.9/5</p>
                 <p className="mt-1 text-xs text-[var(--store-muted)]">Customer rating</p>
@@ -127,12 +160,16 @@ function PreviewSection({
               </div>
             </div>
           </div>
-          <div className="relative min-h-[420px] overflow-hidden rounded-[calc(var(--store-radius)+10px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-4 shadow-2xl shadow-black/10">
+          <div
+            className={`relative min-h-[300px] min-w-0 overflow-hidden rounded-[calc(var(--store-radius)+10px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-4 shadow-2xl shadow-black/10 ${
+              isForcedMobile ? "" : `md:min-h-[420px] ${isForcedTablet ? "" : "xl:min-h-[500px]"}`
+            }`}
+          >
             <div className="absolute inset-4 rounded-[var(--store-radius)] bg-[linear-gradient(135deg,var(--store-secondary),var(--store-accent))]" />
-            <div className="absolute right-7 top-7 rounded-full bg-white/90 px-4 py-2 text-xs font-black text-[var(--store-text)] shadow-lg">
+            <div className="absolute right-5 top-5 rounded-full bg-white/90 px-4 py-2 text-xs font-black text-[var(--store-text)] shadow-lg md:right-7 md:top-7">
               New drop
             </div>
-            <div className="absolute bottom-7 left-7 right-7 rounded-[var(--store-radius)] bg-white/85 p-4 shadow-xl backdrop-blur">
+            <div className="absolute bottom-5 left-5 right-5 min-w-0 rounded-[var(--store-radius)] bg-white/85 p-4 shadow-xl backdrop-blur md:bottom-7 md:left-7 md:right-7 xl:p-5">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--store-primary)]">Featured set</p>
               <p className="mt-2 text-xl font-black text-[var(--store-text)]">Curated everyday essentials</p>
               <p className="mt-1 text-sm text-[var(--store-muted)]">Three-piece capsule bundle from $164.</p>
@@ -146,7 +183,7 @@ function PreviewSection({
   if (section.type === "categoryStrip") {
     return (
       <section className={sectionShell(settings, "surface", "compact", selectedClass, "border-[var(--store-border)] border-y")}>
-        <div className="mx-auto grid max-w-[var(--store-max-width)] gap-3 sm:grid-cols-2 md:grid-cols-4">
+        <div className={`mx-auto grid max-w-[var(--store-max-width)] gap-3 ${isForcedMobile ? "" : isForcedTablet ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
           {(settings.categories as string[]).map((category) => (
             <div
               className="group rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-4 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5"
@@ -162,6 +199,11 @@ function PreviewSection({
   }
 
   if (section.type === "productGrid") {
+    const products = template.products.slice(0, numberSetting(settings.productCount, template.products.length));
+    const columns = numberSetting(settings.columns, 3);
+    const productCardStyle = styleValue(settings.productCardStyle, "elevated");
+    const showQuickAdd = booleanSetting(settings.showQuickAdd, true);
+
     return (
       <section className={sectionShell(settings, "surface", "balanced", selectedClass)}>
         <div className="mx-auto max-w-[var(--store-max-width)]">
@@ -174,42 +216,17 @@ function PreviewSection({
               Shop all
             </button>
           </div>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            {template.products.map((product) => (
-              <article
-                className="group overflow-hidden rounded-[calc(var(--store-radius)+6px)] border border-[var(--store-border)] bg-[var(--store-surface)] shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-black/10"
+          <div className={`mt-8 grid ${densityGapClass} ${isForcedMobile ? "" : productGridColumns(columns, isForcedTablet)}`}>
+            {products.map((product) => (
+              <ProductCard
+                density={density}
+                isForcedMobile={isForcedMobile}
+                isForcedTablet={isForcedTablet}
                 key={product.id}
-              >
-                <div
-                  className="relative aspect-[4/5] overflow-hidden bg-cover bg-center"
-                  style={{
-                    backgroundColor: "#f8fafc",
-                    backgroundImage: product.image,
-                    backgroundPosition: `${product.imagePositionX ?? 50}% ${product.imagePositionY ?? 50}%`,
-                    backgroundSize: `${product.imageZoom ?? 100}%`,
-                  }}
-                >
-                  {product.badge ? (
-                    <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-black text-[var(--store-text)] shadow">
-                      {product.badge}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="p-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--store-muted)]">
-                      {product.category}
-                    </p>
-                    <h3 className="mt-2 text-base font-black text-[var(--store-text)]">{product.name}</h3>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <p className="font-black text-[var(--store-text)]">${product.price}</p>
-                    <button className="rounded-full bg-[var(--store-text)] px-3 py-2 text-xs font-bold text-white">
-                      Add
-                    </button>
-                  </div>
-                </div>
-              </article>
+                product={product}
+                showQuickAdd={showQuickAdd}
+                variant={productCardStyle}
+              />
             ))}
           </div>
         </div>
@@ -219,40 +236,88 @@ function PreviewSection({
 
   if (section.type === "collectionGrid") {
     const filters = settings.filters as string[];
+    const products = template.products.slice(0, numberSetting(settings.productCount, template.products.length));
+    const statusChips = stringArraySetting(settings.statusChips, ["In stock", "Ships in 2 days"]);
+    const showFilters = booleanSetting(settings.showFilters, true);
+    const showSort = booleanSetting(settings.showSort, true);
+    const productCardStyle = styleValue(settings.productCardStyle, "elevated");
+    const showQuickAdd = booleanSetting(settings.showQuickAdd, true);
 
     return (
       <section className={sectionShell(settings, "surface", "balanced", selectedClass)}>
         <div className="mx-auto max-w-[var(--store-max-width)]">
-          <div className={`grid gap-6 border-[var(--store-border)] border-b pb-7 md:grid-cols-[minmax(0,1fr)_auto] md:items-end ${alignmentClass}`}>
-            <div>
+          <div
+            className={`grid gap-6 border-[var(--store-border)] border-b pb-7 ${
+              isForcedMobile ? "" : "md:grid-cols-[minmax(0,1fr)_auto] md:items-end"
+            } ${alignmentClass}`}
+          >
+            <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">{String(settings.eyebrow)}</p>
               <h2 className="mt-2 text-[calc(2rem*var(--store-heading-scale))] font-black text-[var(--store-text)] md:text-[calc(2.75rem*var(--store-heading-scale))]">
                 {String(settings.title)}
               </h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--store-muted)]">
-                Browse a storefront-ready collection page with filters, sorting, and product cards.
+                {String(settings.description)}
               </p>
+              <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-[var(--store-muted)]">
+                <span className="rounded-full border border-[var(--store-border)] bg-[var(--store-canvas)] px-3 py-1">
+                  {products.length} products
+                </span>
+                {statusChips.map((chip) => (
+                  <span className="rounded-full border border-[var(--store-border)] bg-[var(--store-canvas)] px-3 py-1" key={chip}>
+                    {chip}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="rounded-full border border-[var(--store-border)] bg-[var(--store-canvas)] px-4 py-2 text-sm font-bold text-[var(--store-text)]">
-              Sort: {String(settings.sortLabel)}
-            </div>
+            {showSort ? (
+              <div className={`w-full rounded-full border border-[var(--store-border)] bg-[var(--store-canvas)] px-4 py-2 text-sm font-bold text-[var(--store-text)] ${isForcedMobile ? "" : "md:w-auto"}`}>
+                Sort: {String(settings.sortLabel)}
+              </div>
+            ) : null}
           </div>
-          <div className="mt-6 grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-            <aside className="space-y-2">
-              {filters.map((filter) => (
-                <button
-                  className="flex w-full items-center justify-between rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] px-4 py-3 text-sm font-bold text-[var(--store-text)]"
-                  key={filter}
-                  type="button"
-                >
-                  {filter}
-                  <span className="text-[var(--store-muted)]">+</span>
-                </button>
-              ))}
-            </aside>
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {template.products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+          <div
+            className={`mt-6 grid ${densityGapClass} ${
+              !isForcedMobile && showFilters
+                ? isForcedTablet
+                  ? "md:grid-cols-[190px_minmax(0,1fr)]"
+                  : "md:grid-cols-[190px_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)]"
+                : ""
+            }`}
+          >
+            {showFilters ? (
+              <aside className="space-y-2">
+                <div className="mb-4 flex items-center justify-between text-xs font-black uppercase tracking-[0.16em] text-[var(--store-muted)]">
+                  <span>Filter</span>
+                  <span>{products.length} items</span>
+                </div>
+                {filters.map((filter) => (
+                  <button
+                    className="flex w-full items-center justify-between rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] px-4 py-3 text-sm font-bold text-[var(--store-text)] transition hover:border-[var(--store-primary)]"
+                    key={filter}
+                    type="button"
+                  >
+                    <span>{filter}</span>
+                    <span className="rounded-full bg-[var(--store-surface)] px-2 py-0.5 text-[11px] text-[var(--store-muted)]">Any</span>
+                  </button>
+                ))}
+              </aside>
+            ) : null}
+            <div
+              className={`grid ${densityGapClass} ${
+                isForcedMobile ? "" : isForcedTablet ? "sm:grid-cols-2" : `sm:grid-cols-2 ${showFilters ? "xl:grid-cols-3" : "lg:grid-cols-3 xl:grid-cols-4"}`
+              }`}
+            >
+              {products.map((product) => (
+                <ProductCard
+                  density={density}
+                  isForcedMobile={isForcedMobile}
+                  isForcedTablet={isForcedTablet}
+                  key={product.id}
+                  product={product}
+                  showQuickAdd={showQuickAdd}
+                  variant={productCardStyle}
+                />
               ))}
             </div>
           </div>
@@ -265,36 +330,20 @@ function PreviewSection({
     const product = template.products[0];
     const variants = settings.variants as string[];
     const details = settings.details as string[];
+    const socialProof = stringArraySetting(settings.socialProof, ["★★★★★ 4.9", "128 reviews", "Low stock"]);
+    const trustItems = stringArraySetting(settings.trustItems, ["Secure checkout", "Free returns", "Ships tracked"]);
+    const mediaLayout = styleValue(settings.mediaLayout, "gallery");
+    const mediaEmphasis = styleValue(settings.mediaEmphasis, "balanced");
 
     return (
       <section className={sectionShell(settings, "canvas", "balanced", selectedClass)}>
-        <div className="mx-auto grid max-w-[var(--store-max-width)] gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="grid gap-4 sm:grid-cols-[1fr_0.34fr]">
-            <div
-              className="aspect-[4/5] rounded-[calc(var(--store-radius)+10px)] border border-[var(--store-border)] bg-cover bg-center shadow-xl shadow-black/10"
-              style={{
-                backgroundColor: "#f8fafc",
-                backgroundImage: product?.image,
-                backgroundPosition: `${product?.imagePositionX ?? 50}% ${product?.imagePositionY ?? 50}%`,
-                backgroundSize: `${product?.imageZoom ?? 100}%`,
-              }}
-            />
-            <div className="grid gap-3">
-              {[0, 1, 2].map((index) => (
-                <div
-                  className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-cover bg-center"
-                  key={index}
-                  style={{
-                    backgroundColor: "#f8fafc",
-                    backgroundImage: product?.image,
-                    backgroundPosition: `${product?.imagePositionX ?? 50}% ${product?.imagePositionY ?? 50}%`,
-                    backgroundSize: `${product?.imageZoom ?? 100}%`,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-          <div>
+        <div
+          className={`mx-auto grid max-w-[var(--store-max-width)] gap-8 ${
+            isForcedMobile ? "" : `md:items-start ${isForcedTablet ? "" : "xl:gap-12"} ${productDetailColumns(mediaEmphasis, isForcedTablet)}`
+          }`}
+        >
+          <ProductMedia isForcedMobile={isForcedMobile} isForcedTablet={isForcedTablet} product={product} variant={mediaLayout} />
+          <div className={`min-w-0 ${isForcedTablet ? "" : "lg:sticky lg:top-24"}`}>
             <p className="inline-flex rounded-full bg-[var(--store-primary)] px-3 py-1 text-xs font-black text-white">
               {String(settings.badge)}
             </p>
@@ -302,6 +351,13 @@ function PreviewSection({
               {product?.name ?? String(settings.title)}
             </h2>
             <p className="mt-3 text-2xl font-black text-[var(--store-text)]">${product?.price ?? 0}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-[var(--store-muted)]">
+              {socialProof.map((proof, index) => (
+                <span className={index === 0 ? "rounded-full bg-[var(--store-surface)] px-3 py-1 text-[var(--store-primary)]" : ""} key={proof}>
+                  {proof}
+                </span>
+              ))}
+            </div>
             <p className="mt-4 max-w-xl text-base leading-7 text-[var(--store-muted)]">{String(settings.subtitle)}</p>
             <div className="mt-7">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--store-muted)]">Variant</p>
@@ -321,7 +377,7 @@ function PreviewSection({
                 ))}
               </div>
             </div>
-            <div className="mt-7 grid grid-cols-[90px_minmax(0,1fr)] gap-3">
+            <div className={`mt-7 grid gap-3 ${isForcedMobile ? "" : "sm:grid-cols-[90px_minmax(0,1fr)]"}`}>
               <div className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-4 py-3 text-center text-sm font-black text-[var(--store-text)]">
                 1
               </div>
@@ -329,12 +385,19 @@ function PreviewSection({
                 Add to cart
               </button>
             </div>
-            <div className="mt-7 space-y-3 border-[var(--store-border)] border-t pt-5">
+            <div className={`mt-7 border-[var(--store-border)] border-t pt-5 ${densityStack(density)}`}>
               {details.map((detail) => (
                 <p className="flex items-center gap-3 text-sm font-semibold text-[var(--store-text)]" key={detail}>
                   <span className="h-2 w-2 rounded-full bg-[var(--store-primary)]" />
                   {detail}
                 </p>
+              ))}
+            </div>
+            <div className={`mt-6 grid gap-3 ${isForcedMobile ? "" : "sm:grid-cols-3"}`}>
+              {trustItems.map((item) => (
+                <div className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-3 py-3 text-center text-xs font-black text-[var(--store-text)]" key={item}>
+                  {item}
+                </div>
               ))}
             </div>
           </div>
@@ -350,19 +413,35 @@ function PreviewSection({
 
     return (
       <section className={sectionShell(settings, "canvas", "balanced", selectedClass)}>
-        <div className="mx-auto grid max-w-[var(--store-max-width)] gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-5">
+        <div
+          className={`mx-auto grid max-w-[var(--store-max-width)] gap-6 ${
+            isForcedMobile ? "" : isForcedTablet ? "md:grid-cols-[minmax(0,1fr)_320px]" : "md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1fr)_360px]"
+          }`}
+        >
+          <div className="min-w-0 rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-5">
             <h2 className="text-[calc(1.85rem*var(--store-heading-scale))] font-black text-[var(--store-text)]">{String(settings.title)}</h2>
             <p className="mt-2 text-sm font-semibold text-[var(--store-primary)]">{String(settings.note)}</p>
-            <div className="mt-6 space-y-4">
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--store-canvas)]">
+              <div className="h-full w-[72%] rounded-full bg-[var(--store-primary)]" />
+            </div>
+            <div className="mt-4 rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] px-4 py-3 text-sm font-semibold text-[var(--store-muted)]">
+              {String(settings.incentive)}
+            </div>
+            <div className={`mt-6 ${densityStack(density)}`}>
               {cartProducts.map((product) => (
-                <div className="grid grid-cols-[88px_minmax(0,1fr)_auto] gap-4 border-[var(--store-border)] border-t pt-4" key={product.id}>
+                <div
+                  className={`grid grid-cols-[72px_minmax(0,1fr)] gap-3 border-[var(--store-border)] border-t pt-4 ${
+                    isForcedMobile ? "" : "sm:grid-cols-[88px_minmax(0,1fr)_auto] sm:gap-4"
+                  }`}
+                  key={product.id}
+                >
                   <div
                     className="aspect-square rounded-[var(--store-radius)] border border-[var(--store-border)] bg-cover bg-center"
                     style={{
                       backgroundColor: "#f8fafc",
                       backgroundImage: product.image,
                       backgroundPosition: `${product.imagePositionX ?? 50}% ${product.imagePositionY ?? 50}%`,
+                      backgroundRepeat: "no-repeat",
                       backgroundSize: `${product.imageZoom ?? 100}%`,
                     }}
                   />
@@ -373,14 +452,15 @@ function PreviewSection({
                       Qty 1
                     </div>
                   </div>
-                  <p className="font-black text-[var(--store-text)]">${product.price}</p>
+                  <p className={`col-start-2 font-black text-[var(--store-text)] ${isForcedMobile ? "" : "sm:col-start-auto"}`}>${product.price}</p>
                 </div>
               ))}
             </div>
           </div>
-          <aside className="rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-5 shadow-xl shadow-black/5">
+          <aside className={`rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-5 shadow-xl shadow-black/5 ${isForcedMobile ? "" : "md:sticky md:top-24 md:self-start"}`}>
             <p className="text-lg font-black text-[var(--store-text)]">Order summary</p>
-            <div className="mt-5 space-y-3 text-sm">
+            <p className="mt-1 text-xs font-semibold text-[var(--store-muted)]">Taxes and discounts are estimated for preview.</p>
+            <div className={`mt-5 text-sm ${densityStack(density)}`}>
               <SummaryRow label="Subtotal" value={`$${subtotal}`} />
               <SummaryRow label="Shipping" value="Calculated next" />
               <SummaryRow label="Estimated tax" value="$12" />
@@ -392,7 +472,12 @@ function PreviewSection({
             <button className={`${primaryButtonClass} mt-5 w-full`} type="button">
               Checkout
             </button>
-            <div className="mt-5 space-y-2">
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-[var(--store-muted)]">
+              <span className="rounded border border-[var(--store-border)] bg-[var(--store-canvas)] py-2">Visa</span>
+              <span className="rounded border border-[var(--store-border)] bg-[var(--store-canvas)] py-2">Pay</span>
+              <span className="rounded border border-[var(--store-border)] bg-[var(--store-canvas)] py-2">SSL</span>
+            </div>
+            <div className={`mt-5 ${densityStack(density)}`}>
               {perks.map((perk) => (
                 <p className="text-xs font-semibold text-[var(--store-muted)]" key={perk}>
                   {perk}
@@ -407,26 +492,46 @@ function PreviewSection({
 
   if (section.type === "checkoutSummary") {
     const steps = settings.steps as string[];
+    const paymentMethods = stringArraySetting(settings.paymentMethods, ["Shop Pay", "Apple Pay", "Card"]);
     const firstProduct = template.products[0];
 
     return (
       <section className={sectionShell(settings, "surface", "balanced", selectedClass)}>
-        <div className="mx-auto grid max-w-[var(--store-max-width)] gap-7 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <div>
+        <div
+          className={`mx-auto grid max-w-[var(--store-max-width)] gap-7 ${
+            isForcedMobile ? "" : isForcedTablet ? "md:grid-cols-[minmax(0,1fr)_340px]" : "md:grid-cols-[minmax(0,1fr)_340px] lg:grid-cols-[minmax(0,1fr)_380px]"
+          }`}
+        >
+          <div className="min-w-0">
             <h2 className="text-[calc(1.85rem*var(--store-heading-scale))] font-black text-[var(--store-text)]">{String(settings.title)}</h2>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {steps.map((step, index) => (
-                <span
-                  className={`rounded-full px-3 py-1.5 text-xs font-black ${
-                    index === 0 ? "bg-[var(--store-text)] text-white" : "bg-[var(--store-canvas)] text-[var(--store-muted)]"
-                  }`}
-                  key={step}
-                >
-                  {index + 1}. {step}
-                </span>
+            <p className="mt-2 text-sm font-semibold text-[var(--store-muted)]">{String(settings.subtitle)}</p>
+            <div className={`mt-5 grid gap-2 ${isForcedMobile ? "" : "sm:grid-cols-3"}`}>
+              {paymentMethods.map((method) => (
+                <button className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-4 py-3 text-sm font-black text-[var(--store-text)]" key={method} type="button">
+                  {method}
+                </button>
               ))}
             </div>
-            <div className="mt-7 grid gap-4 rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-5">
+            <div className="my-5 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.14em] text-[var(--store-muted)]">
+              <span className="h-px flex-1 bg-[var(--store-border)]" />
+              Or continue below
+              <span className="h-px flex-1 bg-[var(--store-border)]" />
+            </div>
+            <div className={`mt-5 grid gap-3 ${isForcedMobile ? "" : "sm:flex sm:flex-wrap"}`}>
+              {steps.map((step, index) => (
+                <div className="flex items-center gap-2" key={step}>
+                  <span
+                    className={`grid h-8 w-8 place-items-center rounded-full text-xs font-black ${
+                      index === 0 ? "bg-[var(--store-text)] text-white" : "bg-[var(--store-canvas)] text-[var(--store-muted)]"
+                    }`}
+                  >
+                    {index + 1}
+                  </span>
+                  <span className="text-xs font-black text-[var(--store-text)]">{step}</span>
+                </div>
+              ))}
+            </div>
+            <div className={`mt-7 grid rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-5 ${densityGapClass}`}>
               {["Email address", "Shipping address", "Delivery method", "Payment details"].map((field) => (
                 <div className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-4 py-3 text-sm font-semibold text-[var(--store-muted)]" key={field}>
                   {field}
@@ -436,18 +541,19 @@ function PreviewSection({
                 Continue
               </button>
             </div>
-            <p className="mt-4 text-sm leading-6 text-[var(--store-muted)]">{String(settings.reassurance)}</p>
+            <p className="mt-4 rounded-[var(--store-radius)] bg-[var(--store-surface)] px-4 py-3 text-sm font-semibold leading-6 text-[var(--store-muted)]">{String(settings.reassurance)}</p>
           </div>
-          <aside className="rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-5">
+          <aside className={`rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-5 ${isForcedMobile ? "" : "md:sticky md:top-24 md:self-start"}`}>
             <p className="text-lg font-black text-[var(--store-text)]">Order</p>
             {firstProduct ? (
-              <div className="mt-5 grid grid-cols-[72px_minmax(0,1fr)_auto] gap-3">
+              <div className={`mt-5 grid grid-cols-[64px_minmax(0,1fr)] gap-3 ${isForcedMobile ? "" : "sm:grid-cols-[72px_minmax(0,1fr)_auto]"}`}>
                 <div
                   className="aspect-square rounded-[var(--store-radius)] border border-[var(--store-border)] bg-cover bg-center"
                   style={{
                     backgroundColor: "#f8fafc",
                     backgroundImage: firstProduct.image,
                     backgroundPosition: `${firstProduct.imagePositionX ?? 50}% ${firstProduct.imagePositionY ?? 50}%`,
+                    backgroundRepeat: "no-repeat",
                     backgroundSize: `${firstProduct.imageZoom ?? 100}%`,
                   }}
                 />
@@ -455,13 +561,16 @@ function PreviewSection({
                   <p className="text-sm font-black text-[var(--store-text)]">{firstProduct.name}</p>
                   <p className="mt-1 text-xs text-[var(--store-muted)]">Qty 1</p>
                 </div>
-                <p className="text-sm font-black text-[var(--store-text)]">${firstProduct.price}</p>
+                <p className={`col-start-2 text-sm font-black text-[var(--store-text)] ${isForcedMobile ? "" : "sm:col-start-auto"}`}>${firstProduct.price}</p>
               </div>
             ) : null}
             <div className="mt-5 space-y-3 border-[var(--store-border)] border-t pt-5 text-sm">
               <SummaryRow label="Subtotal" value={`$${firstProduct?.price ?? 0}`} />
               <SummaryRow label="Shipping" value="$0" />
               <SummaryRow label="Tax" value="$8" />
+            </div>
+            <div className="mt-5 rounded-[var(--store-radius)] bg-[var(--store-surface)] p-4 text-xs font-semibold leading-5 text-[var(--store-muted)]">
+              Delivery estimate: 2-4 business days after payment confirmation.
             </div>
           </aside>
         </div>
@@ -481,7 +590,7 @@ function PreviewSection({
               <h2 className="mt-2 text-[calc(1.875rem*var(--store-heading-scale))] font-black text-[var(--store-text)]">{String(settings.title)}</h2>
             </div>
           </div>
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className={`grid gap-5 ${isForcedMobile ? "" : isForcedTablet ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3"}`}>
             {tiles.map((tile, index) => (
               <article
                 className="min-h-64 overflow-hidden rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-surface)] shadow-lg shadow-black/5"
@@ -519,7 +628,7 @@ function PreviewSection({
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">Customer proof</p>
             <h2 className="mt-2 text-[calc(1.875rem*var(--store-heading-scale))] font-black text-[var(--store-text)]">{String(settings.title)}</h2>
           </div>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
+          <div className={`mt-8 grid gap-5 ${isForcedMobile ? "" : isForcedTablet ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3"}`}>
             {(settings.reviews as string[]).map((review, index) => (
               <figure className="rounded-[calc(var(--store-radius)+6px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-5" key={`${review}-${index}`}>
                 <div className="text-sm font-black text-[var(--store-primary)]">★★★★★</div>
@@ -538,7 +647,7 @@ function PreviewSection({
   if (section.type === "trustBand") {
     return (
       <section className={sectionShell(settings, "surface", "compact", selectedClass, "border-[var(--store-border)] border-y")}>
-        <div className="mx-auto grid max-w-[var(--store-max-width)] gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={`mx-auto grid max-w-[var(--store-max-width)] gap-3 ${isForcedMobile ? "" : isForcedTablet ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
           {(settings.items as string[]).map((item, index) => (
             <div className="flex items-center gap-3 rounded-[var(--store-radius)] bg-[var(--store-canvas)] p-4" key={`${item}-${index}`}>
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--store-primary)] text-sm font-black text-white">
@@ -555,7 +664,7 @@ function PreviewSection({
   if (section.type === "faq") {
     return (
       <section className={sectionShell(settings, "canvas", "balanced", selectedClass)}>
-        <div className="mx-auto grid max-w-[var(--store-max-width)] gap-8 md:grid-cols-[0.8fr_1.2fr]">
+        <div className={`mx-auto grid max-w-[var(--store-max-width)] gap-8 ${isForcedMobile ? "" : "md:grid-cols-[0.8fr_1.2fr]"}`}>
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">FAQ</p>
             <h2 className="mt-2 text-[calc(1.875rem*var(--store-heading-scale))] font-black leading-tight text-[var(--store-text)]">{String(settings.title)}</h2>
@@ -584,9 +693,9 @@ function PreviewSection({
   if (section.type === "featureBand") {
     return (
       <section className={sectionShell(settings, "primary", "balanced", selectedClass)}>
-        <div className="mx-auto grid max-w-[var(--store-max-width)] gap-8 md:grid-cols-[0.8fr_1.2fr] md:items-center">
+        <div className={`mx-auto grid max-w-[var(--store-max-width)] gap-8 ${isForcedMobile ? "" : "md:grid-cols-[0.8fr_1.2fr] md:items-center"}`}>
           <h2 className="max-w-sm text-[calc(1.875rem*var(--store-heading-scale))] font-black leading-tight">{String(settings.title)}</h2>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className={`grid gap-3 ${isForcedMobile ? "" : "sm:grid-cols-3"}`}>
             {(settings.points as string[]).map((point, index) => (
               <div className="rounded-[var(--store-radius)] bg-white/12 p-4 ring-1 ring-white/15" key={point}>
                 <p className="text-sm font-black">0{index + 1}</p>
@@ -602,7 +711,11 @@ function PreviewSection({
   if (section.type === "newsletter") {
     return (
       <section className={sectionShell(settings, "canvas", "balanced", selectedClass)}>
-        <div className="mx-auto grid max-w-[var(--store-max-width)] gap-5 rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-6 shadow-xl shadow-black/5 md:grid-cols-[1fr_0.9fr] md:items-center md:p-8">
+        <div
+          className={`mx-auto grid max-w-[var(--store-max-width)] gap-5 rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-6 shadow-xl shadow-black/5 ${
+            isForcedMobile ? "" : "md:grid-cols-[1fr_0.9fr] md:items-center md:p-8"
+          }`}
+        >
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">Stay in the loop</p>
             <h2 className="mt-3 max-w-xl text-[calc(1.875rem*var(--store-heading-scale))] font-black leading-tight text-[var(--store-text)]">
@@ -622,7 +735,7 @@ function PreviewSection({
 
   return (
     <footer className={`bg-[var(--store-text)] px-5 py-10 text-white md:px-8 ${selectedClass}`}>
-      <div className="mx-auto grid max-w-[var(--store-max-width)] gap-8 md:grid-cols-[1fr_auto]">
+      <div className={`mx-auto grid max-w-[var(--store-max-width)] gap-8 ${isForcedMobile ? "" : "md:grid-cols-[1fr_auto]"}`}>
         <div>
           <p className="text-lg font-black">{template.name}</p>
           <p className="mt-3 max-w-sm text-sm leading-6 text-white/65">
@@ -651,6 +764,58 @@ function typographyScale(scale: "compact" | "balanced" | "editorial") {
   return { heading: "1", body: "1" };
 }
 
+function isSectionVisibleForPreview(section: TemplateSection, previewDevice?: "desktop" | "tablet" | "mobile") {
+  if (!previewDevice) {
+    return true;
+  }
+
+  if (previewDevice === "desktop") {
+    return section.settings.visibleOnDesktop !== false;
+  }
+
+  if (previewDevice === "tablet") {
+    return section.settings.visibleOnTablet !== false;
+  }
+
+  return section.settings.visibleOnMobile !== false;
+}
+
+function sectionVisibilityClass(settings: TemplateSection["settings"]) {
+  const desktop = settings.visibleOnDesktop !== false;
+  const tablet = settings.visibleOnTablet !== false;
+  const mobile = settings.visibleOnMobile !== false;
+
+  if (desktop && tablet && mobile) {
+    return undefined;
+  }
+
+  if (!desktop && !tablet && !mobile) {
+    return "hidden";
+  }
+
+  if (desktop && tablet && !mobile) {
+    return "hidden md:block";
+  }
+
+  if (desktop && !tablet && !mobile) {
+    return "hidden lg:block";
+  }
+
+  if (!desktop && tablet && mobile) {
+    return "lg:hidden";
+  }
+
+  if (!desktop && !tablet && mobile) {
+    return "md:hidden";
+  }
+
+  if (!desktop && tablet && !mobile) {
+    return "hidden md:block lg:hidden";
+  }
+
+  return undefined;
+}
+
 function sectionShell(
   settings: TemplateSection["settings"],
   fallbackBackground: "canvas" | "surface" | "primary" | "dark",
@@ -661,7 +826,7 @@ function sectionShell(
   return [
     backgroundClass(styleValue(settings.background, "default") === "default" ? fallbackBackground : styleValue(settings.background, fallbackBackground)),
     spacingClass(styleValue(settings.spacing, fallbackSpacing)),
-    "px-5 md:px-8",
+    "px-5 md:px-8 xl:px-10",
     selectedClass,
     extraClass,
   ]
@@ -684,7 +849,7 @@ function spacingClass(spacing: string) {
   const classes: Record<string, string> = {
     compact: "py-6",
     balanced: "py-12",
-    spacious: "py-20",
+    spacious: "py-20 xl:py-24",
   };
 
   return classes[spacing] ?? classes.balanced;
@@ -713,32 +878,169 @@ function styleValue(value: unknown, fallback: string) {
   return typeof value === "string" ? value : fallback;
 }
 
-function ProductCard({ product }: { product: Product }) {
-  return (
-    <article className="group overflow-hidden rounded-[calc(var(--store-radius)+6px)] border border-[var(--store-border)] bg-[var(--store-surface)] shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-black/10">
+function numberSetting(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function booleanSetting(value: unknown, fallback: boolean) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function stringArraySetting(value: unknown, fallback: string[]) {
+  return Array.isArray(value) ? value.map((item) => String(item)) : fallback;
+}
+
+function productGridColumns(columns: number, isForcedTablet = false) {
+  if (isForcedTablet) {
+    return "sm:grid-cols-2";
+  }
+
+  if (columns >= 4) {
+    return "sm:grid-cols-2 xl:grid-cols-4";
+  }
+
+  if (columns <= 2) {
+    return "sm:grid-cols-2";
+  }
+
+  return "sm:grid-cols-2 lg:grid-cols-3";
+}
+
+function ProductMedia({
+  isForcedMobile,
+  isForcedTablet,
+  product,
+  variant,
+}: {
+  isForcedMobile: boolean;
+  isForcedTablet: boolean;
+  product?: Product;
+  variant: string;
+}) {
+  if (variant === "minimal") {
+    return (
       <div
-        className="relative aspect-[4/5] overflow-hidden bg-cover bg-center"
+        className="min-w-0 aspect-square rounded-[calc(var(--store-radius)+14px)] border border-[var(--store-border)] bg-cover bg-center shadow-2xl shadow-black/10"
+        style={productImageStyle(product)}
+      />
+    );
+  }
+
+  if (variant === "stacked") {
+    return (
+      <div className="grid min-w-0 gap-4">
+        {[0, 1].map((index) => (
+          <div
+            className="aspect-[5/4] rounded-[calc(var(--store-radius)+10px)] border border-[var(--store-border)] bg-cover bg-center shadow-xl shadow-black/10"
+            key={index}
+            style={productImageStyle(product)}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`grid min-w-0 gap-4 ${
+        isForcedMobile
+          ? ""
+          : isForcedTablet
+            ? "sm:grid-cols-[minmax(0,1fr)_0.34fr]"
+            : "sm:grid-cols-[minmax(0,1fr)_0.34fr] lg:grid-cols-[minmax(0,1fr)_0.26fr] xl:gap-5"
+      }`}
+    >
+      <div
+        className="aspect-[4/5] rounded-[calc(var(--store-radius)+10px)] border border-[var(--store-border)] bg-cover bg-center shadow-xl shadow-black/10"
+        style={productImageStyle(product)}
+      />
+      <div className="grid gap-3">
+        {[0, 1, 2].map((index) => (
+          <div
+            className="aspect-square rounded-[var(--store-radius)] border border-[var(--store-border)] bg-cover bg-center"
+            key={index}
+            style={productImageStyle(product)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function productImageStyle(product?: Product) {
+  return {
+    backgroundColor: "#f8fafc",
+    backgroundImage: product?.image,
+    backgroundPosition: `${product?.imagePositionX ?? 50}% ${product?.imagePositionY ?? 50}%`,
+    backgroundRepeat: "no-repeat",
+    backgroundSize: `${product?.imageZoom ?? 100}%`,
+  };
+}
+
+function ProductCard({
+  density,
+  isForcedMobile,
+  isForcedTablet,
+  product,
+  showQuickAdd,
+  variant,
+}: {
+  density: string;
+  isForcedMobile: boolean;
+  isForcedTablet: boolean;
+  product: Product;
+  showQuickAdd: boolean;
+  variant: string;
+}) {
+  const isMinimal = variant === "minimal";
+  const isEditorial = variant === "editorial";
+
+  return (
+    <article
+      className={`group overflow-hidden rounded-[calc(var(--store-radius)+6px)] bg-[var(--store-surface)] transition hover:-translate-y-1 ${
+        isMinimal
+          ? "border border-transparent"
+          : isEditorial
+            ? "border border-[var(--store-border)] shadow-xl shadow-black/5"
+            : "border border-[var(--store-border)] shadow-sm hover:shadow-xl hover:shadow-black/10"
+      }`}
+    >
+      <div
+        className={`relative overflow-hidden bg-cover bg-center ${isEditorial ? "aspect-[3/4]" : "aspect-[4/5]"}`}
         style={{
           backgroundColor: "#f8fafc",
           backgroundImage: product.image,
           backgroundPosition: `${product.imagePositionX ?? 50}% ${product.imagePositionY ?? 50}%`,
+          backgroundRepeat: "no-repeat",
           backgroundSize: `${product.imageZoom ?? 100}%`,
         }}
       >
         {product.badge ? (
-          <span className="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-black text-[var(--store-text)] shadow">
+          <span className="absolute left-3 top-3 rounded-full bg-white/92 px-3 py-1 text-xs font-black text-[var(--store-text)] shadow">
             {product.badge}
           </span>
         ) : null}
+        {showQuickAdd ? (
+          <button
+            className={`absolute bottom-3 left-3 right-3 rounded-full bg-white/94 px-4 py-2 text-xs font-black text-[var(--store-text)] opacity-100 shadow-lg transition ${
+              isForcedMobile || isForcedTablet ? "" : "lg:translate-y-2 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100"
+            }`}
+            type="button"
+          >
+            Quick add
+          </button>
+        ) : null}
       </div>
-      <div className="p-4">
+      <div className={isMinimal ? "px-1 py-3" : productCardPadding(density)}>
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--store-muted)]">{product.category}</p>
-        <h3 className="mt-2 text-base font-black text-[var(--store-text)]">{product.name}</h3>
+        <h3 className={`${isEditorial ? "text-lg" : "text-base"} mt-2 font-black text-[var(--store-text)]`}>{product.name}</h3>
         <div className="mt-4 flex items-center justify-between gap-3">
           <p className="font-black text-[var(--store-text)]">${product.price}</p>
-          <button className="rounded-full bg-[var(--store-text)] px-3 py-2 text-xs font-bold text-white" type="button">
-            Add
-          </button>
+          {showQuickAdd ? (
+            <button className="rounded-full bg-[var(--store-text)] px-3 py-2 text-xs font-bold text-white" type="button">
+              Add
+            </button>
+          ) : null}
         </div>
       </div>
     </article>
@@ -752,4 +1054,58 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
       <span className="font-bold text-[var(--store-text)]">{value}</span>
     </div>
   );
+}
+
+function densityGap(density: string) {
+  if (density === "compact") {
+    return "gap-3";
+  }
+
+  if (density === "spacious") {
+    return "gap-7";
+  }
+
+  return "gap-5";
+}
+
+function densityStack(density: string) {
+  if (density === "compact") {
+    return "space-y-2";
+  }
+
+  if (density === "spacious") {
+    return "space-y-5";
+  }
+
+  return "space-y-3";
+}
+
+function productCardPadding(density: string) {
+  if (density === "compact") {
+    return "p-3";
+  }
+
+  if (density === "spacious") {
+    return "p-5";
+  }
+
+  return "p-4";
+}
+
+function productDetailColumns(mediaEmphasis: string, isForcedTablet = false) {
+  if (mediaEmphasis === "media") {
+    return isForcedTablet
+      ? "md:grid-cols-[minmax(0,1.18fr)_0.82fr]"
+      : "md:grid-cols-[minmax(0,1.18fr)_0.82fr] lg:grid-cols-[1.28fr_0.72fr]";
+  }
+
+  if (mediaEmphasis === "info") {
+    return isForcedTablet
+      ? "md:grid-cols-[minmax(0,0.88fr)_1.12fr]"
+      : "md:grid-cols-[minmax(0,0.88fr)_1.12fr] lg:grid-cols-[0.9fr_1.1fr]";
+  }
+
+  return isForcedTablet
+    ? "md:grid-cols-[minmax(0,1fr)_0.92fr]"
+    : "md:grid-cols-[minmax(0,1fr)_0.92fr] lg:grid-cols-[1.05fr_0.95fr]";
 }

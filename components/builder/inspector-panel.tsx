@@ -196,24 +196,86 @@ export function InspectorPanel({
             </div>
             <div className="mt-3 space-y-3">
               {template.products.map((product) => (
-                <details className="rounded-md border border-[#e2e8f0] bg-white p-3" key={product.id}>
-                  <summary className="cursor-pointer list-none text-sm font-medium text-[#111827]">
-                    {product.name}
-                    <span className="mt-1 block text-xs text-[#64748b]">${product.price}</span>
+                <details className="rounded-md border border-[#e2e8f0] bg-white p-3 shadow-sm" key={product.id}>
+                  <summary className="cursor-pointer list-none">
+                    <span className="flex items-center gap-3">
+                      <span
+                        className="h-14 w-11 shrink-0 rounded-md border border-[#e2e8f0] bg-[#f8fafc] bg-cover bg-center"
+                        style={{
+                          backgroundImage: product.image,
+                          backgroundPosition: `${product.imagePositionX ?? 50}% ${product.imagePositionY ?? 50}%`,
+                          backgroundRepeat: "no-repeat",
+                          backgroundSize: `${product.imageZoom ?? 100}%`,
+                        }}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-[#111827]">{product.name}</span>
+                        <span className="mt-1 flex items-center gap-2 text-xs text-[#64748b]">
+                          <span>${product.price}</span>
+                          <span>/</span>
+                          <span>{product.category}</span>
+                        </span>
+                        <span
+                          className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                            isImportedImage(product.image) ? "bg-[#dcfce7] text-[#166534]" : "bg-[#e2e8f0] text-[#64748b]"
+                          }`}
+                        >
+                          {isImportedImage(product.image) ? "Image" : "Gradient"}
+                        </span>
+                      </span>
+                    </span>
                   </summary>
                   <div className="mt-3 space-y-3">
-                    <TextField label="Name" onChange={(value) => updateProduct(product.id, "name", value)} value={product.name} />
-                    <TextField label="Category" onChange={(value) => updateProduct(product.id, "category", value)} value={product.category} />
-                    <NumberField label="Price" min={0} onChange={(value) => updateProduct(product.id, "price", value)} value={product.price} />
-                    <TextField label="Badge" onChange={(value) => updateProduct(product.id, "badge", value)} value={product.badge ?? ""} />
-                    <GradientField label="Visual" onChange={(value) => updateProduct(product.id, "image", value)} value={product.image} />
-                    <button
-                      className="w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
-                      onClick={() => setImageProductId(product.id)}
-                      type="button"
-                    >
-                      Import image
-                    </button>
+                    <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3">
+                      <p className="mb-3 text-xs font-semibold uppercase text-[#475569]">Details</p>
+                      <div className="space-y-3">
+                        <TextField label="Name" onChange={(value) => updateProduct(product.id, "name", value)} value={product.name} />
+                        <TextField label="Category" onChange={(value) => updateProduct(product.id, "category", value)} value={product.category} />
+                        <NumberField label="Price" min={0} onChange={(value) => updateProduct(product.id, "price", value)} value={product.price} />
+                        <TextField label="Badge" onChange={(value) => updateProduct(product.id, "badge", value)} value={product.badge ?? ""} />
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase text-[#475569]">Visual</p>
+                        <span className="text-[11px] font-medium text-[#64748b]">
+                          {isImportedImage(product.image) ? `${product.imageZoom ?? 100}% zoom` : "Gradient"}
+                        </span>
+                      </div>
+                      <GradientField label="Placeholder gradient" onChange={(value) => updateProduct(product.id, "image", value)} value={product.image} />
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        <button
+                          className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                          onClick={() => setImageProductId(product.id)}
+                          type="button"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                          onClick={() => {
+                            updateProduct(product.id, "imagePositionX", 50);
+                            updateProduct(product.id, "imagePositionY", 50);
+                            updateProduct(product.id, "imageZoom", 100);
+                          }}
+                          type="button"
+                        >
+                          Center
+                        </button>
+                        <button
+                          className="rounded-md border border-[#fecaca] bg-white px-2.5 py-2 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2]"
+                          onClick={() => {
+                            updateProduct(product.id, "image", "linear-gradient(135deg, #dbeafe, #f8fafc)");
+                            updateProduct(product.id, "imagePositionX", 50);
+                            updateProduct(product.id, "imagePositionY", 50);
+                            updateProduct(product.id, "imageZoom", 100);
+                          }}
+                          type="button"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
@@ -240,9 +302,23 @@ export function InspectorPanel({
 
         {inspectorTab === "section" && selectedSection ? (
           <section className="px-4 py-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-xs font-semibold uppercase text-[#475569]">Selected section</h3>
+            <div className="rounded-md border border-[#d8dde5] bg-white p-3 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-xs font-semibold uppercase text-[#475569]">Selected section</h3>
+                  <p className="mt-1 truncate text-sm font-semibold text-[#111827]">{sectionRegistry[selectedSection.type].label}</p>
+                  <p className="mt-1 text-xs leading-5 text-[#64748b]">{sectionRegistry[selectedSection.type].description}</p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase ${
+                    selectedSection.enabled ? "bg-[#dcfce7] text-[#166534]" : "bg-[#e2e8f0] text-[#64748b]"
+                  }`}
+                >
+                  {selectedSection.enabled ? "Visible" : "Hidden"}
+                </span>
+              </div>
+              <div className="mt-3 border-[#e2e8f0] border-t pt-3">
+                <h3 className="text-xs font-semibold uppercase text-[#475569]">Controls</h3>
                 <p className="mt-1 text-sm font-medium">{selectedSection.name}</p>
                 <p className="mt-1 text-xs leading-5 text-[#64748b]">
                   {sectionRegistry[selectedSection.type].editableSettings.join(", ")}
@@ -404,7 +480,7 @@ function ImageImportModal({
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4">
       <div className="w-full max-w-md rounded-lg border border-[#d8dde5] bg-white shadow-2xl shadow-slate-950/20">
         <div className="border-[#e2e8f0] border-b px-4 py-3">
-          <h2 className="text-sm font-semibold text-[#111827]">Import product image</h2>
+          <h2 className="text-sm font-semibold text-[#111827]">Product image</h2>
           <p className="mt-1 text-xs text-[#64748b]">{productName}</p>
         </div>
         <div className="p-4">
@@ -423,6 +499,7 @@ function ImageImportModal({
               backgroundColor: "#f8fafc",
               backgroundImage: preview,
               backgroundPosition: `${position.x}% ${position.y}%`,
+              backgroundRepeat: "no-repeat",
               backgroundSize: `${zoom}%`,
             }}
           >
@@ -430,8 +507,8 @@ function ImageImportModal({
               className="pointer-events-none absolute h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#111827] shadow-[0_2px_8px_rgb(15_23_42_/_0.35)]"
               style={{ left: `${position.x}%`, top: `${position.y}%` }}
             />
-            <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-white/90 px-2.5 py-1.5 text-xs font-medium text-[#334155] shadow-sm">
-              Drag image to reposition
+            <div className="pointer-events-none absolute bottom-3 left-3 right-3 rounded-md bg-white/90 px-2.5 py-1.5 text-xs font-medium text-[#334155] shadow-sm">
+              Drag to choose the crop shown in product cards.
             </div>
           </div>
           <label className="mt-4 block text-xs font-medium text-[#475569]">
@@ -450,8 +527,8 @@ function ImageImportModal({
             </span>
           </label>
           <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 py-6 text-center hover:bg-[#f1f5f9]">
-            <span className="text-sm font-medium text-[#334155]">Choose image</span>
-            <span className="mt-1 text-xs text-[#64748b]">PNG, JPG, WebP under 1.5 MB</span>
+            <span className="text-sm font-medium text-[#334155]">{isImportedImage(preview) ? "Replace image" : "Choose image"}</span>
+            <span className="mt-1 text-xs text-[#64748b]">PNG, JPG, or WebP under 1.5 MB</span>
             <input
               accept="image/png,image/jpeg,image/webp"
               className="sr-only"
@@ -506,4 +583,8 @@ function ImageImportModal({
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function isImportedImage(image: string) {
+  return image.startsWith("url(");
 }
