@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { uploadProductImageAction } from "@/app/actions/images";
 import { ColorTokenControl, GradientField, NumberField, RangeControl, TextField } from "@/components/builder/controls";
 import { SectionInspector } from "@/components/builder/section-inspector";
 import { sectionRegistry } from "@/lib/templater/registry";
@@ -393,6 +394,7 @@ export function InspectorPanel({
           currentPositionX={imageProduct.imagePositionX ?? 50}
           currentPositionY={imageProduct.imagePositionY ?? 50}
           currentZoom={imageProduct.imageZoom ?? 100}
+          productId={imageProduct.id}
           onClose={() => setImageProductId(null)}
           onRemove={() => {
             updateProduct(imageProduct.id, "image", "linear-gradient(135deg, #dbeafe, #f8fafc)");
@@ -408,6 +410,7 @@ export function InspectorPanel({
             updateProduct(imageProduct.id, "imageZoom", zoom);
             setImageProductId(null);
           }}
+          templateId={template.id}
           productName={imageProduct.name}
         />
       ) : null}
@@ -423,7 +426,9 @@ function ImageImportModal({
   onClose,
   onRemove,
   onSave,
+  productId,
   productName,
+  templateId,
 }: {
   currentImage: string;
   currentPositionX: number;
@@ -432,12 +437,16 @@ function ImageImportModal({
   onClose: () => void;
   onRemove: () => void;
   onSave: (image: string, positionX: number, positionY: number, zoom: number) => void;
+  productId: string;
   productName: string;
+  templateId: string;
 }) {
   const [preview, setPreview] = useState(currentImage);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [position, setPosition] = useState({ x: currentPositionX, y: currentPositionY });
   const [zoom, setZoom] = useState(currentZoom);
   const [error, setError] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const dragStartRef = useRef<{ pointerX: number; pointerY: number; positionX: number; positionY: number } | null>(null);
 
   function startImageDrag(event: React.PointerEvent<HTMLDivElement>) {
@@ -474,17 +483,43 @@ function ImageImportModal({
       return;
     }
 
-    if (file.size > 1_500_000) {
-      setError("Use an image under 1.5 MB for local preview.");
+    if (file.size > 5_000_000) {
+      setError("Use an image under 5 MB.");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
       setPreview(`url("${reader.result}")`);
+      setSelectedFile(file);
       setError("");
     };
     reader.readAsDataURL(file);
+  }
+
+  async function saveImage() {
+    if (!selectedFile) {
+      onSave(preview, position.x, position.y, zoom);
+      return;
+    }
+
+    setIsUploading(true);
+    setError("");
+
+    const formData = new FormData();
+    formData.set("file", selectedFile);
+    formData.set("templateId", templateId);
+    formData.set("productId", productId);
+
+    const result = await uploadProductImageAction(formData);
+    setIsUploading(false);
+
+    if (!result.imageUrl) {
+      setError(result.error ?? "Could not upload image.");
+      return;
+    }
+
+    onSave(`url("${result.imageUrl}")`, position.x, position.y, zoom);
   }
 
   return (
@@ -539,7 +574,7 @@ function ImageImportModal({
           </label>
           <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 py-6 text-center hover:bg-[#f1f5f9]">
             <span className="text-sm font-medium text-[#334155]">{isImportedImage(preview) ? "Replace image" : "Choose image"}</span>
-            <span className="mt-1 text-xs text-[#64748b]">PNG, JPG, or WebP under 1.5 MB</span>
+            <span className="mt-1 text-xs text-[#64748b]">PNG, JPG, or WebP under 5 MB</span>
             <input
               accept="image/png,image/jpeg,image/webp"
               className="sr-only"
@@ -581,10 +616,11 @@ function ImageImportModal({
           </button>
           <button
             className="rounded-md bg-[#111827] px-3 py-2 text-xs font-medium text-white hover:bg-[#1f2937]"
-            onClick={() => onSave(preview, position.x, position.y, zoom)}
+            disabled={isUploading}
+            onClick={saveImage}
             type="button"
           >
-            Save image
+            {isUploading ? "Uploading..." : "Save image"}
           </button>
         </div>
       </div>

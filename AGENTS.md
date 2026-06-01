@@ -29,6 +29,7 @@ Core user flow:
 - Tailwind CSS 4
 - Clerk auth
 - Neon Postgres with Drizzle ORM for account-owned template persistence
+- Cloudflare R2 for uploaded product image storage
 - pnpm
 
 Current scripts:
@@ -69,6 +70,8 @@ Important files:
 - `lib/db/schema.ts`: Drizzle schema for account-owned templates
 - `lib/db/index.ts`: Neon/Drizzle database client factory
 - `app/actions/templates.ts`: Clerk-authenticated server actions for template list/load/save/delete
+- `lib/storage/r2.ts`: Cloudflare R2 upload helper using the S3-compatible API
+- `app/actions/images.ts`: Clerk-authenticated product image upload action
 - `lib/templater/storage.ts`: localStorage persistence for active template and local template library
 - `components/builder/section-sidebar.tsx`: template switcher, page list, section list, section library, drag reorder
 - `components/builder/preview-canvas.tsx`: editor toolbar, device controls, zoom, preview canvas
@@ -93,7 +96,8 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Theme color tokens, theme presets, and typography presets
 - Product editing, add/duplicate/delete
 - Local product image import as data URLs
-- Product image repositioning, reset/remove, and zoom inside fixed `4/5` media frames
+- Product image upload to Cloudflare R2, plus repositioning, reset/remove, and zoom inside fixed `4/5` media frames
+- Existing product image data URLs remain valid as legacy/local fallback, but new uploads should store public R2 URLs
 - Lightweight local preview cart state for add-to-cart, cart summary, and checkout summary flows
 - Basic page management for home, collection, product, cart, checkout, about, and contact pages
 - Page metadata for slug, SEO title, and draft/published status
@@ -180,6 +184,8 @@ Expected section types over time:
   - `drizzle-orm` for typed Postgres access
   - `@neondatabase/serverless` for the Neon serverless driver
   - `drizzle-kit` for migration generation/application
+- Storage dependencies:
+  - `@aws-sdk/client-s3` for Cloudflare R2 uploads through the S3-compatible API
 - Likely future dependencies:
   - Zustand for editor state
 

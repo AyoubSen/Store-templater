@@ -18,11 +18,13 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 - Add hosted/shareable preview URLs.
 - Add richer controls for responsive layout variants beyond visibility.
 - Improve account persistence polish with manual retry controls and last-synced timestamps.
+- Improve image upload UX with compression, thumbnails, and explicit upload retry states.
 
 ## Soon
 
 - Improve product image handling:
-  - replace data URLs with real upload storage later
+  - keep existing data URLs as legacy fallback
+  - add storage cleanup for replaced/deleted R2 images
 - Add navigation menu controls that can target page slugs.
 - Add more section-level layout controls for storefront density and media emphasis where section-specific variants are still missing.
 
@@ -45,6 +47,6 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 ## Known Gaps
 
 - Templates sync to account storage when `DATABASE_URL` is configured, with localStorage as a local draft/fallback cache.
-- Product images are stored as data URLs locally, which is not suitable for production.
+- Existing local product images may still be data URLs; new uploads use R2 when storage is configured.
 - `/preview/[templateId]` is local-only and not shareable across devices yet.
 - Saved template validation/migration exists and should grow with future schema versions.
