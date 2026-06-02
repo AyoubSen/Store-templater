@@ -1,6 +1,32 @@
 export type TemplateSyncState = "loading" | "saving" | "saved" | "local-only" | "failed";
 
-export function syncStatusLabel(state: TemplateSyncState) {
+type SyncTranslator = (key: SyncTranslationKey) => string;
+
+type SyncTranslationKey =
+  | "sync.failed.description"
+  | "sync.failed.label"
+  | "sync.loading.description"
+  | "sync.loading.label"
+  | "sync.localOnly.description"
+  | "sync.localOnly.label"
+  | "sync.saved.description"
+  | "sync.saved.label"
+  | "sync.saving.description"
+  | "sync.saving.label";
+
+export function syncStatusLabel(state: TemplateSyncState, t?: SyncTranslator) {
+  if (t) {
+    const keys: Record<TemplateSyncState, SyncTranslationKey> = {
+      failed: "sync.failed.label",
+      loading: "sync.loading.label",
+      "local-only": "sync.localOnly.label",
+      saved: "sync.saved.label",
+      saving: "sync.saving.label",
+    };
+
+    return t(keys[state]);
+  }
+
   const labels: Record<TemplateSyncState, string> = {
     failed: "Save failed",
     loading: "Loading",
@@ -12,7 +38,19 @@ export function syncStatusLabel(state: TemplateSyncState) {
   return labels[state];
 }
 
-export function syncStatusDescription(state: TemplateSyncState) {
+export function syncStatusDescription(state: TemplateSyncState, t?: SyncTranslator) {
+  if (t) {
+    const keys: Record<TemplateSyncState, SyncTranslationKey> = {
+      failed: "sync.failed.description",
+      loading: "sync.loading.description",
+      "local-only": "sync.localOnly.description",
+      saved: "sync.saved.description",
+      saving: "sync.saving.description",
+    };
+
+    return t(keys[state]);
+  }
+
   const descriptions: Record<TemplateSyncState, string> = {
     failed: "Saved locally, but account sync failed.",
     loading: "Loading saved templates.",

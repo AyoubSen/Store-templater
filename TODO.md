@@ -11,6 +11,8 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 - Continue simplifying first-use UX with clearer primary actions and fewer visible controls by default.
 - Continue reducing always-visible builder/dashboard controls through progressive disclosure.
 - Keep improving sidebar ergonomics with keyboard navigation and richer section row actions once needed.
+- Refine guided tours with better mobile positioning and optional per-step deep links as the app grows.
+- Expand French i18n coverage from key app chrome/help text to more dashboard, inspector, and settings labels.
 - Improve the public landing page with stronger examples once generated/storefront visuals settle.
 - Continue polishing storefront visuals so templates feel sellable, not just functional.
 - Deepen mock storefront interactions beyond navigation/cart, including filter state and checkout step state.
@@ -55,3 +57,4 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 - R2 cleanup exists for known uploaded keys, but failed cleanup is currently best-effort and should get retry/observability later.
 - `/preview/[templateId]` remains private/local-context preview; public `/s/[shareId]` links load published account templates from Neon.
 - Saved template validation/migration exists and should grow with future schema versions.
+- App UI has a lightweight English/French dictionary, but user-authored template/storefront content is not auto-translated.

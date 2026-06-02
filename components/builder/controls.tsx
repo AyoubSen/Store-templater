@@ -2,6 +2,7 @@
 
 import * as Popover from "@radix-ui/react-popover";
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
 const colorPresets = [
   "#111827",
@@ -33,6 +34,7 @@ export function ColorTokenControl({
   onChange: (value: string) => void;
   value: string;
 }) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const normalizedValue = normalizeHex(value);
   const hsv = hexToHsv(normalizedValue);
@@ -105,9 +107,9 @@ export function ColorTokenControl({
           </div>
 
           <div className="mt-3 space-y-2">
-            <ColorSlider label="Hue" max={360} onChange={(nextHue) => updateHsv({ ...hsv, h: nextHue })} value={hsv.h} variant="hue" />
-            <ColorSlider label="Sat" max={100} onChange={(nextSaturation) => updateHsv({ ...hsv, s: nextSaturation })} value={hsv.s} />
-            <ColorSlider label="Light" max={100} onChange={(nextValue) => updateHsv({ ...hsv, v: nextValue })} value={hsv.v} />
+            <ColorSlider label={t("inspector.hue")} max={360} onChange={(nextHue) => updateHsv({ ...hsv, h: nextHue })} value={hsv.h} variant="hue" />
+            <ColorSlider label={t("inspector.sat")} max={100} onChange={(nextSaturation) => updateHsv({ ...hsv, s: nextSaturation })} value={hsv.s} />
+            <ColorSlider label={t("inspector.variant.light")} max={100} onChange={(nextValue) => updateHsv({ ...hsv, v: nextValue })} value={hsv.v} />
           </div>
 
           <div className="mt-3 grid grid-cols-6 gap-1.5">
@@ -212,6 +214,7 @@ export function NumberField({
 }
 
 export function GradientField({ label, onChange, value }: { label: string; onChange: (value: string) => void; value: string }) {
+  const { t } = useI18n();
   const [firstColor, secondColor] = parseGradient(value);
 
   function updateGradient(nextFirstColor: string, nextSecondColor: string) {
@@ -224,8 +227,8 @@ export function GradientField({ label, onChange, value }: { label: string; onCha
       <div className="mt-1.5 rounded-md border border-[#d8dde5] bg-white p-2 shadow-sm">
         <div className="mb-2 h-16 rounded-md border border-black/10" style={{ background: value }} />
         <div className="grid grid-cols-2 gap-2">
-          <MiniColorButton label="Start" onChange={(color) => updateGradient(color, secondColor)} value={firstColor} />
-          <MiniColorButton label="End" onChange={(color) => updateGradient(firstColor, color)} value={secondColor} />
+          <MiniColorButton label={t("inspector.start")} onChange={(color) => updateGradient(color, secondColor)} value={firstColor} />
+          <MiniColorButton label={t("inspector.end")} onChange={(color) => updateGradient(firstColor, color)} value={secondColor} />
         </div>
       </div>
     </div>
@@ -253,6 +256,8 @@ export function ListEditor({
   placeholder: string;
   values: string[];
 }) {
+  const { t } = useI18n();
+
   function updateItem(index: number, value: string) {
     onChange(values.map((item, itemIndex) => (itemIndex === index ? value : item)));
   }
@@ -270,7 +275,7 @@ export function ListEditor({
           onClick={() => onChange([...values, ""])}
           type="button"
         >
-          Add
+          {t("builder.add")}
         </button>
       </div>
       <div className="space-y-2">
@@ -287,7 +292,7 @@ export function ListEditor({
               onClick={() => removeItem(index)}
               type="button"
             >
-              Remove
+              {t("common.remove")}
             </button>
           </div>
         ))}

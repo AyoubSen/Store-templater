@@ -12,6 +12,9 @@ import {
 } from "@/app/actions/templates";
 import { deleteTemplateImagesAction } from "@/app/actions/images";
 import { AuthControls } from "@/components/auth-controls";
+import { ContextualHelp } from "@/components/contextual-help";
+import { GuidedTour, type GuidedTourStep } from "@/components/guided-tour";
+import { useI18n } from "@/lib/i18n";
 import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport, parseTemplateExport } from "@/lib/templater/export";
 import type { StoreTemplate } from "@/lib/templater/schema";
 import { createTemplateFromStarter, starterTemplates } from "@/lib/templater/starter-templates";
@@ -23,16 +26,45 @@ import {
 } from "@/lib/templater/storage";
 import { syncStatusClassName, syncStatusLabel, type TemplateSyncState } from "@/lib/templater/sync-status";
 
+const dashboardTourStorageKey = "store-templater:dashboard-tour-dismissed";
+
 export default function TemplatesPage() {
+  const { t } = useI18n();
   const [templates, setTemplates] = useState<StoreTemplate[]>([]);
   const [activeTemplateId, setActiveTemplateId] = useState("");
   const [isStarterPickerOpen, setIsStarterPickerOpen] = useState(false);
   const [syncState, setSyncState] = useState<TemplateSyncState>("loading");
-  const [syncMessage, setSyncMessage] = useState("Loading templates.");
+  const [syncMessage, setSyncMessage] = useState(t("status.loadingTemplates"));
   const [shareStates, setShareStates] = useState<Record<string, TemplateShareState>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [publishFilter, setPublishFilter] = useState<"all" | "published" | "private">("all");
   const [sortMode, setSortMode] = useState<"recent" | "name" | "products">("recent");
+  const [isTourOpen, setIsTourOpen] = useState(false);
+  const dashboardTourSteps = useMemo<GuidedTourStep[]>(
+    () => [
+      {
+        target: "dashboard-new-template",
+        title: t("tour.dashboard.new.title"),
+        body: t("tour.dashboard.new.body"),
+      },
+      {
+        target: "dashboard-filters",
+        title: t("tour.dashboard.filters.title"),
+        body: t("tour.dashboard.filters.body"),
+      },
+      {
+        target: "dashboard-template-card",
+        title: t("tour.dashboard.card.title"),
+        body: t("tour.dashboard.card.body"),
+      },
+      {
+        target: "dashboard-share",
+        title: t("tour.dashboard.share.title"),
+        body: t("tour.dashboard.share.body"),
+      },
+    ],
+    [t],
+  );
 
   const visibleTemplates = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -67,17 +99,21 @@ export default function TemplatesPage() {
   }, [publishFilter, searchQuery, shareStates, sortMode, templates]);
 
   useEffect(() => {
+    if (window.localStorage.getItem(dashboardTourStorageKey) !== "true") {
+      window.setTimeout(() => setIsTourOpen(true), 400);
+    }
+
     window.setTimeout(() => {
       setTemplates(readStoredTemplates());
       setActiveTemplateId(readActiveTemplateId());
       setSyncState("local-only");
-      setSyncMessage("Loaded local browser templates.");
+      setSyncMessage(t("status.loadedLocal"));
     }, 0);
 
     listAccountTemplatesAction().then((result) => {
       if (!result.isDatabaseConfigured) {
         setSyncState("local-only");
-        setSyncMessage("Database is not configured. Changes stay in this browser.");
+        setSyncMessage(t("status.databaseMissing"));
         return;
       }
 
@@ -89,7 +125,7 @@ export default function TemplatesPage() {
 
       if (!result.data?.length) {
         setSyncState("local-only");
-        setSyncMessage("No account templates yet. New templates will sync to your account.");
+        setSyncMessage(t("status.noAccountTemplates"));
         return;
       }
 
@@ -104,7 +140,7 @@ export default function TemplatesPage() {
       setTemplates(result.data);
       setActiveTemplateId(nextActiveTemplateId);
       setSyncState("saved");
-      setSyncMessage("Loaded templates from your account.");
+      setSyncMessage(t("status.loadedAccount"));
       Promise.all(
         result.data.map(async (template) => {
           const shareResult = await getTemplateShareStateAction(template.id);
@@ -114,7 +150,7 @@ export default function TemplatesPage() {
         setShareStates(Object.fromEntries(entries));
       });
     });
-  }, []);
+  }, [t]);
 
   function openTemplate(templateId: string) {
     writeActiveTemplateId(templateId);
@@ -130,7 +166,7 @@ export default function TemplatesPage() {
     setTemplates(nextTemplates);
     setActiveTemplateId(template.id);
     setIsStarterPickerOpen(false);
-    await reportTemplateSave(template, "Template created locally and saved to your account.");
+    await reportTemplateSave(template, t("status.createdTemplate"));
   }
 
   async function duplicateTemplate(template: StoreTemplate) {
@@ -170,12 +206,12 @@ export default function TemplatesPage() {
       return nextShareStates;
     });
     setSyncState("saving");
-    setSyncMessage("Deleting from your account.");
+    setSyncMessage(t("status.deletingTemplate"));
     const result = await deleteAccountTemplateAction(templateId);
 
     if (!result.isDatabaseConfigured) {
       setSyncState("local-only");
-      setSyncMessage("Deleted locally. Database is not configured.");
+      setSyncMessage(t("status.deletedLocal"));
       return;
     }
 
@@ -186,7 +222,7 @@ export default function TemplatesPage() {
     }
 
     setSyncState("saved");
-    setSyncMessage("Template deleted from your account.");
+    setSyncMessage(t("status.deletedTemplate"));
   }
 
   function exportTemplate(template: StoreTemplate) {
@@ -224,7 +260,7 @@ export default function TemplatesPage() {
         writeActiveTemplateId(importedTemplate.id);
         setTemplates(nextTemplates);
         setActiveTemplateId(importedTemplate.id);
-        await reportTemplateSave(importedTemplate, "Imported locally and saved to your account.");
+        await reportTemplateSave(importedTemplate, t("status.importedLocal"));
       } catch {
         window.alert("Could not read this JSON file.");
       }
@@ -235,12 +271,12 @@ export default function TemplatesPage() {
 
   async function reportTemplateSave(template: StoreTemplate, successMessage: string) {
     setSyncState("saving");
-    setSyncMessage("Saving to your account.");
+    setSyncMessage(t("status.savingAccount"));
     const result = await saveAccountTemplateAction(template);
 
     if (!result.isDatabaseConfigured) {
       setSyncState("local-only");
-      setSyncMessage("Saved locally. Database is not configured.");
+      setSyncMessage(t("status.savedLocalDatabaseMissing"));
       return;
     }
 
@@ -262,12 +298,12 @@ export default function TemplatesPage() {
     const currentShareState = shareStates[templateId] ?? emptyShareState();
 
     setSyncState("saving");
-    setSyncMessage(currentShareState.shareEnabled ? "Disabling public share link." : "Publishing public share link.");
+    setSyncMessage(currentShareState.shareEnabled ? t("status.disablingShare") : t("status.publishingShare"));
     const result = await setTemplateShareEnabledAction(templateId, !currentShareState.shareEnabled);
 
     if (!result.isDatabaseConfigured) {
       setSyncState("local-only");
-      setSyncMessage("Share links need account storage.");
+      setSyncMessage(t("status.shareNeedsAccount"));
       return;
     }
 
@@ -282,13 +318,18 @@ export default function TemplatesPage() {
       [templateId]: result.data ?? emptyShareState(),
     }));
     setSyncState("saved");
-    setSyncMessage(result.data?.shareEnabled ? "Public share link is live." : "Public share link disabled.");
+    setSyncMessage(result.data?.shareEnabled ? t("status.shareLive") : t("status.shareDisabled"));
   }
 
   async function copyShare(shareId: string) {
     await navigator.clipboard.writeText(`${window.location.origin}/s/${shareId}`);
     setSyncState("saved");
-    setSyncMessage("Share link copied.");
+    setSyncMessage(t("status.copiedShare"));
+  }
+
+  function closeTour() {
+    window.localStorage.setItem(dashboardTourStorageKey, "true");
+    setIsTourOpen(false);
   }
 
   return (
@@ -297,11 +338,18 @@ export default function TemplatesPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4">
           <div>
             <p className="text-xs font-semibold uppercase text-[#64748b]">Store Templater</p>
-            <h1 className="mt-1 text-2xl font-semibold">Templates</h1>
+            <h1 className="mt-1 text-2xl font-semibold">{t("dashboard.templates")}</h1>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
+            <button
+              className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
+              onClick={() => setIsTourOpen(true)}
+              type="button"
+            >
+              {t("builder.tour")}
+            </button>
             <label className="cursor-pointer rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]">
-              Import export
+              {t("dashboard.importExport")}
               <input
                 accept="application/json,.json"
                 className="sr-only"
@@ -316,14 +364,15 @@ export default function TemplatesPage() {
               />
             </label>
             <button
+              data-tour="dashboard-new-template"
               className="rounded-md bg-[#111827] px-3 py-2 text-sm font-medium text-white hover:bg-[#1f2937]"
               onClick={() => setIsStarterPickerOpen(true)}
               type="button"
             >
-              New template
+              {t("dashboard.newTemplate")}
             </button>
             <Link className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]" href="/builder">
-              Open builder
+              {t("dashboard.openBuilder")}
             </Link>
             <AuthControls />
           </div>
@@ -334,31 +383,33 @@ export default function TemplatesPage() {
         <div className="mb-5 rounded-lg border border-[#d8dde5] bg-white p-4 shadow-sm">
           <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
             <div>
-              <h2 className="text-sm font-semibold text-[#111827]">Local export workflow</h2>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#64748b]">
-                Export a validated editing package, download a multi-page static storefront, or generate a runnable Next storefront project.
-              </p>
+              <h2 className="text-sm font-semibold text-[#111827]">{t("dashboard.localExport.title")}</h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-[#64748b]">{t("dashboard.localExport.body")}</p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className={`rounded-md border px-2 py-1 text-xs font-medium ${syncStatusClassName(syncState)}`}>
-                  {syncStatusLabel(syncState)}
+                  {syncStatusLabel(syncState, t)}
                 </span>
                 <span className="text-xs text-[#64748b]">{syncMessage}</span>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <Metric label="Templates" value={templates.length} />
-              <Metric label="Products" value={templates.reduce((total, template) => total + template.products.length, 0)} />
-              <Metric label="Targets" value="3" />
+              <Metric label={t("dashboard.metric.templates")} value={templates.length} />
+              <Metric label={t("dashboard.metric.products")} value={templates.reduce((total, template) => total + template.products.length, 0)} />
+              <Metric label={t("dashboard.metric.targets")} value="3" />
             </div>
           </div>
         </div>
 
-        <div className="mb-5 rounded-lg border border-[#d8dde5] bg-white p-3 shadow-sm">
+        <div className="mb-5 rounded-lg border border-[#d8dde5] bg-white p-3 shadow-sm" data-tour="dashboard-filters">
+          <div className="mb-3 flex items-center gap-2 px-1">
+            <h2 className="text-xs font-semibold uppercase text-[#475569]">{t("dashboard.filters")}</h2>
+            <ContextualHelp body={t("dashboard.filtersHelp.body")} title={t("dashboard.filtersHelp.title")} />
+          </div>
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center">
             <input
               className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 text-sm text-[#111827] outline-none placeholder:text-[#94a3b8] focus:border-[#2563eb]"
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search templates by name or category"
+              placeholder={t("dashboard.searchPlaceholder")}
               type="search"
               value={searchQuery}
             />
@@ -372,7 +423,7 @@ export default function TemplatesPage() {
                   onClick={() => setPublishFilter(filter)}
                   type="button"
                 >
-                  {filter}
+                  {filterLabel(filter, t)}
                 </button>
               ))}
             </div>
@@ -381,19 +432,19 @@ export default function TemplatesPage() {
               onChange={(event) => setSortMode(event.target.value as typeof sortMode)}
               value={sortMode}
             >
-              <option value="recent">Recently saved</option>
-              <option value="name">Name</option>
-              <option value="products">Most products</option>
+              <option value="recent">{t("dashboard.sort.recent")}</option>
+              <option value="name">{t("dashboard.sort.name")}</option>
+              <option value="products">{t("dashboard.sort.products")}</option>
             </select>
           </div>
           <p className="mt-3 text-xs text-[#64748b]">
-            Showing {visibleTemplates.length} of {templates.length} templates.
+            {t("dashboard.showing")} {visibleTemplates.length} {t("dashboard.templatesOf")} {templates.length} {t("dashboard.templatesSuffix")}
           </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {visibleTemplates.map((template) => (
-            <article className="rounded-lg border border-[#d8dde5] bg-white p-4 shadow-sm" key={template.id}>
+            <article className="rounded-lg border border-[#d8dde5] bg-white p-4 shadow-sm" data-tour="dashboard-template-card" key={template.id}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="truncate text-lg font-semibold">{template.name}</h2>
@@ -435,14 +486,14 @@ export default function TemplatesPage() {
                   href="/builder"
                   onClick={() => openTemplate(template.id)}
                 >
-                  Edit
+                  {t("common.edit")}
                 </Link>
                 <Link
                   className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-center text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
                   href={`/preview/${template.id}`}
                   target="_blank"
                 >
-                  Preview
+                  {t("builder.preview")}
                 </Link>
                 <div className="col-span-2">
                   <TemplateSharePanel
@@ -465,19 +516,30 @@ export default function TemplatesPage() {
         </div>
         {visibleTemplates.length === 0 ? (
           <div className="rounded-lg border border-[#d8dde5] bg-white p-8 text-center shadow-sm">
-            <h2 className="text-base font-semibold text-[#111827]">No templates found</h2>
-            <p className="mt-2 text-sm text-[#64748b]">Try a different search or publish filter.</p>
+            <h2 className="text-base font-semibold text-[#111827]">{t("dashboard.noTemplates.title")}</h2>
+            <p className="mt-2 text-sm text-[#64748b]">{t("dashboard.noTemplates.body")}</p>
           </div>
         ) : null}
       </section>
 
       {isStarterPickerOpen ? <StarterPickerModal onClose={() => setIsStarterPickerOpen(false)} onSelect={createTemplate} /> : null}
+      <GuidedTour isOpen={isTourOpen} onClose={closeTour} steps={dashboardTourSteps} />
     </main>
   );
 }
 
 function emptyShareState(): TemplateShareState {
   return { shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null };
+}
+
+function filterLabel(filter: "all" | "published" | "private", t: ReturnType<typeof useI18n>["t"]) {
+  const labels = {
+    all: t("dashboard.filter.all"),
+    private: t("dashboard.filter.private"),
+    published: t("dashboard.filter.published"),
+  };
+
+  return labels[filter];
 }
 
 function TemplateSharePanel({
@@ -489,15 +551,16 @@ function TemplateSharePanel({
   shareState: TemplateShareState;
   toggleShare: () => void;
 }) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const shareLink = shareState.shareId ? `/s/${shareState.shareId}` : "";
 
   return (
-    <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3">
+    <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3" data-tour="dashboard-share">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold text-[#111827]">Public sharing</p>
-          <p className="mt-1 text-xs leading-5 text-[#64748b]">Published pages only.</p>
+          <p className="text-xs font-semibold text-[#111827]">{t("share.publicSharing")}</p>
+          <p className="mt-1 text-xs leading-5 text-[#64748b]">{t("share.publishedPagesOnly")}</p>
         </div>
         <span
           className={`rounded-md border px-2 py-1 text-xs font-semibold ${
@@ -506,7 +569,7 @@ function TemplateSharePanel({
               : "border-[#e2e8f0] bg-white text-[#64748b]"
           }`}
         >
-          {shareState.shareEnabled ? "Published" : "Private"}
+          {shareState.shareEnabled ? t("builder.published") : t("common.private")}
         </span>
       </div>
 
@@ -515,7 +578,7 @@ function TemplateSharePanel({
         onClick={() => setIsOpen((current) => !current)}
         type="button"
       >
-        {isOpen ? "Hide publish controls" : shareState.shareEnabled ? "Manage public link" : "Publish options"}
+        {isOpen ? t("share.hideControls") : shareState.shareEnabled ? t("share.manageLink") : t("share.options")}
       </button>
 
       {isOpen ? (
@@ -537,7 +600,7 @@ function TemplateSharePanel({
               onClick={toggleShare}
               type="button"
             >
-              {shareState.shareEnabled ? "Unpublish" : "Publish"}
+              {shareState.shareEnabled ? t("share.unpublish") : t("share.publish")}
             </button>
             <button
               aria-disabled={!shareState.shareEnabled || !shareState.shareId}
@@ -551,7 +614,7 @@ function TemplateSharePanel({
               }}
               type="button"
             >
-              Copy
+              {t("common.copy")}
             </button>
             {shareState.shareEnabled && shareLink ? (
               <Link
@@ -559,18 +622,18 @@ function TemplateSharePanel({
                 href={shareLink}
                 target="_blank"
               >
-                Open
+                {t("common.open")}
               </Link>
             ) : (
               <span className="rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-center text-xs font-medium text-[#94a3b8]">
-                Open
+                {t("common.open")}
               </span>
             )}
           </div>
 
           <div className="mt-3 grid gap-1 text-[11px] text-[#64748b]">
-            <p>Last saved: {formatShareDate(shareState.updatedAt)}</p>
-            <p>Last published: {formatShareDate(shareState.sharedAt)}</p>
+            <p>{t("share.lastSaved")} {formatShareDate(shareState.updatedAt, t("common.notYet"))}</p>
+            <p>{t("share.lastPublished")} {formatShareDate(shareState.sharedAt, t("common.notYet"))}</p>
           </div>
         </>
       ) : null}
@@ -593,6 +656,8 @@ function TemplateActions({
   exportStatic: () => void;
   exportTemplate: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="col-span-2 grid gap-2 rounded-md border border-[#e2e8f0] bg-white p-2">
       <div className="grid grid-cols-2 gap-2">
@@ -601,7 +666,7 @@ function TemplateActions({
           onClick={duplicateTemplate}
           type="button"
         >
-          Duplicate
+          {t("common.duplicate")}
         </button>
         <button
           aria-disabled={!canDelete}
@@ -615,7 +680,7 @@ function TemplateActions({
           }}
           type="button"
         >
-          Delete
+          {t("common.delete")}
         </button>
       </div>
       <div className="grid grid-cols-3 gap-2">
@@ -624,30 +689,30 @@ function TemplateActions({
           onClick={exportTemplate}
           type="button"
         >
-          Package
+          {t("common.package")}
         </button>
         <button
           className="rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-2 py-2 text-xs font-medium text-[#1d4ed8] hover:bg-[#dbeafe]"
           onClick={exportStatic}
           type="button"
         >
-          Site
+          {t("common.site")}
         </button>
         <button
           className="rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-2 py-2 text-xs font-medium text-[#15803d] hover:bg-[#dcfce7]"
           onClick={exportNext}
           type="button"
         >
-          Next
+          {t("common.next")}
         </button>
       </div>
     </div>
   );
 }
 
-function formatShareDate(value?: string | null) {
+function formatShareDate(value: string | null | undefined, fallback = "Not yet") {
   if (!value) {
-    return "Not yet";
+    return fallback;
   }
 
   return value.replace("T", " ").slice(0, 16);
@@ -669,16 +734,18 @@ function StarterPickerModal({
   onClose: () => void;
   onSelect: (starterId: string) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4">
       <div className="w-full max-w-2xl rounded-lg border border-[#d8dde5] bg-white shadow-2xl shadow-slate-950/20">
         <div className="flex items-center justify-between gap-4 border-[#e2e8f0] border-b px-4 py-3">
           <div>
-            <h2 className="text-sm font-semibold text-[#111827]">Choose a starter template</h2>
-            <p className="mt-1 text-xs text-[#64748b]">Create a local template from a preset store category.</p>
+            <h2 className="text-sm font-semibold text-[#111827]">{t("starter.choose")}</h2>
+            <p className="mt-1 text-xs text-[#64748b]">{t("starter.createLocal")}</p>
           </div>
           <button className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]" onClick={onClose} type="button">
-            Close
+            {t("common.close")}
           </button>
         </div>
         <div className="grid gap-3 p-4 sm:grid-cols-2">

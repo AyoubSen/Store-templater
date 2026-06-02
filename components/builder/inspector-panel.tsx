@@ -5,6 +5,7 @@ import { deleteProductImageAction, uploadProductImageAction } from "@/app/action
 import { ColorTokenControl, GradientField, NumberField, RangeControl, TextField } from "@/components/builder/controls";
 import { SectionInspector } from "@/components/builder/section-inspector";
 import { sectionRegistry } from "@/lib/templater/registry";
+import { useI18n } from "@/lib/i18n";
 import type { Product, StoreTemplate, TemplateSection, ThemeTokens } from "@/lib/templater/schema";
 import { themePresets } from "@/lib/templater/theme-presets";
 import { typographyPresets } from "@/lib/templater/typography-presets";
@@ -54,15 +55,16 @@ export function InspectorPanel({
   updateSectionSetting: (sectionId: string, key: string, value: unknown) => void;
   updateTemplateField: <K extends "name" | "category">(key: K, value: StoreTemplate[K]) => void;
 }) {
+  const { t } = useI18n();
   const [imageProductId, setImageProductId] = useState<string | null>(null);
   const imageProduct = template.products.find((product) => product.id === imageProductId);
 
   return (
-    <aside className="relative z-30 flex min-h-0 flex-col border-[#d8dde5] border-l bg-[#f8fafc]">
+    <aside className="relative z-30 flex min-h-0 flex-col border-[#d8dde5] border-l bg-[#f8fafc]" data-tour="builder-inspector">
       <div className="shrink-0 border-[#e2e8f0] border-b px-4 py-3">
         <div>
-          <h2 className="text-sm font-semibold">Inspector</h2>
-          <p className="text-xs text-[#64748b]">Theme and selected section</p>
+          <h2 className="text-sm font-semibold">{t("builder.inspector")}</h2>
+          <p className="text-xs text-[#64748b]">{t("inspector.themeSubtitle")}</p>
         </div>
       </div>
 
@@ -77,7 +79,7 @@ export function InspectorPanel({
               onClick={() => setInspectorTab(tab)}
               type="button"
             >
-              {tab === "products" ? "Items" : tab}
+              {inspectorTabLabel(tab, t)}
             </button>
           ))}
         </div>
@@ -86,11 +88,11 @@ export function InspectorPanel({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {inspectorTab === "store" ? (
           <section className="px-4 py-4">
-            <h3 className="text-xs font-semibold uppercase text-[#475569]">Store</h3>
+            <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.store")}</h3>
             <div className="mt-3 space-y-3">
-              <TextField label="Template name" onChange={(value) => updateTemplateField("name", value)} value={template.name} />
+              <TextField label={t("inspector.templateName")} onChange={(value) => updateTemplateField("name", value)} value={template.name} />
               <label className="block text-xs font-medium text-[#475569]">
-                Category
+                {t("inspector.category")}
                 <select
                   className="mt-1.5 w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-sm capitalize text-[#111827] shadow-sm"
                   onChange={(event) => updateTemplateField("category", event.target.value as StoreTemplate["category"])}
@@ -110,7 +112,7 @@ export function InspectorPanel({
         {inspectorTab === "theme" ? (
           <>
             <section className="border-[#e2e8f0] border-b px-4 py-4">
-              <h3 className="text-xs font-semibold uppercase text-[#475569]">Theme presets</h3>
+              <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.themePresets")}</h3>
               <div className="mt-3 grid gap-2">
                 {themePresets.map((preset) => (
                   <button
@@ -138,7 +140,7 @@ export function InspectorPanel({
             </section>
 
             <section className="border-[#e2e8f0] border-b px-4 py-4">
-              <h3 className="text-xs font-semibold uppercase text-[#475569]">Theme tokens</h3>
+              <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.themeTokens")}</h3>
               <div className="mt-3 grid grid-cols-2 gap-2.5">
                 {colorControls.map((key) => (
                   <ColorTokenControl key={key} label={key} onChange={(value) => updateColor(key, value)} value={template.theme.colors[key]} />
@@ -147,7 +149,7 @@ export function InspectorPanel({
             </section>
 
             <section className="border-[#e2e8f0] border-b px-4 py-4">
-              <h3 className="text-xs font-semibold uppercase text-[#475569]">Typography</h3>
+              <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.typography")}</h3>
               <div className="mt-3 grid gap-2">
                 {typographyPresets.map((preset) => (
                   <button
@@ -166,12 +168,12 @@ export function InspectorPanel({
             </section>
 
             <section className="border-[#e2e8f0] border-b px-4 py-4">
-              <h3 className="text-xs font-semibold uppercase text-[#475569]">Layout</h3>
+              <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.layout")}</h3>
               <div className="mt-3 space-y-4">
-                <RangeControl label="Radius" max={24} min={0} onChange={(value) => updateLayout("radius", value)} value={template.theme.layout.radius} />
-                <RangeControl label="Spacing" max={32} min={10} onChange={(value) => updateLayout("spacing", value)} value={template.theme.layout.spacing} />
+                <RangeControl label={t("inspector.radius")} max={24} min={0} onChange={(value) => updateLayout("radius", value)} value={template.theme.layout.radius} />
+                <RangeControl label={t("inspector.spacing")} max={32} min={10} onChange={(value) => updateLayout("spacing", value)} value={template.theme.layout.spacing} />
                 <RangeControl
-                  label="Max width"
+                  label={t("inspector.maxWidth")}
                   max={1360}
                   min={920}
                   onChange={(value) => updateLayout("maxWidth", value)}
@@ -186,13 +188,13 @@ export function InspectorPanel({
         {inspectorTab === "products" ? (
           <section className="px-4 py-4">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-xs font-semibold uppercase text-[#475569]">Products</h3>
+              <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.products")}</h3>
               <button
                 className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
                 onClick={addProduct}
                 type="button"
               >
-                Add
+                {t("inspector.addProduct")}
               </button>
             </div>
             <div className="mt-3 space-y-3">
@@ -221,36 +223,36 @@ export function InspectorPanel({
                             isImportedImage(product.image) ? "bg-[#dcfce7] text-[#166534]" : "bg-[#e2e8f0] text-[#64748b]"
                           }`}
                         >
-                          {isImportedImage(product.image) ? "Image" : "Gradient"}
+                          {isImportedImage(product.image) ? t("inspector.image") : t("inspector.gradient")}
                         </span>
                       </span>
                     </span>
                   </summary>
                   <div className="mt-3 space-y-3">
                     <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3">
-                      <p className="mb-3 text-xs font-semibold uppercase text-[#475569]">Details</p>
+                      <p className="mb-3 text-xs font-semibold uppercase text-[#475569]">{t("inspector.details")}</p>
                       <div className="space-y-3">
-                        <TextField label="Name" onChange={(value) => updateProduct(product.id, "name", value)} value={product.name} />
-                        <TextField label="Category" onChange={(value) => updateProduct(product.id, "category", value)} value={product.category} />
-                        <NumberField label="Price" min={0} onChange={(value) => updateProduct(product.id, "price", value)} value={product.price} />
-                        <TextField label="Badge" onChange={(value) => updateProduct(product.id, "badge", value)} value={product.badge ?? ""} />
+                        <TextField label={t("inspector.name")} onChange={(value) => updateProduct(product.id, "name", value)} value={product.name} />
+                        <TextField label={t("inspector.category")} onChange={(value) => updateProduct(product.id, "category", value)} value={product.category} />
+                        <NumberField label={t("inspector.price")} min={0} onChange={(value) => updateProduct(product.id, "price", value)} value={product.price} />
+                        <TextField label={t("inspector.badge")} onChange={(value) => updateProduct(product.id, "badge", value)} value={product.badge ?? ""} />
                       </div>
                     </div>
                     <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3">
                       <div className="mb-3 flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold uppercase text-[#475569]">Visual</p>
+                        <p className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.visual")}</p>
                         <span className="text-[11px] font-medium text-[#64748b]">
-                          {isImportedImage(product.image) ? `${product.imageZoom ?? 100}% zoom` : "Gradient"}
+                          {isImportedImage(product.image) ? `${product.imageZoom ?? 100}% ${t("inspector.zoom").toLowerCase()}` : t("inspector.gradient")}
                         </span>
                       </div>
-                      <GradientField label="Placeholder gradient" onChange={(value) => updateProduct(product.id, "image", value)} value={product.image} />
+                      <GradientField label={t("inspector.image.placeholder")} onChange={(value) => updateProduct(product.id, "image", value)} value={product.image} />
                       <div className="mt-3 grid grid-cols-3 gap-2">
                         <button
                           className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
                           onClick={() => setImageProductId(product.id)}
                           type="button"
                         >
-                          Edit
+                          {t("common.edit")}
                         </button>
                         <button
                           className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
@@ -261,7 +263,7 @@ export function InspectorPanel({
                           }}
                           type="button"
                         >
-                          Center
+                          {t("common.center")}
                         </button>
                         <button
                           className="rounded-md border border-[#fecaca] bg-white px-2.5 py-2 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2]"
@@ -278,7 +280,7 @@ export function InspectorPanel({
                           }}
                           type="button"
                         >
-                          Clear
+                          {t("common.clear")}
                         </button>
                       </div>
                     </div>
@@ -288,7 +290,7 @@ export function InspectorPanel({
                         onClick={() => duplicateProduct(product.id)}
                         type="button"
                       >
-                        Duplicate
+                        {t("common.duplicate")}
                       </button>
                       <button
                         className="rounded-md border border-[#fecaca] bg-white px-2.5 py-2 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-40"
@@ -296,7 +298,7 @@ export function InspectorPanel({
                         onClick={() => deleteProduct(product.id)}
                         type="button"
                       >
-                        Delete
+                        {t("common.delete")}
                       </button>
                     </div>
                   </div>
@@ -311,7 +313,7 @@ export function InspectorPanel({
             <div className="rounded-md border border-[#d8dde5] bg-white p-3 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-xs font-semibold uppercase text-[#475569]">Selected section</h3>
+                  <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.selectedSection")}</h3>
                   <p className="mt-1 truncate text-sm font-semibold text-[#111827]">{sectionRegistry[selectedSection.type].label}</p>
                   <p className="mt-1 text-xs leading-5 text-[#64748b]">{sectionRegistry[selectedSection.type].description}</p>
                 </div>
@@ -320,11 +322,11 @@ export function InspectorPanel({
                     selectedSection.enabled ? "bg-[#dcfce7] text-[#166534]" : "bg-[#e2e8f0] text-[#64748b]"
                   }`}
                 >
-                  {selectedSection.enabled ? "Visible" : "Hidden"}
+                  {selectedSection.enabled ? t("common.visible") : t("common.hidden")}
                 </span>
               </div>
               <div className="mt-3 border-[#e2e8f0] border-t pt-3">
-                <h3 className="text-xs font-semibold uppercase text-[#475569]">Controls</h3>
+                <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.controls")}</h3>
                 <p className="mt-1 text-sm font-medium">{selectedSection.name}</p>
                 <p className="mt-1 text-xs leading-5 text-[#64748b]">
                   {sectionRegistry[selectedSection.type].editableSettings.join(", ")}
@@ -333,7 +335,7 @@ export function InspectorPanel({
             </div>
             <div className="mt-4 rounded-md border border-[#e2e8f0] bg-white p-2">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-[#475569]">Section actions</span>
+                <span className="text-xs font-medium text-[#475569]">{t("inspector.sectionActions")}</span>
                 <button
                   className={`rounded-md px-2.5 py-1.5 text-xs font-medium ${
                     selectedSection.enabled ? "bg-[#dcfce7] text-[#166534] hover:bg-[#bbf7d0]" : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
@@ -341,7 +343,7 @@ export function InspectorPanel({
                   onClick={() => toggleSection(selectedSection.id)}
                   type="button"
                 >
-                  {selectedSection.enabled ? "Visible" : "Hidden"}
+                  {selectedSection.enabled ? t("common.visible") : t("common.hidden")}
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -351,7 +353,7 @@ export function InspectorPanel({
                   onClick={() => moveSection(selectedSection.id, "up")}
                   type="button"
                 >
-                  Move up
+                  {t("common.moveUp")}
                 </button>
                 <button
                   className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
@@ -359,14 +361,14 @@ export function InspectorPanel({
                   onClick={() => moveSection(selectedSection.id, "down")}
                   type="button"
                 >
-                  Move down
+                  {t("common.moveDown")}
                 </button>
                 <button
                   className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
                   onClick={() => duplicateSection(selectedSection.id)}
                   type="button"
                 >
-                  Duplicate
+                  {t("common.duplicate")}
                 </button>
                 <button
                   className="rounded-md border border-[#fecaca] bg-white px-2.5 py-2 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-40"
@@ -374,7 +376,7 @@ export function InspectorPanel({
                   onClick={() => deleteSection(selectedSection.id)}
                   type="button"
                 >
-                  Delete
+                  {t("common.delete")}
                 </button>
               </div>
             </div>
@@ -385,10 +387,8 @@ export function InspectorPanel({
         {inspectorTab === "section" && !selectedSection ? (
           <section className="px-4 py-4">
             <div className="rounded-md border border-dashed border-[#cbd5e1] bg-white p-4">
-              <h3 className="text-sm font-semibold text-[#111827]">No section selected</h3>
-              <p className="mt-2 text-sm leading-6 text-[#64748b]">
-                Select a section from the left sidebar to edit its copy, layout, visibility, and storefront behavior.
-              </p>
+              <h3 className="text-sm font-semibold text-[#111827]">{t("inspector.noSection.title")}</h3>
+              <p className="mt-2 text-sm leading-6 text-[#64748b]">{t("inspector.noSection.body")}</p>
             </div>
           </section>
         ) : null}
@@ -462,6 +462,7 @@ function ImageImportModal({
   productName: string;
   templateId: string;
 }) {
+  const { t } = useI18n();
   const [preview, setPreview] = useState(currentImage);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imageStatus, setImageStatus] = useState("");
@@ -504,12 +505,12 @@ function ImageImportModal({
     setImageStatus("");
 
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      setError("Choose a PNG, JPG, or WebP image.");
+      setError(t("inspector.image.formatError"));
       return;
     }
 
     if (file.size > 20_000_000) {
-      setError("Use an image under 20 MB. Very large originals are hard to process in the browser.");
+      setError(t("inspector.image.largeError"));
       return;
     }
 
@@ -523,7 +524,7 @@ function ImageImportModal({
       setUploadState("idle");
     } catch (error) {
       setUploadState("failed");
-      setError(error instanceof Error ? error.message : "Could not prepare this image.");
+      setError(error instanceof Error ? error.message : t("inspector.image.clearError"));
     }
   }
 
@@ -545,7 +546,7 @@ function ImageImportModal({
 
     if (!result.imageUrl) {
       setUploadState("failed");
-      setError(result.error ?? "Could not upload image.");
+      setError(result.error ?? t("inspector.image.uploadError"));
       return;
     }
 
@@ -557,7 +558,7 @@ function ImageImportModal({
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4">
       <div className="w-full max-w-md rounded-lg border border-[#d8dde5] bg-white shadow-2xl shadow-slate-950/20">
         <div className="border-[#e2e8f0] border-b px-4 py-3">
-          <h2 className="text-sm font-semibold text-[#111827]">Product image</h2>
+          <h2 className="text-sm font-semibold text-[#111827]">{t("inspector.image.product")}</h2>
           <p className="mt-1 text-xs text-[#64748b]">{productName}</p>
         </div>
         <div className="p-4">
@@ -585,11 +586,11 @@ function ImageImportModal({
               style={{ left: `${position.x}%`, top: `${position.y}%` }}
             />
             <div className="pointer-events-none absolute bottom-3 left-3 right-3 rounded-md bg-white/90 px-2.5 py-1.5 text-xs font-medium text-[#334155] shadow-sm">
-              Drag to choose the crop shown in product cards.
+              {t("inspector.image.cropHint")}
             </div>
           </div>
           <label className="mt-4 block text-xs font-medium text-[#475569]">
-            Zoom
+            {t("inspector.zoom")}
             <span className="mt-1.5 flex items-center gap-3">
               <input
                 className="w-full accent-[#2563eb]"
@@ -604,8 +605,8 @@ function ImageImportModal({
             </span>
           </label>
           <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 py-6 text-center hover:bg-[#f1f5f9]">
-            <span className="text-sm font-medium text-[#334155]">{isImportedImage(preview) ? "Replace image" : "Choose image"}</span>
-            <span className="mt-1 text-xs text-[#64748b]">PNG, JPG, or WebP. Large images are compressed before upload.</span>
+            <span className="text-sm font-medium text-[#334155]">{isImportedImage(preview) ? t("inspector.image.replace") : t("inspector.image.choose")}</span>
+            <span className="mt-1 text-xs text-[#64748b]">{t("inspector.image.help")}</span>
             <input
               accept="image/png,image/jpeg,image/webp"
               className="sr-only"
@@ -625,12 +626,12 @@ function ImageImportModal({
           ) : null}
           {uploadState === "preparing" ? (
             <p className="mt-3 rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2 text-xs font-medium text-[#1d4ed8]">
-              Preparing image for upload.
+              {t("inspector.image.preparing")}
             </p>
           ) : null}
           {uploadState === "failed" && selectedFile ? (
             <p className="mt-3 rounded-md border border-[#fed7aa] bg-[#fff7ed] px-3 py-2 text-xs font-medium text-[#9a3412]">
-              Upload failed. Check the message below, then save again to retry.
+              {t("inspector.image.uploadFailed")}
             </p>
           ) : null}
           {error ? <p className="mt-3 text-xs font-medium text-[#b91c1c]">{error}</p> : null}
@@ -644,21 +645,21 @@ function ImageImportModal({
             }}
             type="button"
           >
-            Reset
+            {t("common.reset")}
           </button>
           <button
             className="rounded-md border border-[#fecaca] bg-white px-3 py-2 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2]"
             onClick={onRemove}
             type="button"
           >
-            Remove
+            {t("common.remove")}
           </button>
           <button
             className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
             onClick={onClose}
             type="button"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             className="rounded-md bg-[#111827] px-3 py-2 text-xs font-medium text-white hover:bg-[#1f2937]"
@@ -666,7 +667,13 @@ function ImageImportModal({
             onClick={saveImage}
             type="button"
           >
-            {uploadState === "preparing" ? "Preparing..." : uploadState === "uploading" ? "Uploading..." : uploadState === "failed" ? "Retry upload" : "Save image"}
+            {uploadState === "preparing"
+              ? t("inspector.image.preparingButton")
+              : uploadState === "uploading"
+                ? t("inspector.image.uploading")
+                : uploadState === "failed"
+                  ? t("inspector.image.retry")
+                  : t("inspector.image.save")}
           </button>
         </div>
       </div>
@@ -775,4 +782,15 @@ function formatFileSize(size: number) {
 
 function isImportedImage(image: string) {
   return image.startsWith("url(");
+}
+
+function inspectorTabLabel(tab: InspectorTab, t: ReturnType<typeof useI18n>["t"]) {
+  const labels: Record<InspectorTab, string> = {
+    products: t("inspector.items"),
+    section: t("builder.sections"),
+    store: t("inspector.store"),
+    theme: t("inspector.theme"),
+  };
+
+  return labels[tab];
 }

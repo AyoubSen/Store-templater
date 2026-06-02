@@ -14,6 +14,8 @@ import type { PreviewCartItem } from "@/components/storefront-preview";
 import { InspectorPanel, type InspectorTab } from "@/components/builder/inspector-panel";
 import { PreviewCanvas, type Device } from "@/components/builder/preview-canvas";
 import { SectionSidebar } from "@/components/builder/section-sidebar";
+import { GuidedTour, type GuidedTourStep } from "@/components/guided-tour";
+import { useI18n } from "@/lib/i18n";
 import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport } from "@/lib/templater/export";
 import { createPage } from "@/lib/templater/page-defaults";
 import { sampleTemplate } from "@/lib/templater/sample-template";
@@ -50,6 +52,7 @@ const sectionGroups: Array<{ label: string; sections: SectionType[] }> = [
 ];
 
 const welcomeStorageKey = "store-templater:welcome-dismissed";
+const builderTourStorageKey = "store-templater:builder-tour-dismissed";
 
 type TemplateUpdater = StoreTemplate | ((current: StoreTemplate) => StoreTemplate);
 
@@ -59,6 +62,7 @@ type TemplateHistory = {
 };
 
 export default function Home() {
+  const { t } = useI18n();
   const [template, setTemplate] = useState<StoreTemplate>(sampleTemplate);
   const [templates, setTemplates] = useState<StoreTemplate[]>([sampleTemplate]);
   const [selectedPageId, setSelectedPageId] = useState(sampleTemplate.pages[0]?.id ?? "");
@@ -67,19 +71,55 @@ export default function Home() {
   const [zoom, setZoom] = useState(90);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("section");
   const [saveState, setSaveState] = useState<TemplateSyncState>("loading");
-  const [saveStatusMessage, setSaveStatusMessage] = useState(syncStatusDescription("loading"));
+  const [saveStatusMessage, setSaveStatusMessage] = useState(syncStatusDescription("loading", t));
   const [accountTemplates, setAccountTemplates] = useState<StoreTemplate[]>([]);
   const [localImportStatus, setLocalImportStatus] = useState<"hidden" | "available" | "importing" | "failed" | "done">("hidden");
   const [history, setHistory] = useState<TemplateHistory>({ past: [], future: [] });
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
   const [previewProductId, setPreviewProductId] = useState(template.products[0]?.id ?? "");
   const [previewCartItems, setPreviewCartItems] = useState<PreviewCartItem[]>([]);
   const [shareState, setShareState] = useState<TemplateShareState>({ shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null });
-  const [shareStatus, setShareStatus] = useState("Share links are off.");
+  const [shareStatus, setShareStatus] = useState(t("status.shareOff"));
   const hasLoadedStoredTemplate = useRef(false);
 
   const selectedPage = template.pages.find((page) => page.id === selectedPageId) ?? template.pages[0];
   const selectedSection = selectedPage?.sections.find((section) => section.id === selectedSectionId);
+  const builderTourSteps = useMemo<GuidedTourStep[]>(
+    () => [
+      {
+        target: "builder-sidebar",
+        title: t("tour.builder.sidebar.title"),
+        body: t("tour.builder.sidebar.body"),
+      },
+      {
+        target: "builder-sidebar-modes",
+        title: t("tour.builder.workflow.title"),
+        body: t("tour.builder.workflow.body"),
+      },
+      {
+        target: "builder-preview",
+        title: t("tour.builder.preview.title"),
+        body: t("tour.builder.preview.body"),
+      },
+      {
+        target: "builder-inspector",
+        title: t("tour.builder.inspector.title"),
+        body: t("tour.builder.inspector.body"),
+      },
+      {
+        target: "builder-devices",
+        title: t("tour.builder.devices.title"),
+        body: t("tour.builder.devices.body"),
+      },
+      {
+        target: "builder-publish",
+        title: t("tour.builder.publish.title"),
+        body: t("tour.builder.publish.body"),
+      },
+    ],
+    [t],
+  );
 
   useEffect(() => {
     window.setTimeout(() => {
@@ -92,13 +132,13 @@ export default function Home() {
       hasLoadedStoredTemplate.current = true;
       setIsWelcomeOpen(window.localStorage.getItem(welcomeStorageKey) !== "true");
       setSaveState("local-only");
-      setSaveStatusMessage(syncStatusDescription("local-only"));
+      setSaveStatusMessage(syncStatusDescription("local-only", t));
     }, 0);
 
     listAccountTemplatesAction().then((result) => {
       if (!result.isDatabaseConfigured) {
         setSaveState("local-only");
-        setSaveStatusMessage(syncStatusDescription("local-only"));
+        setSaveStatusMessage(syncStatusDescription("local-only", t));
         return;
       }
 
@@ -131,9 +171,9 @@ export default function Home() {
       setHistory({ past: [], future: [] });
       hasLoadedStoredTemplate.current = true;
       setSaveState("saved");
-      setSaveStatusMessage(syncStatusDescription("saved"));
+      setSaveStatusMessage(syncStatusDescription("saved", t));
     });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!hasLoadedStoredTemplate.current) {
@@ -142,11 +182,11 @@ export default function Home() {
 
     writeStoredTemplate(template);
     setSaveState("saving");
-    setSaveStatusMessage(syncStatusDescription("saving"));
+    setSaveStatusMessage(syncStatusDescription("saving", t));
     saveAccountTemplateAction(template).then((result) => {
       if (!result.isDatabaseConfigured) {
         setSaveState("local-only");
-        setSaveStatusMessage(syncStatusDescription("local-only"));
+        setSaveStatusMessage(syncStatusDescription("local-only", t));
         return;
       }
 
@@ -157,14 +197,14 @@ export default function Home() {
       }
 
       setSaveState("saved");
-      setSaveStatusMessage(syncStatusDescription("saved"));
+      setSaveStatusMessage(syncStatusDescription("saved", t));
     });
     setTemplates((current) =>
       current.some((storedTemplate) => storedTemplate.id === template.id)
         ? current.map((storedTemplate) => (storedTemplate.id === template.id ? template : storedTemplate))
         : [...current, template],
     );
-  }, [template]);
+  }, [template, t]);
 
   useEffect(() => {
     if (!hasLoadedStoredTemplate.current) {
@@ -175,7 +215,7 @@ export default function Home() {
     getTemplateShareStateAction(template.id).then((result) => {
       if (!result.isDatabaseConfigured) {
         setShareState({ shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null });
-        setShareStatus("Share links need account storage.");
+        setShareStatus(t("status.shareNeedsAccount"));
         return;
       }
 
@@ -186,9 +226,9 @@ export default function Home() {
       }
 
       setShareState(result.data ?? { shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null });
-      setShareStatus(result.data?.shareEnabled ? "Public share link is live." : "Share links are off.");
+      setShareStatus(result.data?.shareEnabled ? t("status.shareLive") : t("status.shareOff"));
     });
-  }, [template.id]);
+  }, [template.id, t]);
 
   const previewStyle = useMemo(
     () =>
@@ -692,11 +732,11 @@ export default function Home() {
     replaceTemplate(nextTemplate);
     void deleteTemplateImagesAction(templateId);
     setSaveState("saving");
-    setSaveStatusMessage("Deleting template from your account.");
+    setSaveStatusMessage(t("status.deletingTemplate"));
     deleteAccountTemplateAction(templateId).then((result) => {
       if (!result.isDatabaseConfigured) {
         setSaveState("local-only");
-        setSaveStatusMessage(syncStatusDescription("local-only"));
+        setSaveStatusMessage(syncStatusDescription("local-only", t));
         return;
       }
 
@@ -707,7 +747,7 @@ export default function Home() {
       }
 
       setSaveState("saved");
-      setSaveStatusMessage("Template deleted from your account.");
+      setSaveStatusMessage(t("status.deletedTemplate"));
     });
   }
 
@@ -735,11 +775,11 @@ export default function Home() {
   }
 
   async function toggleShareLink() {
-    setShareStatus(shareState.shareEnabled ? "Disabling share link." : "Publishing share link.");
+    setShareStatus(shareState.shareEnabled ? t("status.disablingShare") : t("status.publishingShare"));
     const result = await setTemplateShareEnabledAction(template.id, !shareState.shareEnabled);
 
     if (!result.isDatabaseConfigured) {
-      setShareStatus("Share links need account storage.");
+      setShareStatus(t("status.shareNeedsAccount"));
       return;
     }
 
@@ -750,7 +790,7 @@ export default function Home() {
 
     const nextShareState = result.data ?? { shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null };
     setShareState(nextShareState);
-    setShareStatus(nextShareState.shareEnabled ? "Public share link is live." : "Share link disabled.");
+    setShareStatus(nextShareState.shareEnabled ? t("status.shareLive") : t("status.shareDisabled"));
   }
 
   async function copyShareLink() {
@@ -759,7 +799,7 @@ export default function Home() {
     }
 
     await navigator.clipboard.writeText(`${window.location.origin}/s/${shareState.shareId}`);
-    setShareStatus("Share link copied.");
+    setShareStatus(t("status.copiedShare"));
   }
 
   function importLocalTemplatesToAccount() {
@@ -779,14 +819,14 @@ export default function Home() {
       if (failedResult) {
         setLocalImportStatus("failed");
         setSaveState("failed");
-        setSaveStatusMessage(failedResult.error ?? "Could not import local templates.");
+        setSaveStatusMessage(failedResult.error ?? t("status.syncFailedLocalSafe"));
         return;
       }
 
       if (results.some((result) => !result.isDatabaseConfigured)) {
         setLocalImportStatus("failed");
         setSaveState("local-only");
-        setSaveStatusMessage(syncStatusDescription("local-only"));
+        setSaveStatusMessage(syncStatusDescription("local-only", t));
         return;
       }
 
@@ -806,6 +846,15 @@ export default function Home() {
   function dismissWelcome() {
     window.localStorage.setItem(welcomeStorageKey, "true");
     setIsWelcomeOpen(false);
+
+    if (window.localStorage.getItem(builderTourStorageKey) !== "true") {
+      setIsTourOpen(true);
+    }
+  }
+
+  function closeTour() {
+    window.localStorage.setItem(builderTourStorageKey, "true");
+    setIsTourOpen(false);
   }
 
   function openWelcomeTab(tab: InspectorTab) {
@@ -822,6 +871,7 @@ export default function Home() {
           createTemplate={createTemplate}
           deleteTemplate={deleteTemplate}
           duplicateTemplate={duplicateTemplate}
+          onStartTour={() => setIsTourOpen(true)}
           reorderSections={reorderSections}
           saveState={saveState}
           saveStatusMessage={saveStatusMessage}
@@ -909,6 +959,7 @@ export default function Home() {
           onImport={importLocalTemplatesToAccount}
         />
       ) : null}
+      <GuidedTour isOpen={isTourOpen} onClose={closeTour} steps={builderTourSteps} />
     </main>
   );
 }
@@ -932,16 +983,17 @@ function LocalImportPrompt({
   onImport: () => void;
   status: "available" | "importing" | "failed" | "done";
 }) {
+  const { t } = useI18n();
   const copy = {
-    available: "Local templates found in this browser. Save them to your account so they are available on every device.",
-    done: "Local templates were saved to your account.",
-    failed: "Local templates are still safe in this browser, but account import failed.",
-    importing: "Saving local templates to your account.",
+    available: t("importLocal.available"),
+    done: t("importLocal.done"),
+    failed: t("importLocal.failed"),
+    importing: t("importLocal.importing"),
   };
 
   return (
     <div className="fixed right-4 bottom-4 z-50 w-[min(360px,calc(100vw-32px))] rounded-lg border border-[#d8dde5] bg-white p-4 shadow-2xl shadow-slate-950/20">
-      <p className="text-sm font-semibold text-[#111827]">Account sync</p>
+      <p className="text-sm font-semibold text-[#111827]">{t("importLocal.accountSync")}</p>
       <p className="mt-1 text-sm leading-6 text-[#64748b]">{copy[status]}</p>
       <div className="mt-3 flex justify-end gap-2">
         {status === "available" || status === "failed" ? (
@@ -950,7 +1002,7 @@ function LocalImportPrompt({
             onClick={onImport}
             type="button"
           >
-            {status === "failed" ? "Try again" : "Save to account"}
+            {status === "failed" ? t("common.tryAgain") : t("importLocal.saveToAccount")}
           </button>
         ) : null}
         <button
@@ -959,7 +1011,7 @@ function LocalImportPrompt({
           onClick={onDismiss}
           type="button"
         >
-          {status === "done" ? "Close" : "Not now"}
+          {status === "done" ? t("common.close") : t("common.notNow")}
         </button>
       </div>
     </div>
@@ -975,25 +1027,25 @@ function WelcomeChecklist({
   onOpenProducts: () => void;
   onOpenTheme: () => void;
 }) {
+  const { t } = useI18n();
+  const steps = [
+    t("builder.welcomeStep.1"),
+    t("builder.welcomeStep.2"),
+    t("builder.welcomeStep.3"),
+    t("builder.welcomeStep.4"),
+    t("builder.welcomeStep.5"),
+    t("builder.welcomeStep.6"),
+  ];
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4">
       <section className="w-full max-w-lg rounded-lg border border-[#d8dde5] bg-white shadow-2xl shadow-slate-950/20">
         <div className="border-[#e2e8f0] border-b px-5 py-4">
-          <h2 className="text-base font-semibold text-[#111827]">Start with the essentials</h2>
-          <p className="mt-1 text-sm leading-6 text-[#64748b]">
-            The sidebars edit the template. The center is a customer preview where you can click products, add cart items,
-            and test checkout behavior.
-          </p>
+          <h2 className="text-base font-semibold text-[#111827]">{t("builder.welcome.title")}</h2>
+          <p className="mt-1 text-sm leading-6 text-[#64748b]">{t("builder.welcome.body")}</p>
         </div>
         <div className="space-y-2 px-5 py-4">
-          {[
-            "Select a section on the left to edit it.",
-            "Use the right inspector for content and layout.",
-            "Open Theme when you want colors and typography.",
-            "Open Items when you want product names, prices, or images.",
-            "Use product cards and Add buttons in the preview to test cart and checkout.",
-            "Publish only when the public link should be visible.",
-          ].map((step, index) => (
+          {steps.map((step, index) => (
             <div className="flex gap-3 rounded-md bg-[#f8fafc] px-3 py-2.5" key={step}>
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#111827] text-[11px] font-semibold text-white">
                 {index + 1}
@@ -1008,21 +1060,21 @@ function WelcomeChecklist({
             onClick={onOpenTheme}
             type="button"
           >
-            Edit theme
+            {t("builder.editTheme")}
           </button>
           <button
             className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
             onClick={onOpenProducts}
             type="button"
           >
-            Edit items
+            {t("builder.editItems")}
           </button>
           <button
             className="rounded-md bg-[#111827] px-3 py-2 text-sm font-medium text-white hover:bg-[#1f2937]"
             onClick={onClose}
             type="button"
           >
-            Start editing
+            {t("builder.startTour")}
           </button>
         </div>
       </section>

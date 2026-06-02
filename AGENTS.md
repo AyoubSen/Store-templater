@@ -73,6 +73,7 @@ Important files:
 - `lib/templater/shared-preview.ts`: public shared-preview template lookup by generated share id
 - `lib/storage/r2.ts`: Cloudflare R2 upload helper using the S3-compatible API
 - `app/actions/images.ts`: Clerk-authenticated product image upload action
+- `lib/i18n.tsx`: lightweight client-side app UI i18n provider with English/French dictionaries and language switcher
 - `lib/templater/storage.ts`: localStorage persistence for active template and local template library
 - `components/builder/section-sidebar.tsx`: compact template switcher, page/section/library sidebar modes, section list, section library, drag reorder
 - `components/builder/preview-canvas.tsx`: editor toolbar, device controls, zoom, preview canvas
@@ -130,7 +131,10 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Local browser templates can be imported into the signed-in account from the builder sync prompt
 - `/templates` dashboard create, duplicate, delete, import, and share flows report account sync results instead of silently ignoring failures
 - First-run welcome checklist with compact guidance for section, theme, item, device, and preview workflows
+- Replayable guided tours in the builder and `/templates` dashboard using highlighted targets and short tooltips
+- Lightweight English/French app UI translations for shared auth controls, guided tours, key builder/dashboard labels, and contextual help
 - Contextual preview guidance for customer interactions such as product clicks, cart state, and checkout state
+- Contextual help popovers for important workflows such as pages, adding sections, preview behavior, and dashboard filters
 - Progressive disclosure in the builder: page settings, section library, and advanced section layout controls stay collapsed until needed
 - Left sidebar separates Pages, Sections, and Add-section workflows so users are not shown every navigation/editing control at once
 
@@ -205,5 +209,6 @@ Expected section types over time:
 - Avoid beige-heavy or one-note palettes for the builder UI.
 - Cards should be purposeful; avoid card-in-card layouts.
 - Keep controls compact and predictable.
+- Account for translated UI labels being wider than English; prefer wrapping/flexible controls over fixed-width text assumptions.
 - Ensure mobile and desktop preview modes do not overflow awkwardly.
 - Do not put explanatory marketing copy in the app chrome unless it directly helps the workflow.

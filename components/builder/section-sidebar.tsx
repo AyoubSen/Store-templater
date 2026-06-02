@@ -4,6 +4,8 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useState } from "react";
 import { AuthControls } from "@/components/auth-controls";
+import { ContextualHelp } from "@/components/contextual-help";
+import { useI18n } from "@/lib/i18n";
 import { pageTypeLabels, pageTypes } from "@/lib/templater/page-defaults";
 import { sectionRegistry } from "@/lib/templater/registry";
 import type { PageType, SectionType, StoreTemplate, TemplatePage, TemplateSection } from "@/lib/templater/schema";
@@ -18,6 +20,7 @@ export function SectionSidebar({
   deletePage,
   deleteTemplate,
   duplicateTemplate,
+  onStartTour,
   pages,
   reorderSections,
   saveState,
@@ -40,6 +43,7 @@ export function SectionSidebar({
   deletePage: (pageId: string) => void;
   deleteTemplate: (templateId: string) => void;
   duplicateTemplate: () => void;
+  onStartTour: () => void;
   pages: TemplatePage[];
   reorderSections: (sectionIds: string[]) => void;
   saveState: TemplateSyncState;
@@ -55,6 +59,7 @@ export function SectionSidebar({
   templates: StoreTemplate[];
   updatePageField: <K extends "name" | "slug" | "seoTitle" | "status">(pageId: string, key: K, value: TemplatePage[K]) => void;
 }) {
+  const { t } = useI18n();
   const [isStarterPickerOpen, setIsStarterPickerOpen] = useState(false);
   const [isPageSettingsOpen, setIsPageSettingsOpen] = useState(false);
   const [isTemplateActionsOpen, setIsTemplateActionsOpen] = useState(false);
@@ -82,7 +87,7 @@ export function SectionSidebar({
   }
 
   return (
-    <aside className="flex min-h-0 flex-col border-[#d8dde5] border-r bg-[#f8fafc]">
+    <aside className="flex min-h-0 flex-col border-[#d8dde5] border-r bg-[#f8fafc]" data-tour="builder-sidebar">
       <div className="shrink-0 border-[#e2e8f0] border-b px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="grid h-7 w-7 place-items-center rounded-md bg-[#111827] text-[11px] font-semibold text-white">
@@ -90,14 +95,20 @@ export function SectionSidebar({
           </div>
           <div>
             <h1 className="text-sm font-semibold">Store Templater</h1>
-            <p className="text-[11px] text-[#64748b]">Template workspace</p>
+            <p className="text-[11px] text-[#64748b]">{t("builder.templateWorkspace")}</p>
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
-          <Link className="inline-flex rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]" href="/templates">
-            Manage templates
-          </Link>
-          <AuthControls />
+          <button
+            className="inline-flex h-9 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2.5 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+            onClick={onStartTour}
+            type="button"
+          >
+            {t("builder.tour")}
+          </button>
+          <div className="flex shrink-0 items-center justify-end">
+            <AuthControls />
+          </div>
         </div>
       </div>
 
@@ -108,11 +119,18 @@ export function SectionSidebar({
             <p className="text-xs capitalize text-[#64748b]">{template.category} template</p>
           </div>
           <span className={`rounded-md border px-2 py-1 text-[11px] font-medium ${syncStatusClassName(saveState)}`} title={saveStatusMessage}>
-            {syncStatusLabel(saveState)}
+            {syncStatusLabel(saveState, t)}
           </span>
         </div>
         {saveStatusMessage ? <p className="mt-2 text-[11px] leading-4 text-[#64748b]">{saveStatusMessage}</p> : null}
         <div className="mt-3 space-y-2">
+          <Link
+            className="inline-flex h-9 w-full items-center justify-center rounded-md border border-[#d8dde5] bg-white px-3 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+            href="/templates"
+            title={t("builder.manageTemplates")}
+          >
+            {t("builder.manageTemplates")}
+          </Link>
           <select
             className="w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] shadow-sm"
             onChange={(event) => selectTemplate(event.target.value)}
@@ -129,8 +147,8 @@ export function SectionSidebar({
             onClick={() => setIsTemplateActionsOpen((current) => !current)}
             type="button"
           >
-            <span>Template actions</span>
-            <span className="text-[#94a3b8]">{isTemplateActionsOpen ? "Hide" : "Show"}</span>
+            <span>{t("builder.templateActions")}</span>
+            <span className="text-[#94a3b8]">{isTemplateActionsOpen ? t("builder.hide") : t("builder.show")}</span>
           </button>
           {isTemplateActionsOpen ? (
             <div className="grid grid-cols-3 gap-1.5">
@@ -139,14 +157,14 @@ export function SectionSidebar({
                 onClick={() => setIsStarterPickerOpen(true)}
                 type="button"
               >
-                New
+                {t("builder.new")}
               </button>
               <button
                 className="rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
                 onClick={duplicateTemplate}
                 type="button"
               >
-                Copy
+                {t("common.copy")}
               </button>
               <button
                 aria-disabled={templates.length <= 1}
@@ -160,19 +178,19 @@ export function SectionSidebar({
                 }}
                 type="button"
               >
-                Delete
+                {t("common.delete")}
               </button>
             </div>
           ) : null}
         </div>
       </div>
 
-      <div className="shrink-0 border-[#e2e8f0] border-b bg-white px-3 py-2">
+      <div className="shrink-0 border-[#e2e8f0] border-b bg-white px-3 py-2" data-tour="builder-sidebar-modes">
         <div className="grid grid-cols-3 rounded-md bg-[#f1f5f9] p-0.5">
           {[
-            { label: "Pages", value: "pages" },
-            { label: "Sections", value: "sections" },
-            { label: "Add", value: "library" },
+            { label: t("builder.pages"), value: "pages" },
+            { label: t("builder.sections"), value: "sections" },
+            { label: t("builder.add"), value: "library" },
           ].map((item) => (
             <button
               className={`rounded px-2 py-1.5 text-xs font-semibold ${
@@ -191,11 +209,14 @@ export function SectionSidebar({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {sidebarMode === "pages" ? <section className="px-3 py-4">
           <div className="mb-2 flex items-center justify-between px-1">
-            <h2 className="text-xs font-semibold uppercase text-[#475569]">Pages</h2>
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 className="text-xs font-semibold uppercase text-[#475569]">{t("builder.pages")}</h2>
+              <ContextualHelp body={t("builder.pagesHelp.body")} title={t("builder.pagesHelp.title")} />
+            </div>
             <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#64748b]">{pages.length}</span>
           </div>
           <p className="mb-3 px-1 text-xs leading-5 text-[#64748b]">
-            Pages control what visitors can browse. Draft pages stay out of public share links.
+            {t("builder.pagesHelp.body")}
           </p>
           <div className="space-y-1">
             {pages.map((page) => (
@@ -220,7 +241,7 @@ export function SectionSidebar({
                   onClick={() => addPage(type)}
                   type="button"
                 >
-                  {existingPage ? `Open ${pageTypeLabels[type]}` : `Add ${pageTypeLabels[type]}`}
+                  {existingPage ? `${t("common.open")} ${pageTypeLabels[type]}` : `${t("builder.add")} ${pageTypeLabels[type]}`}
                 </button>
               );
             })}
@@ -233,7 +254,7 @@ export function SectionSidebar({
                 type="button"
               >
                 <span>Page settings</span>
-                <span className="text-[#94a3b8]">{isPageSettingsOpen ? "Hide" : "Show"}</span>
+                <span className="text-[#94a3b8]">{isPageSettingsOpen ? t("builder.hide") : t("builder.show")}</span>
               </button>
               {isPageSettingsOpen ? <PageSettings page={selectedPage} updatePageField={updatePageField} /> : null}
             </div>
@@ -242,7 +263,7 @@ export function SectionSidebar({
 
         {sidebarMode === "sections" ? <section className="px-3 py-4">
           <div className="mb-2 flex items-center justify-between px-1">
-            <h2 className="text-xs font-semibold uppercase text-[#475569]">Sections</h2>
+            <h2 className="text-xs font-semibold uppercase text-[#475569]">{t("builder.sections")}</h2>
             <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#64748b]">{sections.length}</span>
           </div>
           <p className="mb-3 px-1 text-xs leading-5 text-[#64748b]">
@@ -250,7 +271,7 @@ export function SectionSidebar({
           </p>
           {selectedSection ? (
             <div className="mb-3 rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase text-[#2563eb]">Selected section</p>
+              <p className="text-[11px] font-semibold uppercase text-[#2563eb]">{t("builder.selectedSection")}</p>
               <p className="mt-0.5 truncate text-sm font-semibold text-[#1e293b]">{sectionRegistry[selectedSection.type].label}</p>
               <p className="mt-0.5 truncate text-xs text-[#64748b]">{sectionPreviewLabel(selectedSection)}</p>
             </div>
@@ -271,9 +292,12 @@ export function SectionSidebar({
           </DndContext>
         </section> : null}
 
-        {sidebarMode === "library" ? <section className="px-3 py-4">
+        {sidebarMode === "library" ? <section className="px-3 py-4" data-tour="builder-section-library">
           <div className="mb-2 px-1">
-            <h2 className="text-xs font-semibold uppercase text-[#475569]">Add section</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs font-semibold uppercase text-[#475569]">{t("builder.addSection")}</h2>
+              <ContextualHelp body={t("builder.addHelp.body")} title={t("builder.addHelp.title")} />
+            </div>
             <p className="mt-1 text-xs leading-5 text-[#64748b]">
               Inserts after {selectedSection ? sectionRegistry[selectedSection.type].label : "the selected block"}.
             </p>
@@ -331,6 +355,8 @@ function PageRow({
   onSelect: () => void;
   page: TemplatePage;
 }) {
+  const { t } = useI18n();
+
   return (
     <div
       className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-md border ${
@@ -341,7 +367,7 @@ function PageRow({
         <span className="flex min-w-0 items-center gap-2">
           <span className="block truncate text-sm font-medium text-[#1f2937]">{page.name}</span>
           {page.status === "draft" ? (
-            <span className="rounded-full bg-[#fef3c7] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[#92400e]">Draft</span>
+            <span className="rounded-full bg-[#fef3c7] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[#92400e]">{t("common.draft")}</span>
           ) : null}
         </span>
         <span className="mt-0.5 block truncate font-mono text-xs text-[#64748b]">{page.slug}</span>
@@ -358,7 +384,7 @@ function PageRow({
         }}
         type="button"
       >
-        Delete
+        {t("common.delete")}
       </button>
     </div>
   );
@@ -432,20 +458,22 @@ function StarterPickerModal({
   onClose: () => void;
   onSelect: (starterId: string) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4">
       <div className="w-full max-w-2xl rounded-lg border border-[#d8dde5] bg-white shadow-2xl shadow-slate-950/20">
         <div className="flex items-center justify-between gap-4 border-[#e2e8f0] border-b px-4 py-3">
           <div>
-            <h2 className="text-sm font-semibold text-[#111827]">Choose a starter template</h2>
-            <p className="mt-1 text-xs text-[#64748b]">Start from a store category and customize from there.</p>
+            <h2 className="text-sm font-semibold text-[#111827]">{t("starter.choose")}</h2>
+            <p className="mt-1 text-xs text-[#64748b]">{t("starter.startCategory")}</p>
           </div>
           <button
             className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
             onClick={onClose}
             type="button"
           >
-            Close
+            {t("common.close")}
           </button>
         </div>
         <div className="grid gap-3 p-4 sm:grid-cols-2">

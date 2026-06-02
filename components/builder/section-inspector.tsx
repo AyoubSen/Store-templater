@@ -9,6 +9,7 @@ import {
   TextField,
 } from "@/components/builder/controls";
 import type { ReactNode } from "react";
+import { useI18n } from "@/lib/i18n";
 import type { TemplateSection } from "@/lib/templater/schema";
 
 export function SectionInspector({
@@ -18,13 +19,14 @@ export function SectionInspector({
   section: TemplateSection;
   updateSetting: (sectionId: string, key: string, value: unknown) => void;
 }) {
+  const { t } = useI18n();
   const settings = section.settings;
   const setValue = (key: string, value: unknown) => updateSetting(section.id, key, value);
 
   if (section.type === "announcement") {
     return (
       <div className="mt-4 space-y-3">
-        <TextField label="Message" onChange={(value) => setValue("text", value)} value={stringSetting(settings.text)} />
+        <TextField label={t("inspector.message")} onChange={(value) => setValue("text", value)} value={stringSetting(settings.text)} />
       </div>
     );
   }
@@ -32,8 +34,8 @@ export function SectionInspector({
   if (section.type === "header") {
     return (
       <div className="mt-4 space-y-3">
-        <TextField label="Logo text" onChange={(value) => setValue("logo", value)} value={stringSetting(settings.logo)} />
-        <ListEditor label="Navigation" onChange={(value) => setValue("links", value)} placeholder="Nav item" values={arraySetting(settings.links)} />
+        <TextField label={t("inspector.logoText")} onChange={(value) => setValue("logo", value)} value={stringSetting(settings.logo)} />
+        <ListEditor label={t("inspector.navigation")} onChange={(value) => setValue("links", value)} placeholder={t("inspector.navItem")} values={arraySetting(settings.links)} />
       </div>
     );
   }
@@ -42,11 +44,11 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <ControlGroup title="Content">
-          <TextField label="Eyebrow" onChange={(value) => setValue("eyebrow", value)} value={stringSetting(settings.eyebrow)} />
-          <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-          <TextArea label="Copy" onChange={(value) => setValue("copy", value)} value={stringSetting(settings.copy)} />
-          <TextField label="Button" onChange={(value) => setValue("cta", value)} value={stringSetting(settings.cta)} />
+        <ControlGroup title={t("inspector.content")}>
+          <TextField label={t("inspector.eyebrow")} onChange={(value) => setValue("eyebrow", value)} value={stringSetting(settings.eyebrow)} />
+          <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+          <TextArea label={t("inspector.copy")} onChange={(value) => setValue("copy", value)} value={stringSetting(settings.copy)} />
+          <TextField label={t("inspector.button")} onChange={(value) => setValue("cta", value)} value={stringSetting(settings.cta)} />
         </ControlGroup>
       </div>
     );
@@ -56,7 +58,7 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <ListEditor label="Categories" onChange={(value) => setValue("categories", value)} placeholder="Category" values={arraySetting(settings.categories)} />
+        <ListEditor label={t("inspector.categories")} onChange={(value) => setValue("categories", value)} placeholder={t("inspector.category")} values={arraySetting(settings.categories)} />
       </div>
     );
   }
@@ -65,10 +67,10 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <ControlGroup title="Content">
-          <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-          <RangeControl label="Columns" max={4} min={2} onChange={(value) => setValue("columns", value)} value={numberSetting(settings.columns, 3)} />
-          <RangeControl label="Product count" max={12} min={1} onChange={(value) => setValue("productCount", value)} value={numberSetting(settings.productCount, 3)} />
+        <ControlGroup title={t("inspector.content")}>
+          <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+          <RangeControl label={t("inspector.columns")} max={4} min={2} onChange={(value) => setValue("columns", value)} value={numberSetting(settings.columns, 3)} />
+          <RangeControl label={t("inspector.productCount")} max={12} min={1} onChange={(value) => setValue("productCount", value)} value={numberSetting(settings.productCount, 3)} />
         </ControlGroup>
         <ProductCardControls settings={settings} setValue={setValue} />
       </div>
@@ -79,35 +81,35 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <ControlGroup title="Content">
-          <TextField label="Eyebrow" onChange={(value) => setValue("eyebrow", value)} value={stringSetting(settings.eyebrow)} />
-          <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-          <TextArea label="Description" onChange={(value) => setValue("description", value)} value={stringSetting(settings.description)} />
-          <ListEditor label="Status chips" onChange={(value) => setValue("statusChips", value)} placeholder="Status chip" values={arraySetting(settings.statusChips)} />
-          <RangeControl label="Product count" max={12} min={1} onChange={(value) => setValue("productCount", value)} value={numberSetting(settings.productCount, 6)} />
+        <ControlGroup title={t("inspector.content")}>
+          <TextField label={t("inspector.eyebrow")} onChange={(value) => setValue("eyebrow", value)} value={stringSetting(settings.eyebrow)} />
+          <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+          <TextArea label={t("inspector.description")} onChange={(value) => setValue("description", value)} value={stringSetting(settings.description)} />
+          <ListEditor label={t("inspector.statusChips")} onChange={(value) => setValue("statusChips", value)} placeholder={t("inspector.placeholder.statusChip")} values={arraySetting(settings.statusChips)} />
+          <RangeControl label={t("inspector.productCount")} max={12} min={1} onChange={(value) => setValue("productCount", value)} value={numberSetting(settings.productCount, 6)} />
         </ControlGroup>
         <ProductCardControls settings={settings} setValue={setValue} />
-        <ControlGroup title="Collection tools">
+        <ControlGroup title={t("inspector.collectionTools")}>
           <SelectControl
-            label="Filters"
+            label={t("inspector.filters")}
             onChange={(value) => setValue("showFilters", value === "show")}
             options={[
-              { label: "Show", value: "show" },
-              { label: "Hide", value: "hide" },
+              { label: t("inspector.variant.show"), value: "show" },
+              { label: t("inspector.variant.hide"), value: "hide" },
             ]}
             value={settings.showFilters === false ? "hide" : "show"}
           />
           <SelectControl
-            label="Sort"
+            label={t("inspector.sort")}
             onChange={(value) => setValue("showSort", value === "show")}
             options={[
-              { label: "Show", value: "show" },
-              { label: "Hide", value: "hide" },
+              { label: t("inspector.variant.show"), value: "show" },
+              { label: t("inspector.variant.hide"), value: "hide" },
             ]}
             value={settings.showSort === false ? "hide" : "show"}
           />
-          <ListEditor label="Filters" onChange={(value) => setValue("filters", value)} placeholder="Filter" values={arraySetting(settings.filters)} />
-          <TextField label="Sort label" onChange={(value) => setValue("sortLabel", value)} value={stringSetting(settings.sortLabel)} />
+          <ListEditor label={t("inspector.filters")} onChange={(value) => setValue("filters", value)} placeholder={t("inspector.filters")} values={arraySetting(settings.filters)} />
+          <TextField label={t("inspector.sortLabel")} onChange={(value) => setValue("sortLabel", value)} value={stringSetting(settings.sortLabel)} />
         </ControlGroup>
       </div>
     );
@@ -117,38 +119,38 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <ControlGroup title="Media">
+        <ControlGroup title={t("inspector.media")}>
           <SelectControl
-            label="Media layout"
+            label={t("inspector.mediaLayout")}
             onChange={(value) => setValue("mediaLayout", value)}
             options={[
-              { label: "Gallery", value: "gallery" },
-              { label: "Stacked", value: "stacked" },
-              { label: "Minimal", value: "minimal" },
+              { label: t("inspector.variant.gallery"), value: "gallery" },
+              { label: t("inspector.variant.stacked"), value: "stacked" },
+              { label: t("inspector.variant.minimal"), value: "minimal" },
             ]}
             value={styleSetting(settings.mediaLayout, "gallery")}
           />
           <SelectControl
-            label="Media emphasis"
+            label={t("inspector.mediaEmphasis")}
             onChange={(value) => setValue("mediaEmphasis", value)}
             options={[
-              { label: "Balanced", value: "balanced" },
-              { label: "Media first", value: "media" },
-              { label: "Info first", value: "info" },
+              { label: t("inspector.variant.balanced"), value: "balanced" },
+              { label: t("inspector.variant.mediaFirst"), value: "media" },
+              { label: t("inspector.variant.infoFirst"), value: "info" },
             ]}
             value={styleSetting(settings.mediaEmphasis, "balanced")}
           />
         </ControlGroup>
-        <ControlGroup title="Content">
-          <TextField label="Badge" onChange={(value) => setValue("badge", value)} value={stringSetting(settings.badge)} />
-          <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-          <TextArea label="Subtitle" onChange={(value) => setValue("subtitle", value)} value={stringSetting(settings.subtitle)} />
-          <ListEditor label="Social proof" onChange={(value) => setValue("socialProof", value)} placeholder="Proof point" values={arraySetting(settings.socialProof)} />
+        <ControlGroup title={t("inspector.content")}>
+          <TextField label={t("inspector.badge")} onChange={(value) => setValue("badge", value)} value={stringSetting(settings.badge)} />
+          <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+          <TextArea label={t("inspector.subtitle")} onChange={(value) => setValue("subtitle", value)} value={stringSetting(settings.subtitle)} />
+          <ListEditor label={t("inspector.socialProof")} onChange={(value) => setValue("socialProof", value)} placeholder={t("inspector.placeholder.point")} values={arraySetting(settings.socialProof)} />
         </ControlGroup>
-        <ControlGroup title="Commerce">
-          <ListEditor label="Variants" onChange={(value) => setValue("variants", value)} placeholder="Variant" values={arraySetting(settings.variants)} />
-          <ListEditor label="Details" onChange={(value) => setValue("details", value)} placeholder="Detail" values={arraySetting(settings.details)} />
-          <ListEditor label="Trust items" onChange={(value) => setValue("trustItems", value)} placeholder="Trust item" values={arraySetting(settings.trustItems)} />
+        <ControlGroup title={t("inspector.commerce")}>
+          <ListEditor label={t("inspector.variants")} onChange={(value) => setValue("variants", value)} placeholder={t("inspector.placeholder.variant")} values={arraySetting(settings.variants)} />
+          <ListEditor label={t("inspector.details")} onChange={(value) => setValue("details", value)} placeholder={t("inspector.details")} values={arraySetting(settings.details)} />
+          <ListEditor label={t("inspector.trustItems")} onChange={(value) => setValue("trustItems", value)} placeholder={t("inspector.placeholder.trustItem")} values={arraySetting(settings.trustItems)} />
         </ControlGroup>
       </div>
     );
@@ -158,11 +160,11 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <ControlGroup title="Cart content">
-          <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-          <TextField label="Note" onChange={(value) => setValue("note", value)} value={stringSetting(settings.note)} />
-          <TextArea label="Incentive" onChange={(value) => setValue("incentive", value)} value={stringSetting(settings.incentive)} />
-          <ListEditor label="Perks" onChange={(value) => setValue("perks", value)} placeholder="Perk" values={arraySetting(settings.perks)} />
+        <ControlGroup title={t("inspector.cartContent")}>
+          <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+          <TextField label={t("inspector.note")} onChange={(value) => setValue("note", value)} value={stringSetting(settings.note)} />
+          <TextArea label={t("inspector.incentive")} onChange={(value) => setValue("incentive", value)} value={stringSetting(settings.incentive)} />
+          <ListEditor label={t("inspector.perks")} onChange={(value) => setValue("perks", value)} placeholder={t("inspector.perk")} values={arraySetting(settings.perks)} />
         </ControlGroup>
       </div>
     );
@@ -172,12 +174,12 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <ControlGroup title="Checkout content">
-          <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-          <TextArea label="Subtitle" onChange={(value) => setValue("subtitle", value)} value={stringSetting(settings.subtitle)} />
-          <ListEditor label="Payment methods" onChange={(value) => setValue("paymentMethods", value)} placeholder="Payment method" values={arraySetting(settings.paymentMethods)} />
-          <ListEditor label="Steps" onChange={(value) => setValue("steps", value)} placeholder="Step" values={arraySetting(settings.steps)} />
-          <TextArea label="Reassurance" onChange={(value) => setValue("reassurance", value)} value={stringSetting(settings.reassurance)} />
+        <ControlGroup title={t("inspector.checkoutContent")}>
+          <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+          <TextArea label={t("inspector.subtitle")} onChange={(value) => setValue("subtitle", value)} value={stringSetting(settings.subtitle)} />
+          <ListEditor label={t("inspector.paymentMethods")} onChange={(value) => setValue("paymentMethods", value)} placeholder={t("inspector.paymentMethod")} values={arraySetting(settings.paymentMethods)} />
+          <ListEditor label={t("inspector.steps")} onChange={(value) => setValue("steps", value)} placeholder={t("inspector.placeholder.step")} values={arraySetting(settings.steps)} />
+          <TextArea label={t("inspector.reassurance")} onChange={(value) => setValue("reassurance", value)} value={stringSetting(settings.reassurance)} />
         </ControlGroup>
       </div>
     );
@@ -187,8 +189,8 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-        <ListEditor label="Points" onChange={(value) => setValue("points", value)} placeholder="Point" values={arraySetting(settings.points)} />
+        <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+        <ListEditor label={t("inspector.points")} onChange={(value) => setValue("points", value)} placeholder={t("inspector.placeholder.point")} values={arraySetting(settings.points)} />
       </div>
     );
   }
@@ -197,8 +199,8 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-        <ListEditor label="Tiles" onChange={(value) => setValue("tiles", value)} placeholder="Promo tile" values={arraySetting(settings.tiles)} />
+        <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+        <ListEditor label={t("inspector.tiles")} onChange={(value) => setValue("tiles", value)} placeholder={t("inspector.placeholder.promoTile")} values={arraySetting(settings.tiles)} />
       </div>
     );
   }
@@ -207,8 +209,8 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-        <ListEditor label="Reviews" onChange={(value) => setValue("reviews", value)} placeholder="Customer quote" values={arraySetting(settings.reviews)} />
+        <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+        <ListEditor label={t("inspector.reviews")} onChange={(value) => setValue("reviews", value)} placeholder={t("inspector.customerQuote")} values={arraySetting(settings.reviews)} />
       </div>
     );
   }
@@ -217,7 +219,7 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <ListEditor label="Trust items" onChange={(value) => setValue("items", value)} placeholder="Trust item" values={arraySetting(settings.items)} />
+        <ListEditor label={t("inspector.trustItems")} onChange={(value) => setValue("items", value)} placeholder={t("inspector.placeholder.trustItem")} values={arraySetting(settings.items)} />
       </div>
     );
   }
@@ -226,8 +228,8 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-        <ListEditor label="Questions" onChange={(value) => setValue("questions", value)} placeholder="Question" values={arraySetting(settings.questions)} />
+        <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+        <ListEditor label={t("inspector.questions")} onChange={(value) => setValue("questions", value)} placeholder={t("inspector.placeholder.question")} values={arraySetting(settings.questions)} />
       </div>
     );
   }
@@ -236,15 +238,15 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
-        <TextField label="Title" onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-        <TextField label="Button" onChange={(value) => setValue("cta", value)} value={stringSetting(settings.cta)} />
+        <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
+        <TextField label={t("inspector.button")} onChange={(value) => setValue("cta", value)} value={stringSetting(settings.cta)} />
       </div>
     );
   }
 
   return (
     <div className="mt-4">
-      <ListEditor label="Columns" onChange={(value) => setValue("columns", value)} placeholder="Footer column" values={arraySetting(settings.columns)} />
+      <ListEditor label={t("inspector.columns")} onChange={(value) => setValue("columns", value)} placeholder={t("inspector.columns")} values={arraySetting(settings.columns)} />
     </div>
   );
 }
@@ -256,77 +258,79 @@ function SectionStyleControls({
   settings: TemplateSection["settings"];
   setValue: (key: string, value: unknown) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3">
-      <p className="mb-3 text-xs font-semibold uppercase text-[#475569]">Layout</p>
+      <p className="mb-3 text-xs font-semibold uppercase text-[#475569]">{t("inspector.layout")}</p>
       <div className="space-y-3">
         <SelectControl
-          label="Spacing"
+          label={t("inspector.spacing")}
           onChange={(value) => setValue("spacing", value)}
           options={[
-            { label: "Compact", value: "compact" },
-            { label: "Balanced", value: "balanced" },
-            { label: "Spacious", value: "spacious" },
+            { label: t("inspector.variant.compact"), value: "compact" },
+            { label: t("inspector.variant.balanced"), value: "balanced" },
+            { label: t("inspector.variant.spacious"), value: "spacious" },
           ]}
           value={styleSetting(settings.spacing, "balanced")}
         />
         <SelectControl
-          label="Background"
+          label={t("inspector.background")}
           onChange={(value) => setValue("background", value)}
           options={[
-            { label: "Default", value: "default" },
-            { label: "Canvas", value: "canvas" },
-            { label: "Surface", value: "surface" },
-            { label: "Primary", value: "primary" },
-            { label: "Dark", value: "dark" },
+            { label: t("inspector.variant.default"), value: "default" },
+            { label: t("inspector.variant.canvas"), value: "canvas" },
+            { label: t("inspector.variant.surface"), value: "surface" },
+            { label: t("inspector.variant.primary"), value: "primary" },
+            { label: t("inspector.variant.dark"), value: "dark" },
           ]}
           value={styleSetting(settings.background, "default")}
         />
         <details className="border-[#e2e8f0] border-t pt-3">
-          <summary className="cursor-pointer list-none text-xs font-semibold text-[#475569]">Advanced layout</summary>
+          <summary className="cursor-pointer list-none text-xs font-semibold text-[#475569]">{t("inspector.advancedLayout")}</summary>
           <div className="mt-3 space-y-3">
             <SelectControl
-              label="Density"
+              label={t("inspector.density")}
               onChange={(value) => setValue("layoutDensity", value)}
               options={[
-                { label: "Compact", value: "compact" },
-                { label: "Comfortable", value: "comfortable" },
-                { label: "Spacious", value: "spacious" },
+                { label: t("inspector.variant.compact"), value: "compact" },
+                { label: t("inspector.variant.comfortable"), value: "comfortable" },
+                { label: t("inspector.variant.spacious"), value: "spacious" },
               ]}
               value={styleSetting(settings.layoutDensity, "comfortable")}
             />
             <SelectControl
-              label="Alignment"
+              label={t("inspector.alignment")}
               onChange={(value) => setValue("alignment", value)}
               options={[
-                { label: "Left", value: "left" },
-                { label: "Center", value: "center" },
+                { label: t("inspector.variant.left"), value: "left" },
+                { label: t("inspector.variant.center"), value: "center" },
               ]}
               value={styleSetting(settings.alignment, "left")}
             />
             <SelectControl
-              label="Button style"
+              label={t("inspector.buttonStyle")}
               onChange={(value) => setValue("buttonStyle", value)}
               options={[
-                { label: "Solid", value: "solid" },
-                { label: "Dark", value: "dark" },
-                { label: "Outline", value: "outline" },
+                { label: t("inspector.variant.solid"), value: "solid" },
+                { label: t("inspector.variant.dark"), value: "dark" },
+                { label: t("inspector.variant.outline"), value: "outline" },
               ]}
               value={styleSetting(settings.buttonStyle, "solid")}
             />
             <div className="grid grid-cols-3 gap-2">
               <VisibilityControl
-                label="Desktop"
+                label={t("inspector.desktop")}
                 onChange={(value) => setValue("visibleOnDesktop", value)}
                 value={settings.visibleOnDesktop !== false}
               />
               <VisibilityControl
-                label="Tablet"
+                label={t("inspector.tablet")}
                 onChange={(value) => setValue("visibleOnTablet", value)}
                 value={settings.visibleOnTablet !== false}
               />
               <VisibilityControl
-                label="Mobile"
+                label={t("inspector.mobile")}
                 onChange={(value) => setValue("visibleOnMobile", value)}
                 value={settings.visibleOnMobile !== false}
               />
@@ -369,26 +373,28 @@ function ProductCardControls({
   settings: TemplateSection["settings"];
   setValue: (key: string, value: unknown) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="rounded-md border border-[#e2e8f0] bg-white p-3 shadow-sm">
-      <p className="mb-3 text-xs font-semibold uppercase text-[#475569]">Product cards</p>
+      <p className="mb-3 text-xs font-semibold uppercase text-[#475569]">{t("inspector.productCards")}</p>
       <div className="space-y-3">
         <SelectControl
-          label="Card style"
+          label={t("inspector.cardStyle")}
           onChange={(value) => setValue("productCardStyle", value)}
           options={[
-            { label: "Elevated", value: "elevated" },
-            { label: "Minimal", value: "minimal" },
-            { label: "Editorial", value: "editorial" },
+            { label: t("inspector.variant.elevated"), value: "elevated" },
+            { label: t("inspector.variant.minimal"), value: "minimal" },
+            { label: t("inspector.variant.editorial"), value: "editorial" },
           ]}
           value={styleSetting(settings.productCardStyle, "elevated")}
         />
         <SelectControl
-          label="Quick add"
+          label={t("inspector.quickAdd")}
           onChange={(value) => setValue("showQuickAdd", value === "show")}
           options={[
-            { label: "Show", value: "show" },
-            { label: "Hide", value: "hide" },
+            { label: t("inspector.variant.show"), value: "show" },
+            { label: t("inspector.variant.hide"), value: "hide" },
           ]}
           value={settings.showQuickAdd === false ? "hide" : "show"}
         />

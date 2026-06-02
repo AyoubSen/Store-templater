@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ContextualHelp } from "@/components/contextual-help";
 import { StorefrontPreview } from "@/components/storefront-preview";
 import type { PreviewCartItem } from "@/components/storefront-preview";
+import { useI18n } from "@/lib/i18n";
 import { sectionRegistry } from "@/lib/templater/registry";
 import type { StoreTemplate, TemplatePage, TemplateSection } from "@/lib/templater/schema";
 
@@ -70,17 +72,18 @@ export function PreviewCanvas({
   undoTemplateChange: () => void;
   zoom: number;
 }) {
+  const { t } = useI18n();
   const [isSharePanelOpen, setIsSharePanelOpen] = useState(false);
   const [isMorePanelOpen, setIsMorePanelOpen] = useState(false);
 
   return (
-    <section className="flex min-h-0 flex-col bg-[#eef0f3]">
+    <section className="flex min-h-0 flex-col bg-[#eef0f3]" data-tour="builder-preview">
       <header className="flex h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-[#d8dde5] border-b bg-white px-4">
         <div>
           <p className="text-sm font-semibold">{selectedPage?.name ?? "Page"}</p>
-          <p className="text-xs text-[#64748b]">Live storefront preview</p>
+          <p className="text-xs text-[#64748b]">{t("builder.previewSubtitle")}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             aria-disabled={!canUndo}
             className={`rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] ${
@@ -93,7 +96,7 @@ export function PreviewCanvas({
             }}
             type="button"
           >
-            Undo
+            {t("builder.undo")}
           </button>
           <button
             aria-disabled={!canRedo}
@@ -107,9 +110,9 @@ export function PreviewCanvas({
             }}
             type="button"
           >
-            Redo
+            {t("builder.redo")}
           </button>
-          <div className="flex rounded-md border border-[#d8dde5] bg-[#f8fafc] p-0.5">
+          <div className="flex rounded-md border border-[#d8dde5] bg-[#f8fafc] p-0.5" data-tour="builder-devices">
             {(["desktop", "tablet", "mobile"] as const).map((option) => (
               <button
                 className={`rounded px-3 py-1.5 text-xs font-medium capitalize ${
@@ -119,7 +122,7 @@ export function PreviewCanvas({
                 onClick={() => setDevice(option)}
                 type="button"
               >
-                {option}
+                {deviceShortLabel(option, t)}
               </button>
             ))}
           </div>
@@ -128,9 +131,9 @@ export function PreviewCanvas({
             href={`/preview/${template.id}?page=${encodeURIComponent(selectedPage?.slug ?? selectedPage?.id ?? "")}`}
             target="_blank"
           >
-            Preview
+            {t("builder.preview")}
           </Link>
-          <div className="relative">
+          <div className="relative" data-tour="builder-publish">
             <button
               className={`rounded-md border px-3 py-2 text-xs font-semibold ${
                 shareEnabled
@@ -140,7 +143,7 @@ export function PreviewCanvas({
               onClick={() => setIsSharePanelOpen((current) => !current)}
               type="button"
             >
-              {shareEnabled ? "Published" : "Publish"}
+              {shareEnabled ? t("builder.published") : t("builder.publish")}
             </button>
             {isSharePanelOpen ? (
               <SharePanel
@@ -160,7 +163,7 @@ export function PreviewCanvas({
               onClick={() => setIsMorePanelOpen((current) => !current)}
               type="button"
             >
-              More
+            {t("common.more")}
             </button>
             {isMorePanelOpen ? (
               <MorePanel
@@ -212,10 +215,13 @@ export function PreviewCanvas({
                 {zoom}%
               </button>
             </div>
-            <span>{selectedSection ? sectionRegistry[selectedSection.type].label : "No section selected"}</span>
+            <span>{selectedSection ? sectionRegistry[selectedSection.type].label : t("builder.noSection")}</span>
           </div>
-          <div className="mb-3 rounded-md border border-[#d8dde5] bg-white/90 px-3 py-2 text-xs text-[#475569] shadow-sm">
-            <span className="font-semibold text-[#111827]">Preview mode:</span> click product cards to open the product page, use Add/Quick add to fill the cart, then test cart and checkout.
+          <div className="mb-3 flex items-start gap-2 rounded-md border border-[#d8dde5] bg-white/90 px-3 py-2 text-xs text-[#475569] shadow-sm">
+            <div className="min-w-0 flex-1 break-words leading-5">
+              <span className="font-semibold text-[#111827]">{t("previewHint.label")}</span> {t("previewHint.text")}
+            </div>
+            <ContextualHelp body={t("builder.previewHelp.body")} title={t("builder.previewHelp.title")} />
           </div>
           <StorePreview
             device={device}
@@ -253,19 +259,21 @@ function SharePanel({
   shareUpdatedAt?: string | null;
   toggleShareLink: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-80 rounded-lg border border-[#d8dde5] bg-white p-4 text-left shadow-2xl shadow-slate-950/20">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-[#111827]">Public sharing</p>
-          <p className="mt-1 text-xs leading-5 text-[#64748b]">Only pages marked as published are visible on the public link.</p>
+          <p className="text-sm font-semibold text-[#111827]">{t("share.publicSharing")}</p>
+          <p className="mt-1 text-xs leading-5 text-[#64748b]">{t("share.publicSharingBody")}</p>
         </div>
         <span
           className={`rounded-md border px-2 py-1 text-xs font-semibold ${
             shareEnabled ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]" : "border-[#e2e8f0] bg-[#f8fafc] text-[#64748b]"
           }`}
         >
-          {shareEnabled ? "Published" : "Private"}
+          {shareEnabled ? t("builder.published") : t("common.private")}
         </span>
       </div>
 
@@ -278,14 +286,14 @@ function SharePanel({
               onClick={copyShareLink}
               type="button"
             >
-              Copy link
+              {t("share.copyLink")}
             </button>
             <Link
               className="rounded-md bg-[#111827] px-3 py-2 text-center text-xs font-medium text-white hover:bg-[#1f2937]"
               href={shareLink}
               target="_blank"
             >
-              Open preview
+              {t("share.openPreview")}
             </Link>
           </div>
         </div>
@@ -293,8 +301,8 @@ function SharePanel({
 
       <div className="mt-4 space-y-1.5 text-xs text-[#64748b]">
         <p>{shareStatus}</p>
-        <p>Last saved: {formatShareDate(shareUpdatedAt)}</p>
-        <p>Last published: {formatShareDate(sharedAt)}</p>
+        <p>{t("share.lastSaved")} {formatShareDate(shareUpdatedAt, t("common.notYet"))}</p>
+        <p>{t("share.lastPublished")} {formatShareDate(sharedAt, t("common.notYet"))}</p>
       </div>
 
       <button
@@ -304,7 +312,7 @@ function SharePanel({
         onClick={toggleShareLink}
         type="button"
       >
-        {shareEnabled ? "Unpublish" : "Publish share link"}
+        {shareEnabled ? t("share.unpublish") : t("share.publishLink")}
       </button>
     </div>
   );
@@ -358,9 +366,9 @@ function MorePanel({
   );
 }
 
-function formatShareDate(value?: string | null) {
+function formatShareDate(value: string | null | undefined, fallback = "Not yet") {
   if (!value) {
-    return "Not yet";
+    return fallback;
   }
 
   return value.replace("T", " ").slice(0, 16);
@@ -371,6 +379,16 @@ function deviceLabel(device: Device) {
     desktop: "Desktop 1440px",
     tablet: "Tablet 768px",
     mobile: "Mobile 390px",
+  };
+
+  return labels[device];
+}
+
+function deviceShortLabel(device: Device, t: (key: "builder.device.desktop" | "builder.device.tablet" | "builder.device.mobile") => string) {
+  const labels: Record<Device, ReturnType<typeof t>> = {
+    desktop: t("builder.device.desktop"),
+    tablet: t("builder.device.tablet"),
+    mobile: t("builder.device.mobile"),
   };
 
   return labels[device];
