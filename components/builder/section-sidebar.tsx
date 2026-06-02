@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { AuthControls } from "@/components/auth-controls";
 import { ContextualHelp } from "@/components/contextual-help";
+import { TemplateCreationFlow } from "@/components/template-creation-flow";
 import { useI18n } from "@/lib/i18n";
 import { pageTypeLabels, pageTypes } from "@/lib/templater/page-defaults";
 import { sectionRegistry } from "@/lib/templater/registry";
 import type { PageType, SectionType, StoreTemplate, TemplatePage, TemplateSection } from "@/lib/templater/schema";
 import { syncStatusClassName, syncStatusLabel, type TemplateSyncState } from "@/lib/templater/sync-status";
-import { starterTemplates } from "@/lib/templater/starter-templates";
+import type { TemplateCreationOptions } from "@/lib/templater/starter-templates";
 
 export function SectionSidebar({
   addSection,
@@ -39,7 +40,7 @@ export function SectionSidebar({
   addSection: (type: SectionType) => void;
   activeTemplateId: string;
   addPage: (type: PageType) => void;
-  createTemplate: (starterId: string) => void;
+  createTemplate: (options: TemplateCreationOptions) => void;
   deletePage: (pageId: string) => void;
   deleteTemplate: (templateId: string) => void;
   duplicateTemplate: () => void;
@@ -100,7 +101,7 @@ export function SectionSidebar({
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
           <button
-            className="inline-flex h-9 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2.5 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2.5 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
             onClick={onStartTour}
             type="button"
           >
@@ -116,16 +117,16 @@ export function SectionSidebar({
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{template.name}</p>
-            <p className="text-xs capitalize text-[#64748b]">{template.category} template</p>
+            <p className="truncate text-xs capitalize text-[#64748b]">{template.category} template</p>
           </div>
-          <span className={`rounded-md border px-2 py-1 text-[11px] font-medium ${syncStatusClassName(saveState)}`} title={saveStatusMessage}>
+          <span className={`shrink-0 rounded-md border px-2 py-1 text-[11px] font-medium ${syncStatusClassName(saveState)}`} title={saveStatusMessage}>
             {syncStatusLabel(saveState, t)}
           </span>
         </div>
         {saveStatusMessage ? <p className="mt-2 text-[11px] leading-4 text-[#64748b]">{saveStatusMessage}</p> : null}
         <div className="mt-3 space-y-2">
           <Link
-            className="inline-flex h-9 w-full items-center justify-center rounded-md border border-[#d8dde5] bg-white px-3 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+            className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-[#d8dde5] bg-white px-3 py-1.5 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
             href="/templates"
             title={t("builder.manageTemplates")}
           >
@@ -143,24 +144,24 @@ export function SectionSidebar({
             ))}
           </select>
           <button
-            className="flex w-full items-center justify-between rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+            className="flex min-h-9 w-full items-center justify-between gap-3 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
             onClick={() => setIsTemplateActionsOpen((current) => !current)}
             type="button"
           >
-            <span>{t("builder.templateActions")}</span>
-            <span className="text-[#94a3b8]">{isTemplateActionsOpen ? t("builder.hide") : t("builder.show")}</span>
+            <span className="min-w-0 truncate">{t("builder.templateActions")}</span>
+            <span className="shrink-0 text-[#94a3b8]">{isTemplateActionsOpen ? t("builder.hide") : t("builder.show")}</span>
           </button>
           {isTemplateActionsOpen ? (
             <div className="grid grid-cols-3 gap-1.5">
               <button
-                className="rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-1.5 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
                 onClick={() => setIsStarterPickerOpen(true)}
                 type="button"
               >
                 {t("builder.new")}
               </button>
               <button
-                className="rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-1.5 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
                 onClick={duplicateTemplate}
                 type="button"
               >
@@ -168,7 +169,7 @@ export function SectionSidebar({
               </button>
               <button
                 aria-disabled={templates.length <= 1}
-                className={`rounded-md border border-[#fecaca] bg-white px-2 py-1.5 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2] ${
+                className={`min-h-8 rounded-md border border-[#fecaca] bg-white px-1.5 py-1.5 text-[11px] font-medium leading-4 text-[#b91c1c] hover:bg-[#fef2f2] ${
                   templates.length <= 1 ? "cursor-not-allowed opacity-40" : ""
                 }`}
                 onClick={() => {
@@ -236,7 +237,7 @@ export function SectionSidebar({
 
               return (
                 <button
-                  className="rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                  className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
                   key={type}
                   onClick={() => addPage(type)}
                   type="button"
@@ -249,12 +250,12 @@ export function SectionSidebar({
           {selectedPage ? (
             <div className="mt-3">
               <button
-                className="flex w-full items-center justify-between rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-left text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                className="flex min-h-9 w-full items-center justify-between gap-3 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-left text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
                 onClick={() => setIsPageSettingsOpen((isOpen) => !isOpen)}
                 type="button"
               >
-                <span>Page settings</span>
-                <span className="text-[#94a3b8]">{isPageSettingsOpen ? t("builder.hide") : t("builder.show")}</span>
+                <span className="min-w-0 truncate">Page settings</span>
+                <span className="shrink-0 text-[#94a3b8]">{isPageSettingsOpen ? t("builder.hide") : t("builder.show")}</span>
               </button>
               {isPageSettingsOpen ? <PageSettings page={selectedPage} updatePageField={updatePageField} /> : null}
             </div>
@@ -330,10 +331,10 @@ export function SectionSidebar({
         </section> : null}
       </div>
       {isStarterPickerOpen ? (
-        <StarterPickerModal
+        <TemplateCreationFlow
           onClose={() => setIsStarterPickerOpen(false)}
-          onSelect={(starterId) => {
-            createTemplate(starterId);
+          onCreate={(options) => {
+            createTemplate(options);
             setIsStarterPickerOpen(false);
           }}
         />
@@ -449,57 +450,6 @@ function normalizeSlug(value: string) {
   }
 
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-}
-
-function StarterPickerModal({
-  onClose,
-  onSelect,
-}: {
-  onClose: () => void;
-  onSelect: (starterId: string) => void;
-}) {
-  const { t } = useI18n();
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4">
-      <div className="w-full max-w-2xl rounded-lg border border-[#d8dde5] bg-white shadow-2xl shadow-slate-950/20">
-        <div className="flex items-center justify-between gap-4 border-[#e2e8f0] border-b px-4 py-3">
-          <div>
-            <h2 className="text-sm font-semibold text-[#111827]">{t("starter.choose")}</h2>
-            <p className="mt-1 text-xs text-[#64748b]">{t("starter.startCategory")}</p>
-          </div>
-          <button
-            className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
-            onClick={onClose}
-            type="button"
-          >
-            {t("common.close")}
-          </button>
-        </div>
-        <div className="grid gap-3 p-4 sm:grid-cols-2">
-          {starterTemplates.map((starter) => (
-            <button
-              className="rounded-md border border-[#d8dde5] bg-white p-3 text-left hover:border-[#2563eb] hover:bg-[#eff6ff]"
-              key={starter.id}
-              onClick={() => onSelect(starter.id)}
-              type="button"
-            >
-              <div className="mb-3 flex gap-1.5">
-                {Object.values(starter.colors)
-                  .slice(0, 5)
-                  .map((color) => (
-                    <span className="h-5 w-5 rounded-full border border-black/10" key={color} style={{ background: color }} />
-                  ))}
-              </div>
-              <p className="text-sm font-semibold text-[#111827]">{starter.name}</p>
-              <p className="mt-1 text-xs capitalize text-[#64748b]">{starter.category}</p>
-              <p className="mt-3 text-xs leading-5 text-[#475569]">{starter.description}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function SortableSectionRow({

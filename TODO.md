@@ -8,10 +8,11 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 
 ## Next
 
-- Continue simplifying first-use UX with clearer primary actions and fewer visible controls by default.
+- Continue simplifying first-use UX with clearer primary actions, better empty states, and fewer visible controls by default.
 - Continue reducing always-visible builder/dashboard controls through progressive disclosure.
 - Keep improving sidebar ergonomics with keyboard navigation and richer section row actions once needed.
 - Refine guided tours with better mobile positioning and optional per-step deep links as the app grows.
+- Refine guided template creation with better generated copy, more industry variants, and optional AI-assisted briefs later.
 - Expand French i18n coverage from key app chrome/help text to more dashboard, inspector, and settings labels.
 - Improve the public landing page with stronger examples once generated/storefront visuals settle.
 - Continue polishing storefront visuals so templates feel sellable, not just functional.
@@ -24,6 +25,7 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 - Add richer controls for responsive layout variants beyond visibility.
 - Improve account persistence polish with manual retry controls and last-synced timestamps.
 - Continue image upload polish with generated thumbnails, better crop presets, and upload observability.
+- Expand visual QA from screenshot smoke checks to optional reviewed baselines once the builder UI stabilizes.
 
 ## Soon
 
@@ -58,3 +60,4 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 - `/preview/[templateId]` remains private/local-context preview; public `/s/[shareId]` links load published account templates from Neon.
 - Saved template validation/migration exists and should grow with future schema versions.
 - App UI has a lightweight English/French dictionary, but user-authored template/storefront content is not auto-translated.
+- Visual QA skips Clerk-protected pages unless `tests/.auth/user.json` or `PLAYWRIGHT_STORAGE_STATE` is available, and skips public share screenshots unless `VISUAL_QA_SHARE_PATH` is provided.

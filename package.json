@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "qa:visual": "playwright test -c playwright.config.ts",
+    "qa:visual:install": "playwright install chromium",
+    "qa:visual:report": "playwright show-report",
     "verify:exports": "node scripts/verify-exports.cjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -28,6 +31,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -62,7 +62,7 @@ export function StorefrontPreview({
   }, [selectedSectionId]);
 
   return (
-    <div className="store-preview" style={previewStyle}>
+    <div className="store-preview overflow-hidden bg-[var(--store-canvas)] text-[var(--store-text)]" style={previewStyle}>
       {enabledSections.map((section) => (
         <div className={sectionVisibilityClass(section.settings)} data-store-section-id={section.id} key={section.id}>
           <PreviewSection
@@ -130,9 +130,9 @@ function PreviewSection({
     const cartPage = findPageByType(template, "cart");
 
     return (
-      <div className={`sticky top-0 z-[1] border-[var(--store-border)] border-b bg-[var(--store-surface)]/95 backdrop-blur ${selectedClass}`}>
-        <div className="mx-auto flex max-w-[var(--store-max-width)] items-center justify-between gap-5 px-5 py-4 md:px-8">
-          <div className="text-base font-black tracking-[0.16em] text-[var(--store-text)]">{String(settings.logo)}</div>
+      <div className={`sticky top-0 z-[5] border-[var(--store-border)] border-b bg-[var(--store-surface)]/95 backdrop-blur ${selectedClass}`}>
+        <div className="mx-auto flex max-w-[var(--store-max-width)] flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-8">
+          <div className="min-w-0 text-base font-black tracking-[0.16em] text-[var(--store-text)]">{String(settings.logo)}</div>
           <div className={`${isForcedMobile ? "hidden" : "hidden md:flex"} gap-6 text-sm font-medium text-[var(--store-muted)]`}>
             {navPages.map((page) => (
               <button
@@ -146,7 +146,7 @@ function PreviewSection({
             ))}
           </div>
           <button
-            className="rounded-full border border-[var(--store-border)] px-4 py-2 text-xs font-semibold text-[var(--store-text)]"
+            className="shrink-0 rounded-full border border-[var(--store-border)] bg-[var(--store-canvas)] px-4 py-2 text-xs font-semibold text-[var(--store-text)] transition hover:border-[var(--store-primary)]"
             onClick={() => {
               if (cartPage) {
                 onNavigatePage?.(cartPage.id);
@@ -156,6 +156,22 @@ function PreviewSection({
           >
             Cart {cartQuantity}
           </button>
+          {isForcedMobile ? (
+            <div className="flex basis-full gap-2 overflow-x-auto pt-1 text-xs font-bold text-[var(--store-muted)]">
+              {navPages.slice(0, 4).map((page) => (
+                <button
+                  className={`shrink-0 rounded-full border border-[var(--store-border)] bg-[var(--store-canvas)] px-3 py-1.5 ${
+                    currentPage?.id === page.id ? "text-[var(--store-text)]" : ""
+                  }`}
+                  key={page.id}
+                  onClick={() => onNavigatePage?.(page.id)}
+                  type="button"
+                >
+                  {page.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -169,7 +185,7 @@ function PreviewSection({
             isForcedMobile ? "" : `md:grid-cols-[0.92fr_1.08fr] md:items-center md:py-14 ${isForcedTablet ? "" : "xl:gap-12"}`
           }`}
         >
-          <div className={`min-w-0 ${alignmentClass}`}>
+          <div className={`min-w-0 self-center ${alignmentClass}`}>
             <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--store-primary)]">
               {String(settings.eyebrow)}
             </p>
@@ -189,7 +205,7 @@ function PreviewSection({
             >
               {String(settings.copy)}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className={`mt-8 flex flex-wrap gap-3 ${alignmentClass === "text-center" ? "justify-center" : ""}`}>
               <button className={primaryButtonClass} onClick={() => navigateToPageType(template, "collection", onNavigatePage)} type="button">
                 {String(settings.cta)}
               </button>
@@ -201,16 +217,16 @@ function PreviewSection({
                 View lookbook
               </button>
             </div>
-            <div className={`mt-8 grid max-w-md gap-4 border-[var(--store-border)] border-t pt-5 text-sm ${isForcedMobile ? "" : "sm:grid-cols-3"}`}>
-              <div>
+            <div className={`mt-8 grid max-w-md gap-3 border-[var(--store-border)] border-t pt-5 text-sm ${isForcedMobile ? "grid-cols-3" : "sm:grid-cols-3"} ${alignmentClass === "text-center" ? "mx-auto" : ""}`}>
+              <div className="rounded-[var(--store-radius)] bg-[var(--store-surface)]/70 px-3 py-2">
                 <p className="font-black text-[var(--store-text)]">4.9/5</p>
                 <p className="mt-1 text-xs text-[var(--store-muted)]">Customer rating</p>
               </div>
-              <div>
+              <div className="rounded-[var(--store-radius)] bg-[var(--store-surface)]/70 px-3 py-2">
                 <p className="font-black text-[var(--store-text)]">2-day</p>
                 <p className="mt-1 text-xs text-[var(--store-muted)]">Fast dispatch</p>
               </div>
-              <div>
+              <div className="rounded-[var(--store-radius)] bg-[var(--store-surface)]/70 px-3 py-2">
                 <p className="font-black text-[var(--store-text)]">30-day</p>
                 <p className="mt-1 text-xs text-[var(--store-muted)]">Easy returns</p>
               </div>
@@ -218,7 +234,7 @@ function PreviewSection({
           </div>
           <div
             className={`relative min-h-[300px] min-w-0 overflow-hidden rounded-[calc(var(--store-radius)+10px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-4 shadow-2xl shadow-black/10 ${
-              isForcedMobile ? "" : `md:min-h-[420px] ${isForcedTablet ? "" : "xl:min-h-[500px]"}`
+              isForcedMobile ? "aspect-[4/5]" : `md:min-h-[420px] ${isForcedTablet ? "" : "xl:min-h-[500px]"}`
             }`}
           >
             <div className="absolute inset-4 rounded-[var(--store-radius)] bg-[linear-gradient(135deg,var(--store-secondary),var(--store-accent))]" />
@@ -276,7 +292,7 @@ function PreviewSection({
               Shop all
             </button>
           </div>
-          <div className={`mt-8 grid ${densityGapClass} ${isForcedMobile ? "" : productGridColumns(columns, isForcedTablet)}`}>
+          <div className={`mt-8 grid ${densityGapClass} ${isForcedMobile ? "grid-cols-1" : productGridColumns(columns, isForcedTablet)}`}>
             {products.map((product) => (
               <ProductCard
                 density={density}
@@ -553,8 +569,9 @@ function PreviewSection({
                   <p className={`col-start-2 font-black text-[var(--store-text)] ${isForcedMobile ? "" : "sm:col-start-auto"}`}>${product.price * item.quantity}</p>
                 </div>
               )) : (
-                <div className="rounded-[calc(var(--store-radius)+6px)] border border-dashed border-[var(--store-border)] bg-[var(--store-canvas)] p-5">
-                  <p className="text-sm font-black text-[var(--store-text)]">The preview cart is empty.</p>
+                <div className="rounded-[calc(var(--store-radius)+6px)] border border-dashed border-[var(--store-border)] bg-[var(--store-canvas)] p-6 text-center">
+                  <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--store-primary)]">Cart preview</p>
+                  <p className="mt-2 text-lg font-black text-[var(--store-text)]">The preview cart is empty.</p>
                   <p className="mt-2 text-sm leading-6 text-[var(--store-muted)]">
                     Use product cards, Quick add, or the product page Add to cart button to test this cart state.
                   </p>
@@ -690,8 +707,9 @@ function PreviewSection({
                 <p className={`col-start-2 text-sm font-black text-[var(--store-text)] ${isForcedMobile ? "" : "sm:col-start-auto"}`}>${product.price * item.quantity}</p>
               </div>
             )) : (
-              <div className="mt-5 rounded-[calc(var(--store-radius)+6px)] border border-dashed border-[var(--store-border)] bg-[var(--store-surface)] p-4">
-                <p className="text-sm font-black text-[var(--store-text)]">Checkout needs cart items.</p>
+              <div className="mt-5 rounded-[calc(var(--store-radius)+6px)] border border-dashed border-[var(--store-border)] bg-[var(--store-surface)] p-5 text-center">
+                <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--store-primary)]">Checkout preview</p>
+                <p className="mt-2 text-base font-black text-[var(--store-text)]">Checkout needs cart items.</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--store-muted)]">
                   Go to a collection or product page, add an item, then return here to preview checkout.
                 </p>
@@ -862,9 +880,9 @@ function PreviewSection({
               {String(settings.title)}
             </h2>
           </div>
-          <div className="flex gap-2 rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-2">
-            <div className="flex-1 px-3 py-2 text-sm text-[var(--store-muted)]">Email address</div>
-            <button className="rounded-[calc(var(--store-radius)-2px)] bg-[var(--store-text)] px-4 py-2.5 text-sm font-bold text-white">
+          <div className={`flex gap-2 rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-2 ${isForcedMobile ? "flex-col" : ""}`}>
+            <div className="min-h-11 flex-1 rounded-[calc(var(--store-radius)-2px)] bg-[var(--store-surface)] px-3 py-2.5 text-sm text-[var(--store-muted)]">Email address</div>
+            <button className="min-h-11 rounded-[calc(var(--store-radius)-2px)] bg-[var(--store-text)] px-4 py-2.5 text-sm font-bold text-white">
               {String(settings.cta)}
             </button>
           </div>
@@ -1019,7 +1037,7 @@ function sectionAlignment(settings: TemplateSection["settings"]) {
 
 function buttonClass(settings: TemplateSection["settings"]) {
   const style = styleValue(settings.buttonStyle, "solid");
-  const base = "rounded-[var(--store-radius)] px-5 py-3 text-sm font-black shadow-lg shadow-black/10";
+  const base = "inline-flex min-h-11 items-center justify-center rounded-[var(--store-radius)] px-5 py-3 text-center text-sm font-black shadow-lg shadow-black/10 transition hover:-translate-y-0.5";
 
   if (style === "outline") {
     return `${base} border border-[var(--store-border)] bg-[var(--store-surface)] text-[var(--store-text)]`;
@@ -1159,7 +1177,7 @@ function ProductCard({
 
   return (
     <article
-      className={`group overflow-hidden rounded-[calc(var(--store-radius)+6px)] bg-[var(--store-surface)] transition hover:-translate-y-1 ${
+      className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-[calc(var(--store-radius)+6px)] bg-[var(--store-surface)] transition hover:-translate-y-1 ${
         isMinimal
           ? "border border-transparent"
           : isEditorial
@@ -1169,7 +1187,7 @@ function ProductCard({
     >
       <div
         aria-label={`Open ${product.name}`}
-        className={`relative overflow-hidden bg-cover bg-center ${isEditorial ? "aspect-[3/4]" : "aspect-[4/5]"}`}
+        className={`relative shrink-0 overflow-hidden bg-cover bg-center transition duration-300 group-hover:scale-[1.01] ${isEditorial ? "aspect-[3/4]" : "aspect-[4/5]"}`}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
@@ -1188,13 +1206,13 @@ function ProductCard({
         tabIndex={0}
       >
         {product.badge ? (
-          <span className="absolute left-3 top-3 rounded-full bg-white/92 px-3 py-1 text-xs font-black text-[var(--store-text)] shadow">
+          <span className="absolute left-3 top-3 max-w-[calc(100%-24px)] truncate rounded-full bg-white/92 px-3 py-1 text-xs font-black text-[var(--store-text)] shadow">
             {product.badge}
           </span>
         ) : null}
         {showQuickAdd ? (
           <button
-            className={`absolute bottom-3 left-3 right-3 rounded-full bg-white/94 px-4 py-2 text-xs font-black text-[var(--store-text)] opacity-100 shadow-lg transition ${
+            className={`absolute bottom-3 left-3 right-3 min-h-9 rounded-full bg-white/94 px-4 py-2 text-xs font-black text-[var(--store-text)] opacity-100 shadow-lg transition ${
               isForcedMobile || isForcedTablet ? "" : "lg:translate-y-2 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100"
             }`}
             onClick={(event) => {
@@ -1207,13 +1225,13 @@ function ProductCard({
           </button>
         ) : null}
       </div>
-      <div className={isMinimal ? "px-1 py-3" : productCardPadding(density)}>
+      <div className={`${isMinimal ? "px-1 py-3" : productCardPadding(density)} flex flex-1 flex-col`}>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--store-muted)]">{product.category}</p>
+          <p className="min-w-0 truncate text-xs font-semibold uppercase tracking-[0.14em] text-[var(--store-muted)]">{product.category}</p>
           <p className="text-xs font-black text-[var(--store-primary)]">4.8</p>
         </div>
         <button className="mt-2 block text-left" onClick={() => onOpenProduct?.(product.id)} type="button">
-          <h3 className={`${isEditorial ? "text-lg" : "text-base"} font-black text-[var(--store-text)]`}>{product.name}</h3>
+          <h3 className={`${isEditorial ? "text-lg" : "text-base"} line-clamp-2 font-black leading-tight text-[var(--store-text)]`}>{product.name}</h3>
         </button>
         <div className="mt-3 flex items-center gap-1.5">
           {[product.imagePositionX ?? 42, product.imagePositionY ?? 58, product.imageZoom ?? 100].map((value, index) => (
@@ -1233,11 +1251,11 @@ function ProductCard({
           ))}
           <span className="ml-1 text-xs font-semibold text-[var(--store-muted)]">In stock</span>
         </div>
-        <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="mt-auto flex items-center justify-between gap-3 pt-4">
           <p className="font-black text-[var(--store-text)]">${product.price}</p>
           {showQuickAdd ? (
             <button
-              className="rounded-full bg-[var(--store-text)] px-3 py-2 text-xs font-bold text-white"
+              className="min-h-9 rounded-full bg-[var(--store-text)] px-3 py-2 text-xs font-bold text-white"
               onClick={() => onAddToCart?.(product.id)}
               type="button"
             >

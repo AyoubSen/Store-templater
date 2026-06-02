@@ -7,19 +7,19 @@ export function AuthControls() {
   const { t } = useI18n();
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex items-center justify-end gap-2">
       <LanguageSwitcher />
       <Show when="signed-out">
         <SignInButton mode="modal">
           <button
-            className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+            className="min-h-8 whitespace-nowrap rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
             type="button"
           >
             {t("auth.signIn")}
           </button>
         </SignInButton>
         <SignUpButton mode="modal">
-          <button className="min-h-8 rounded-md bg-[#111827] px-2.5 py-1.5 text-xs font-medium text-white hover:bg-[#1f2937]" type="button">
+          <button className="min-h-8 whitespace-nowrap rounded-md bg-[#111827] px-2.5 py-1.5 text-xs font-medium text-white hover:bg-[#1f2937]" type="button">
             {t("auth.signUp")}
           </button>
         </SignUpButton>

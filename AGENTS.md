@@ -37,10 +37,13 @@ Current scripts:
 - `pnpm dev`
 - `pnpm build`
 - `pnpm lint`
+- `pnpm qa:visual`
+- `pnpm qa:visual:install`
 - `pnpm verify:exports`
 
 Run `pnpm build` after meaningful code changes.
 Run `pnpm verify:exports` after export-generator changes.
+Run `pnpm qa:visual` for screenshot smoke checks after visual/layout-heavy changes; see `docs/VISUAL_QA.md`.
 
 Use `pnpm` only. Do not use `npm` commands in this project.
 
@@ -93,6 +96,7 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 
 - Local multi-template library stored in localStorage
 - Starter template picker for new templates, with category-specific copy, products, categories, and section defaults
+- Guided template creation flow for choosing store type, visual direction, starting page structure, and optional template name
 - Explicit `/preview/[templateId]` preview URLs with selected-page query support
 - Public `/s/[shareId]` and `/s/[shareId]/[page-slug]` share links backed by account templates in Neon
 - Compact publish/share panels in the builder and `/templates` dashboard with private/published state, copy/open/unpublish actions, and saved/published timestamps
@@ -137,6 +141,7 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Contextual help popovers for important workflows such as pages, adding sections, preview behavior, and dashboard filters
 - Progressive disclosure in the builder: page settings, section library, and advanced section layout controls stay collapsed until needed
 - Left sidebar separates Pages, Sections, and Add-section workflows so users are not shown every navigation/editing control at once
+- Lightweight Playwright visual QA captures public, authenticated, share-preview, mobile, desktop, and French states when the required auth/share setup is present
 
 ## Builder UX Direction
 
@@ -194,6 +199,7 @@ Expected section types over time:
 - Existing notable dependencies:
   - `@dnd-kit` for section reorder
   - `@radix-ui/react-popover` for floating color picker UI
+  - `@playwright/test` for lightweight screenshot smoke checks
   - `zod` for template validation and migration
 - Database dependencies:
   - `drizzle-orm` for typed Postgres access

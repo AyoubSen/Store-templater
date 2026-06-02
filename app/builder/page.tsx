@@ -21,7 +21,7 @@ import { createPage } from "@/lib/templater/page-defaults";
 import { sampleTemplate } from "@/lib/templater/sample-template";
 import { createSection } from "@/lib/templater/section-defaults";
 import type { PageType, Product, SectionType, StoreTemplate, TemplatePage, ThemeTokens } from "@/lib/templater/schema";
-import { createTemplateFromStarter } from "@/lib/templater/starter-templates";
+import { createTemplateFromStarter, type TemplateCreationOptions } from "@/lib/templater/starter-templates";
 import { syncStatusDescription, type TemplateSyncState } from "@/lib/templater/sync-status";
 import {
   clearStoredTemplate,
@@ -694,8 +694,8 @@ export default function Home() {
     setTemplates([sampleTemplate]);
   }
 
-  function createTemplate(starterId: string) {
-    const nextTemplate = createTemplateFromStarter(starterId);
+  function createTemplate(options: TemplateCreationOptions) {
+    const nextTemplate = createTemplateFromStarter(options);
     const nextTemplates = [...templates, nextTemplate];
 
     writeStoredTemplates(nextTemplates);
@@ -995,10 +995,10 @@ function LocalImportPrompt({
     <div className="fixed right-4 bottom-4 z-50 w-[min(360px,calc(100vw-32px))] rounded-lg border border-[#d8dde5] bg-white p-4 shadow-2xl shadow-slate-950/20">
       <p className="text-sm font-semibold text-[#111827]">{t("importLocal.accountSync")}</p>
       <p className="mt-1 text-sm leading-6 text-[#64748b]">{copy[status]}</p>
-      <div className="mt-3 flex justify-end gap-2">
+      <div className="mt-3 flex flex-wrap justify-end gap-2">
         {status === "available" || status === "failed" ? (
           <button
-            className="rounded-md bg-[#111827] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1f2937]"
+            className="min-h-9 rounded-md bg-[#111827] px-3 py-2 text-xs font-semibold leading-4 text-white hover:bg-[#1f2937]"
             onClick={onImport}
             type="button"
           >
@@ -1006,7 +1006,7 @@ function LocalImportPrompt({
           </button>
         ) : null}
         <button
-          className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+          className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
           disabled={status === "importing"}
           onClick={onDismiss}
           type="button"

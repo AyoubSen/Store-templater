@@ -271,7 +271,7 @@ export function ListEditor({
       <div className="mb-1.5 flex items-center justify-between">
         <p className="text-xs font-medium text-[#475569]">{label}</p>
         <button
-          className="rounded-md border border-[#d8dde5] bg-white px-2 py-1 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+          className="min-h-7 rounded-md border border-[#d8dde5] bg-white px-2 py-1 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
           onClick={() => onChange([...values, ""])}
           type="button"
         >
@@ -280,7 +280,7 @@ export function ListEditor({
       </div>
       <div className="space-y-2">
         {values.map((item, index) => (
-          <div className="flex gap-2" key={`${label}-${index}`}>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2" key={`${label}-${index}`}>
             <input
               className="min-w-0 flex-1 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-sm text-[#111827] shadow-sm"
               onChange={(event) => updateItem(index, event.target.value)}
@@ -288,7 +288,7 @@ export function ListEditor({
               value={item}
             />
             <button
-              className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#64748b] hover:bg-[#f1f5f9]"
+              className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#64748b] hover:bg-[#f1f5f9]"
               onClick={() => removeItem(index)}
               type="button"
             >
@@ -318,9 +318,9 @@ export function RangeControl({
 }) {
   return (
     <label className="block text-xs font-medium text-[#475569]">
-      <span className="flex justify-between">
+      <span className="flex items-start justify-between gap-3">
         {label}
-        <span className="font-mono text-[#64748b]">{value}</span>
+        <span className="shrink-0 font-mono text-[#64748b]">{value}</span>
       </span>
       <input
         className="mt-2 w-full accent-[#2563eb]"

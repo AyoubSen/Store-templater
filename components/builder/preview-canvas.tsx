@@ -78,15 +78,15 @@ export function PreviewCanvas({
 
   return (
     <section className="flex min-h-0 flex-col bg-[#eef0f3]" data-tour="builder-preview">
-      <header className="flex h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-[#d8dde5] border-b bg-white px-4">
-        <div>
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-[#d8dde5] border-b bg-white px-4 py-2">
+        <div className="min-w-0">
           <p className="text-sm font-semibold">{selectedPage?.name ?? "Page"}</p>
           <p className="text-xs text-[#64748b]">{t("builder.previewSubtitle")}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             aria-disabled={!canUndo}
-            className={`rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] ${
+            className={`min-h-9 whitespace-nowrap rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] ${
               canUndo ? "" : "cursor-not-allowed opacity-40"
             }`}
             onClick={() => {
@@ -100,7 +100,7 @@ export function PreviewCanvas({
           </button>
           <button
             aria-disabled={!canRedo}
-            className={`rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] ${
+            className={`min-h-9 whitespace-nowrap rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] ${
               canRedo ? "" : "cursor-not-allowed opacity-40"
             }`}
             onClick={() => {
@@ -115,7 +115,7 @@ export function PreviewCanvas({
           <div className="flex rounded-md border border-[#d8dde5] bg-[#f8fafc] p-0.5" data-tour="builder-devices">
             {(["desktop", "tablet", "mobile"] as const).map((option) => (
               <button
-                className={`rounded px-3 py-1.5 text-xs font-medium capitalize ${
+                className={`min-h-8 rounded px-2.5 py-1.5 text-xs font-medium capitalize ${
                   device === option ? "bg-white text-[#111827] shadow-sm" : "text-[#64748b] hover:text-[#111827]"
                 }`}
                 key={option}
@@ -127,7 +127,7 @@ export function PreviewCanvas({
             ))}
           </div>
           <Link
-            className="rounded-md bg-[#111827] px-3 py-2 text-xs font-medium text-white hover:bg-[#1f2937]"
+            className="inline-flex min-h-9 items-center whitespace-nowrap rounded-md bg-[#111827] px-3 py-2 text-xs font-medium text-white hover:bg-[#1f2937]"
             href={`/preview/${template.id}?page=${encodeURIComponent(selectedPage?.slug ?? selectedPage?.id ?? "")}`}
             target="_blank"
           >
@@ -135,7 +135,7 @@ export function PreviewCanvas({
           </Link>
           <div className="relative" data-tour="builder-publish">
             <button
-              className={`rounded-md border px-3 py-2 text-xs font-semibold ${
+              className={`min-h-9 whitespace-nowrap rounded-md border px-3 py-2 text-xs font-semibold ${
                 shareEnabled
                   ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d] hover:bg-[#dcfce7]"
                   : "border-[#d8dde5] bg-white text-[#334155] hover:bg-[#f1f5f9]"
@@ -159,11 +159,11 @@ export function PreviewCanvas({
           </div>
           <div className="relative">
             <button
-              className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+              className="min-h-9 whitespace-nowrap rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
               onClick={() => setIsMorePanelOpen((current) => !current)}
               type="button"
             >
-            {t("common.more")}
+              {t("common.more")}
             </button>
             {isMorePanelOpen ? (
               <MorePanel
@@ -181,10 +181,10 @@ export function PreviewCanvas({
         <div className="w-full max-w-7xl">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-xs text-[#64748b]">
             <span>{deviceLabel(device)}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
               <span>Zoom</span>
               <button
-                className="rounded-md border border-[#d8dde5] bg-white px-2 py-1 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                className="min-h-7 rounded-md border border-[#d8dde5] bg-white px-2 py-1 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
                 onClick={() => setZoom((current) => Math.max(60, current - 10))}
                 type="button"
               >
@@ -201,21 +201,21 @@ export function PreviewCanvas({
                 value={zoom}
               />
               <button
-                className="rounded-md border border-[#d8dde5] bg-white px-2 py-1 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                className="min-h-7 rounded-md border border-[#d8dde5] bg-white px-2 py-1 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
                 onClick={() => setZoom((current) => Math.min(120, current + 10))}
                 type="button"
               >
                 +
               </button>
               <button
-                className="rounded-md border border-[#d8dde5] bg-white px-2 py-1 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                className="min-h-7 rounded-md border border-[#d8dde5] bg-white px-2 py-1 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
                 onClick={() => setZoom(90)}
                 type="button"
               >
                 {zoom}%
               </button>
             </div>
-            <span>{selectedSection ? sectionRegistry[selectedSection.type].label : t("builder.noSection")}</span>
+            <span className="min-w-0 truncate">{selectedSection ? sectionRegistry[selectedSection.type].label : t("builder.noSection")}</span>
           </div>
           <div className="mb-3 flex items-start gap-2 rounded-md border border-[#d8dde5] bg-white/90 px-3 py-2 text-xs text-[#475569] shadow-sm">
             <div className="min-w-0 flex-1 break-words leading-5">
@@ -262,7 +262,7 @@ function SharePanel({
   const { t } = useI18n();
 
   return (
-    <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-80 rounded-lg border border-[#d8dde5] bg-white p-4 text-left shadow-2xl shadow-slate-950/20">
+    <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-[min(320px,calc(100vw-32px))] rounded-lg border border-[#d8dde5] bg-white p-4 text-left shadow-2xl shadow-slate-950/20">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-[#111827]">{t("share.publicSharing")}</p>
@@ -282,14 +282,14 @@ function SharePanel({
           <p className="truncate text-xs font-medium text-[#334155]">{shareLink}</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
-              className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+              className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
               onClick={copyShareLink}
               type="button"
             >
               {t("share.copyLink")}
             </button>
             <Link
-              className="rounded-md bg-[#111827] px-3 py-2 text-center text-xs font-medium text-white hover:bg-[#1f2937]"
+              className="inline-flex min-h-9 items-center justify-center rounded-md bg-[#111827] px-3 py-2 text-center text-xs font-medium leading-4 text-white hover:bg-[#1f2937]"
               href={shareLink}
               target="_blank"
             >
@@ -306,7 +306,7 @@ function SharePanel({
       </div>
 
       <button
-        className={`mt-4 w-full rounded-md px-3 py-2 text-xs font-semibold ${
+        className={`mt-4 min-h-9 w-full rounded-md px-3 py-2 text-xs font-semibold leading-4 ${
           shareEnabled ? "border border-[#fecaca] bg-white text-[#b91c1c] hover:bg-[#fef2f2]" : "bg-[#111827] text-white hover:bg-[#1f2937]"
         }`}
         onClick={toggleShareLink}
@@ -330,7 +330,7 @@ function MorePanel({
   resetTemplate: () => void;
 }) {
   return (
-    <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-72 rounded-lg border border-[#d8dde5] bg-white p-3 text-left shadow-2xl shadow-slate-950/20">
+    <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-[min(288px,calc(100vw-32px))] rounded-lg border border-[#d8dde5] bg-white p-3 text-left shadow-2xl shadow-slate-950/20">
       <p className="px-1 text-xs font-semibold uppercase text-[#64748b]">Secondary actions</p>
       <div className="mt-2 grid gap-2">
         <button

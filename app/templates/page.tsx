@@ -14,10 +14,11 @@ import { deleteTemplateImagesAction } from "@/app/actions/images";
 import { AuthControls } from "@/components/auth-controls";
 import { ContextualHelp } from "@/components/contextual-help";
 import { GuidedTour, type GuidedTourStep } from "@/components/guided-tour";
+import { TemplateCreationFlow } from "@/components/template-creation-flow";
 import { useI18n } from "@/lib/i18n";
 import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport, parseTemplateExport } from "@/lib/templater/export";
 import type { StoreTemplate } from "@/lib/templater/schema";
-import { createTemplateFromStarter, starterTemplates } from "@/lib/templater/starter-templates";
+import { createTemplateFromStarter, type TemplateCreationOptions } from "@/lib/templater/starter-templates";
 import {
   readActiveTemplateId,
   readStoredTemplates,
@@ -157,8 +158,8 @@ export default function TemplatesPage() {
     setActiveTemplateId(templateId);
   }
 
-  async function createTemplate(starterId: string) {
-    const template = createTemplateFromStarter(starterId);
+  async function createTemplate(options: TemplateCreationOptions) {
+    const template = createTemplateFromStarter(options);
     const nextTemplates = [...templates, template];
 
     writeStoredTemplates(nextTemplates);
@@ -335,20 +336,20 @@ export default function TemplatesPage() {
   return (
     <main className="min-h-screen bg-[#eef0f3] text-[#111827]">
       <header className="border-[#d8dde5] border-b bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4">
-          <div>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-4">
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase text-[#64748b]">Store Templater</p>
             <h1 className="mt-1 text-2xl font-semibold">{t("dashboard.templates")}</h1>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <button
-              className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
+              className="min-h-10 whitespace-nowrap rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
               onClick={() => setIsTourOpen(true)}
               type="button"
             >
               {t("builder.tour")}
             </button>
-            <label className="cursor-pointer rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]">
+            <label className="inline-flex min-h-10 cursor-pointer items-center whitespace-nowrap rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]">
               {t("dashboard.importExport")}
               <input
                 accept="application/json,.json"
@@ -365,13 +366,13 @@ export default function TemplatesPage() {
             </label>
             <button
               data-tour="dashboard-new-template"
-              className="rounded-md bg-[#111827] px-3 py-2 text-sm font-medium text-white hover:bg-[#1f2937]"
+              className="min-h-10 whitespace-nowrap rounded-md bg-[#111827] px-3 py-2 text-sm font-medium text-white hover:bg-[#1f2937]"
               onClick={() => setIsStarterPickerOpen(true)}
               type="button"
             >
               {t("dashboard.newTemplate")}
             </button>
-            <Link className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]" href="/builder">
+            <Link className="inline-flex min-h-10 items-center whitespace-nowrap rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]" href="/builder">
               {t("dashboard.openBuilder")}
             </Link>
             <AuthControls />
@@ -413,10 +414,10 @@ export default function TemplatesPage() {
               type="search"
               value={searchQuery}
             />
-            <div className="flex rounded-md border border-[#d8dde5] bg-[#f8fafc] p-0.5">
+            <div className="flex min-w-0 rounded-md border border-[#d8dde5] bg-[#f8fafc] p-0.5">
               {(["all", "published", "private"] as const).map((filter) => (
                 <button
-                  className={`rounded px-3 py-2 text-xs font-semibold capitalize ${
+                  className={`min-h-9 rounded px-2.5 py-2 text-xs font-semibold capitalize leading-4 ${
                     publishFilter === filter ? "bg-white text-[#111827] shadow-sm" : "text-[#64748b] hover:text-[#111827]"
                   }`}
                   key={filter}
@@ -451,7 +452,7 @@ export default function TemplatesPage() {
                   <p className="mt-1 text-sm capitalize text-[#64748b]">{template.category}</p>
                 </div>
                 {activeTemplateId === template.id ? (
-                  <span className="rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-2 py-1 text-xs font-medium text-[#15803d]">
+                  <span className="shrink-0 rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-2 py-1 text-xs font-medium text-[#15803d]">
                     Active
                   </span>
                 ) : null}
@@ -482,14 +483,14 @@ export default function TemplatesPage() {
 
               <div className="mt-5 grid grid-cols-2 gap-2">
                 <Link
-                  className="rounded-md bg-[#111827] px-3 py-2 text-center text-sm font-medium text-white hover:bg-[#1f2937]"
+                  className="inline-flex min-h-10 items-center justify-center rounded-md bg-[#111827] px-3 py-2 text-center text-sm font-medium text-white hover:bg-[#1f2937]"
                   href="/builder"
                   onClick={() => openTemplate(template.id)}
                 >
                   {t("common.edit")}
                 </Link>
                 <Link
-                  className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-center text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                  className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-center text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
                   href={`/preview/${template.id}`}
                   target="_blank"
                 >
@@ -522,7 +523,14 @@ export default function TemplatesPage() {
         ) : null}
       </section>
 
-      {isStarterPickerOpen ? <StarterPickerModal onClose={() => setIsStarterPickerOpen(false)} onSelect={createTemplate} /> : null}
+      {isStarterPickerOpen ? (
+        <TemplateCreationFlow
+          onClose={() => setIsStarterPickerOpen(false)}
+          onCreate={(options) => {
+            void createTemplate(options);
+          }}
+        />
+      ) : null}
       <GuidedTour isOpen={isTourOpen} onClose={closeTour} steps={dashboardTourSteps} />
     </main>
   );
@@ -574,7 +582,7 @@ function TemplateSharePanel({
       </div>
 
       <button
-        className="mt-3 w-full rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-semibold text-[#334155] hover:bg-[#f1f5f9]"
+        className="mt-3 min-h-9 w-full rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-semibold leading-4 text-[#334155] hover:bg-[#f1f5f9]"
         onClick={() => setIsOpen((current) => !current)}
         type="button"
       >
@@ -592,7 +600,7 @@ function TemplateSharePanel({
 
           <div className="mt-3 grid grid-cols-3 gap-2">
             <button
-              className={`rounded-md px-2 py-2 text-xs font-semibold ${
+              className={`min-h-9 rounded-md px-2 py-2 text-xs font-semibold leading-4 ${
                 shareState.shareEnabled
                   ? "border border-[#fecaca] bg-white text-[#b91c1c] hover:bg-[#fef2f2]"
                   : "bg-[#111827] text-white hover:bg-[#1f2937]"
@@ -604,7 +612,7 @@ function TemplateSharePanel({
             </button>
             <button
               aria-disabled={!shareState.shareEnabled || !shareState.shareId}
-              className={`rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] ${
+              className={`min-h-9 rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] ${
                 !shareState.shareEnabled || !shareState.shareId ? "cursor-not-allowed opacity-40" : ""
               }`}
               onClick={() => {
@@ -618,14 +626,14 @@ function TemplateSharePanel({
             </button>
             {shareState.shareEnabled && shareLink ? (
               <Link
-                className="rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-center text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                className="inline-flex min-h-9 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
                 href={shareLink}
                 target="_blank"
               >
                 {t("common.open")}
               </Link>
             ) : (
-              <span className="rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-center text-xs font-medium text-[#94a3b8]">
+              <span className="inline-flex min-h-9 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-center text-xs font-medium leading-4 text-[#94a3b8]">
                 {t("common.open")}
               </span>
             )}
@@ -662,7 +670,7 @@ function TemplateActions({
     <div className="col-span-2 grid gap-2 rounded-md border border-[#e2e8f0] bg-white p-2">
       <div className="grid grid-cols-2 gap-2">
         <button
-          className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
+          className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium leading-5 text-[#334155] hover:bg-[#f1f5f9]"
           onClick={duplicateTemplate}
           type="button"
         >
@@ -670,7 +678,7 @@ function TemplateActions({
         </button>
         <button
           aria-disabled={!canDelete}
-          className={`rounded-md border border-[#fecaca] bg-white px-3 py-2 text-sm font-medium text-[#b91c1c] hover:bg-[#fef2f2] ${
+          className={`min-h-10 rounded-md border border-[#fecaca] bg-white px-3 py-2 text-sm font-medium leading-5 text-[#b91c1c] hover:bg-[#fef2f2] ${
             canDelete ? "" : "cursor-not-allowed opacity-40"
           }`}
           onClick={() => {
@@ -685,21 +693,21 @@ function TemplateActions({
       </div>
       <div className="grid grid-cols-3 gap-2">
         <button
-          className="rounded-md border border-[#d8dde5] bg-[#f8fafc] px-2 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+          className="min-h-9 rounded-md border border-[#d8dde5] bg-[#f8fafc] px-2 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
           onClick={exportTemplate}
           type="button"
         >
           {t("common.package")}
         </button>
         <button
-          className="rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-2 py-2 text-xs font-medium text-[#1d4ed8] hover:bg-[#dbeafe]"
+          className="min-h-9 rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-2 py-2 text-xs font-medium leading-4 text-[#1d4ed8] hover:bg-[#dbeafe]"
           onClick={exportStatic}
           type="button"
         >
           {t("common.site")}
         </button>
         <button
-          className="rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-2 py-2 text-xs font-medium text-[#15803d] hover:bg-[#dcfce7]"
+          className="min-h-9 rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-2 py-2 text-xs font-medium leading-4 text-[#15803d] hover:bg-[#dcfce7]"
           onClick={exportNext}
           type="button"
         >
@@ -723,55 +731,6 @@ function Metric({ label, value }: { label: string; value: number | string }) {
     <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2">
       <p className="font-semibold text-[#111827]">{value}</p>
       <p className="mt-0.5 text-[#64748b]">{label}</p>
-    </div>
-  );
-}
-
-function StarterPickerModal({
-  onClose,
-  onSelect,
-}: {
-  onClose: () => void;
-  onSelect: (starterId: string) => void;
-}) {
-  const { t } = useI18n();
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4">
-      <div className="w-full max-w-2xl rounded-lg border border-[#d8dde5] bg-white shadow-2xl shadow-slate-950/20">
-        <div className="flex items-center justify-between gap-4 border-[#e2e8f0] border-b px-4 py-3">
-          <div>
-            <h2 className="text-sm font-semibold text-[#111827]">{t("starter.choose")}</h2>
-            <p className="mt-1 text-xs text-[#64748b]">{t("starter.createLocal")}</p>
-          </div>
-          <button className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]" onClick={onClose} type="button">
-            {t("common.close")}
-          </button>
-        </div>
-        <div className="grid gap-3 p-4 sm:grid-cols-2">
-          {starterTemplates.map((starter) => (
-            <button className="rounded-md border border-[#d8dde5] bg-white p-3 text-left hover:border-[#2563eb] hover:bg-[#eff6ff]" key={starter.id} onClick={() => onSelect(starter.id)} type="button">
-              <div className="mb-3 flex gap-1.5">
-                {Object.values(starter.colors)
-                  .slice(0, 5)
-                  .map((color) => (
-                    <span className="h-5 w-5 rounded-full border border-black/10" key={color} style={{ background: color }} />
-                  ))}
-              </div>
-              <p className="text-sm font-semibold text-[#111827]">{starter.name}</p>
-              <p className="mt-1 text-xs capitalize text-[#64748b]">{starter.category}</p>
-              <p className="mt-3 text-xs leading-5 text-[#475569]">{starter.description}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {starter.products.slice(0, 3).map((product) => (
-                  <span className="rounded-full border border-[#e2e8f0] bg-[#f8fafc] px-2 py-1 text-[11px] font-medium text-[#475569]" key={product.id}>
-                    {product.category}
-                  </span>
-                ))}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

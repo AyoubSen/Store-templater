@@ -72,7 +72,7 @@ export function InspectorPanel({
         <div className="flex rounded-md bg-[#f1f5f9] p-0.5">
           {(["store", "theme", "products", "section"] as const).map((tab) => (
             <button
-              className={`min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] font-medium capitalize leading-5 ${
+              className={`min-h-7 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] font-medium capitalize leading-4 ${
                 inspectorTab === tab ? "bg-white text-[#111827] shadow-sm" : "text-[#64748b] hover:text-[#111827]"
               }`}
               key={tab}
@@ -190,7 +190,7 @@ export function InspectorPanel({
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.products")}</h3>
               <button
-                className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
                 onClick={addProduct}
                 type="button"
               >
@@ -248,14 +248,14 @@ export function InspectorPanel({
                       <GradientField label={t("inspector.image.placeholder")} onChange={(value) => updateProduct(product.id, "image", value)} value={product.image} />
                       <div className="mt-3 grid grid-cols-3 gap-2">
                         <button
-                          className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                          className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
                           onClick={() => setImageProductId(product.id)}
                           type="button"
                         >
                           {t("common.edit")}
                         </button>
                         <button
-                          className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                          className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
                           onClick={() => {
                             updateProduct(product.id, "imagePositionX", 50);
                             updateProduct(product.id, "imagePositionY", 50);
@@ -266,7 +266,7 @@ export function InspectorPanel({
                           {t("common.center")}
                         </button>
                         <button
-                          className="rounded-md border border-[#fecaca] bg-white px-2.5 py-2 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2]"
+                          className="min-h-9 rounded-md border border-[#fecaca] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#b91c1c] hover:bg-[#fef2f2]"
                           onClick={() => {
                             updateProduct(product.id, "image", "linear-gradient(135deg, #dbeafe, #f8fafc)");
                             updateProduct(product.id, "imagePositionX", 50);
@@ -286,14 +286,14 @@ export function InspectorPanel({
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <button
-                        className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                        className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
                         onClick={() => duplicateProduct(product.id)}
                         type="button"
                       >
                         {t("common.duplicate")}
                       </button>
                       <button
-                        className="rounded-md border border-[#fecaca] bg-white px-2.5 py-2 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="min-h-9 rounded-md border border-[#fecaca] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#b91c1c] hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-40"
                         disabled={template.products.length <= 1}
                         onClick={() => deleteProduct(product.id)}
                         type="button"
@@ -337,7 +337,7 @@ export function InspectorPanel({
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-medium text-[#475569]">{t("inspector.sectionActions")}</span>
                 <button
-                  className={`rounded-md px-2.5 py-1.5 text-xs font-medium ${
+                  className={`min-h-8 rounded-md px-2.5 py-1.5 text-xs font-medium leading-4 ${
                     selectedSection.enabled ? "bg-[#dcfce7] text-[#166534] hover:bg-[#bbf7d0]" : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
                   }`}
                   onClick={() => toggleSection(selectedSection.id)}
@@ -348,7 +348,7 @@ export function InspectorPanel({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
                   disabled={homeSections[0]?.id === selectedSection.id}
                   onClick={() => moveSection(selectedSection.id, "up")}
                   type="button"
@@ -356,7 +356,7 @@ export function InspectorPanel({
                   {t("common.moveUp")}
                 </button>
                 <button
-                  className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
                   disabled={homeSections.at(-1)?.id === selectedSection.id}
                   onClick={() => moveSection(selectedSection.id, "down")}
                   type="button"
@@ -364,14 +364,14 @@ export function InspectorPanel({
                   {t("common.moveDown")}
                 </button>
                 <button
-                  className="rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                  className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
                   onClick={() => duplicateSection(selectedSection.id)}
                   type="button"
                 >
                   {t("common.duplicate")}
                 </button>
                 <button
-                  className="rounded-md border border-[#fecaca] bg-white px-2.5 py-2 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="min-h-9 rounded-md border border-[#fecaca] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#b91c1c] hover:bg-[#fef2f2] disabled:cursor-not-allowed disabled:opacity-40"
                   disabled={homeSections.length <= 1}
                   onClick={() => deleteSection(selectedSection.id)}
                   type="button"
@@ -636,9 +636,9 @@ function ImageImportModal({
           ) : null}
           {error ? <p className="mt-3 text-xs font-medium text-[#b91c1c]">{error}</p> : null}
         </div>
-        <div className="flex justify-end gap-2 border-[#e2e8f0] border-t px-4 py-3">
+        <div className="grid grid-cols-2 gap-2 border-[#e2e8f0] border-t px-4 py-3 sm:grid-cols-[auto_auto_auto_1fr]">
           <button
-            className="mr-auto rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+            className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
             onClick={() => {
               setPosition({ x: 50, y: 50 });
               setZoom(100);
@@ -648,21 +648,21 @@ function ImageImportModal({
             {t("common.reset")}
           </button>
           <button
-            className="rounded-md border border-[#fecaca] bg-white px-3 py-2 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2]"
+            className="min-h-9 rounded-md border border-[#fecaca] bg-white px-3 py-2 text-xs font-medium leading-4 text-[#b91c1c] hover:bg-[#fef2f2]"
             onClick={onRemove}
             type="button"
           >
             {t("common.remove")}
           </button>
           <button
-            className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+            className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
             onClick={onClose}
             type="button"
           >
             {t("common.cancel")}
           </button>
           <button
-            className="rounded-md bg-[#111827] px-3 py-2 text-xs font-medium text-white hover:bg-[#1f2937]"
+            className="min-h-9 rounded-md bg-[#111827] px-3 py-2 text-xs font-medium leading-4 text-white hover:bg-[#1f2937] sm:justify-self-end"
             disabled={uploadState === "preparing" || uploadState === "uploading"}
             onClick={saveImage}
             type="button"
