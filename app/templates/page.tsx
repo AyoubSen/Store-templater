@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { deleteAccountTemplateAction, listAccountTemplatesAction, saveAccountTemplateAction } from "@/app/actions/templates";
+import { useEffect, useMemo, useState } from "react";
+import {
+  deleteAccountTemplateAction,
+  getTemplateShareStateAction,
+  listAccountTemplatesAction,
+  saveAccountTemplateAction,
+  setTemplateShareEnabledAction,
+  type TemplateShareState,
+} from "@/app/actions/templates";
+import { deleteTemplateImagesAction } from "@/app/actions/images";
 import { AuthControls } from "@/components/auth-controls";
 import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport, parseTemplateExport } from "@/lib/templater/export";
 import type { StoreTemplate } from "@/lib/templater/schema";
@@ -21,6 +29,42 @@ export default function TemplatesPage() {
   const [isStarterPickerOpen, setIsStarterPickerOpen] = useState(false);
   const [syncState, setSyncState] = useState<TemplateSyncState>("loading");
   const [syncMessage, setSyncMessage] = useState("Loading templates.");
+  const [shareStates, setShareStates] = useState<Record<string, TemplateShareState>>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [publishFilter, setPublishFilter] = useState<"all" | "published" | "private">("all");
+  const [sortMode, setSortMode] = useState<"recent" | "name" | "products">("recent");
+
+  const visibleTemplates = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+
+    return templates
+      .filter((template) => {
+        const shareState = shareStates[template.id] ?? emptyShareState();
+        const matchesPublishFilter =
+          publishFilter === "all" ||
+          (publishFilter === "published" && shareState.shareEnabled) ||
+          (publishFilter === "private" && !shareState.shareEnabled);
+        const matchesSearch =
+          !normalizedQuery ||
+          template.name.toLowerCase().includes(normalizedQuery) ||
+          template.category.toLowerCase().includes(normalizedQuery);
+
+        return matchesPublishFilter && matchesSearch;
+      })
+      .sort((leftTemplate, rightTemplate) => {
+        if (sortMode === "name") {
+          return leftTemplate.name.localeCompare(rightTemplate.name);
+        }
+
+        if (sortMode === "products") {
+          return rightTemplate.products.length - leftTemplate.products.length;
+        }
+
+        const leftUpdatedAt = shareStates[leftTemplate.id]?.updatedAt ?? "";
+        const rightUpdatedAt = shareStates[rightTemplate.id]?.updatedAt ?? "";
+        return rightUpdatedAt.localeCompare(leftUpdatedAt);
+      });
+  }, [publishFilter, searchQuery, shareStates, sortMode, templates]);
 
   useEffect(() => {
     window.setTimeout(() => {
@@ -61,6 +105,14 @@ export default function TemplatesPage() {
       setActiveTemplateId(nextActiveTemplateId);
       setSyncState("saved");
       setSyncMessage("Loaded templates from your account.");
+      Promise.all(
+        result.data.map(async (template) => {
+          const shareResult = await getTemplateShareStateAction(template.id);
+          return [template.id, shareResult.data ?? emptyShareState()] as const;
+        }),
+      ).then((entries) => {
+        setShareStates(Object.fromEntries(entries));
+      });
     });
   }, []);
 
@@ -106,11 +158,17 @@ export default function TemplatesPage() {
     const nextActiveTemplateId = activeTemplateId === templateId ? nextTemplates[0]?.id : activeTemplateId;
 
     writeStoredTemplates(nextTemplates);
+    void deleteTemplateImagesAction(templateId);
     if (nextActiveTemplateId) {
       writeActiveTemplateId(nextActiveTemplateId);
       setActiveTemplateId(nextActiveTemplateId);
     }
     setTemplates(nextTemplates);
+    setShareStates((current) => {
+      const nextShareStates = { ...current };
+      delete nextShareStates[templateId];
+      return nextShareStates;
+    });
     setSyncState("saving");
     setSyncMessage("Deleting from your account.");
     const result = await deleteAccountTemplateAction(templateId);
@@ -194,6 +252,43 @@ export default function TemplatesPage() {
 
     setSyncState("saved");
     setSyncMessage(successMessage);
+    setShareStates((current) => ({
+      ...current,
+      [template.id]: current[template.id] ?? emptyShareState(),
+    }));
+  }
+
+  async function toggleShare(templateId: string) {
+    const currentShareState = shareStates[templateId] ?? emptyShareState();
+
+    setSyncState("saving");
+    setSyncMessage(currentShareState.shareEnabled ? "Disabling public share link." : "Publishing public share link.");
+    const result = await setTemplateShareEnabledAction(templateId, !currentShareState.shareEnabled);
+
+    if (!result.isDatabaseConfigured) {
+      setSyncState("local-only");
+      setSyncMessage("Share links need account storage.");
+      return;
+    }
+
+    if (result.error) {
+      setSyncState("failed");
+      setSyncMessage(result.error);
+      return;
+    }
+
+    setShareStates((current) => ({
+      ...current,
+      [templateId]: result.data ?? emptyShareState(),
+    }));
+    setSyncState("saved");
+    setSyncMessage(result.data?.shareEnabled ? "Public share link is live." : "Public share link disabled.");
+  }
+
+  async function copyShare(shareId: string) {
+    await navigator.clipboard.writeText(`${window.location.origin}/s/${shareId}`);
+    setSyncState("saved");
+    setSyncMessage("Share link copied.");
   }
 
   return (
@@ -258,8 +353,46 @@ export default function TemplatesPage() {
           </div>
         </div>
 
+        <div className="mb-5 rounded-lg border border-[#d8dde5] bg-white p-3 shadow-sm">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center">
+            <input
+              className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 text-sm text-[#111827] outline-none placeholder:text-[#94a3b8] focus:border-[#2563eb]"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search templates by name or category"
+              type="search"
+              value={searchQuery}
+            />
+            <div className="flex rounded-md border border-[#d8dde5] bg-[#f8fafc] p-0.5">
+              {(["all", "published", "private"] as const).map((filter) => (
+                <button
+                  className={`rounded px-3 py-2 text-xs font-semibold capitalize ${
+                    publishFilter === filter ? "bg-white text-[#111827] shadow-sm" : "text-[#64748b] hover:text-[#111827]"
+                  }`}
+                  key={filter}
+                  onClick={() => setPublishFilter(filter)}
+                  type="button"
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+            <select
+              className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 text-sm font-medium text-[#334155] outline-none focus:border-[#2563eb]"
+              onChange={(event) => setSortMode(event.target.value as typeof sortMode)}
+              value={sortMode}
+            >
+              <option value="recent">Recently saved</option>
+              <option value="name">Name</option>
+              <option value="products">Most products</option>
+            </select>
+          </div>
+          <p className="mt-3 text-xs text-[#64748b]">
+            Showing {visibleTemplates.length} of {templates.length} templates.
+          </p>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {templates.map((template) => (
+          {visibleTemplates.map((template) => (
             <article className="rounded-lg border border-[#d8dde5] bg-white p-4 shadow-sm" key={template.id}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -311,53 +444,213 @@ export default function TemplatesPage() {
                 >
                   Preview
                 </Link>
-                <button
-                  className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
-                  onClick={() => duplicateTemplate(template)}
-                  type="button"
-                >
-                  Duplicate
-                </button>
-                <button
-                  className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
-                  onClick={() => exportTemplate(template)}
-                  type="button"
-                >
-                  Package
-                </button>
-                <button
-                  className="rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2 text-sm font-medium text-[#1d4ed8] hover:bg-[#dbeafe]"
-                  onClick={() => exportStatic(template)}
-                  type="button"
-                >
-                  Static site
-                </button>
-                <button
-                  className="rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-2 text-sm font-medium text-[#15803d] hover:bg-[#dcfce7]"
-                  onClick={() => exportNext(template)}
-                  type="button"
-                >
-                  Next app
-                </button>
-                <button
-                  aria-disabled={templates.length <= 1}
-                  className={`rounded-md border border-[#fecaca] bg-white px-3 py-2 text-sm font-medium text-[#b91c1c] hover:bg-[#fef2f2] ${
-                    templates.length <= 1 ? "cursor-not-allowed opacity-40" : ""
-                  }`}
-                  onClick={() => deleteTemplate(template.id)}
-                  type="button"
-                >
-                  Delete
-                </button>
+                <div className="col-span-2">
+                  <TemplateSharePanel
+                    copyShare={copyShare}
+                    shareState={shareStates[template.id] ?? emptyShareState()}
+                    toggleShare={() => toggleShare(template.id)}
+                  />
+                </div>
+                <TemplateActions
+                  canDelete={templates.length > 1}
+                  deleteTemplate={() => deleteTemplate(template.id)}
+                  duplicateTemplate={() => duplicateTemplate(template)}
+                  exportNext={() => exportNext(template)}
+                  exportStatic={() => exportStatic(template)}
+                  exportTemplate={() => exportTemplate(template)}
+                />
               </div>
             </article>
           ))}
         </div>
+        {visibleTemplates.length === 0 ? (
+          <div className="rounded-lg border border-[#d8dde5] bg-white p-8 text-center shadow-sm">
+            <h2 className="text-base font-semibold text-[#111827]">No templates found</h2>
+            <p className="mt-2 text-sm text-[#64748b]">Try a different search or publish filter.</p>
+          </div>
+        ) : null}
       </section>
 
       {isStarterPickerOpen ? <StarterPickerModal onClose={() => setIsStarterPickerOpen(false)} onSelect={createTemplate} /> : null}
     </main>
   );
+}
+
+function emptyShareState(): TemplateShareState {
+  return { shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null };
+}
+
+function TemplateSharePanel({
+  copyShare,
+  shareState,
+  toggleShare,
+}: {
+  copyShare: (shareId: string) => void;
+  shareState: TemplateShareState;
+  toggleShare: () => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const shareLink = shareState.shareId ? `/s/${shareState.shareId}` : "";
+
+  return (
+    <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-[#111827]">Public sharing</p>
+          <p className="mt-1 text-xs leading-5 text-[#64748b]">Published pages only.</p>
+        </div>
+        <span
+          className={`rounded-md border px-2 py-1 text-xs font-semibold ${
+            shareState.shareEnabled
+              ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]"
+              : "border-[#e2e8f0] bg-white text-[#64748b]"
+          }`}
+        >
+          {shareState.shareEnabled ? "Published" : "Private"}
+        </span>
+      </div>
+
+      <button
+        className="mt-3 w-full rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-semibold text-[#334155] hover:bg-[#f1f5f9]"
+        onClick={() => setIsOpen((current) => !current)}
+        type="button"
+      >
+        {isOpen ? "Hide publish controls" : shareState.shareEnabled ? "Manage public link" : "Publish options"}
+      </button>
+
+      {isOpen ? (
+        <>
+
+          {shareState.shareEnabled && shareLink ? (
+            <p className="mt-3 truncate rounded border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-medium text-[#334155]">
+              {shareLink}
+            </p>
+          ) : null}
+
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <button
+              className={`rounded-md px-2 py-2 text-xs font-semibold ${
+                shareState.shareEnabled
+                  ? "border border-[#fecaca] bg-white text-[#b91c1c] hover:bg-[#fef2f2]"
+                  : "bg-[#111827] text-white hover:bg-[#1f2937]"
+              }`}
+              onClick={toggleShare}
+              type="button"
+            >
+              {shareState.shareEnabled ? "Unpublish" : "Publish"}
+            </button>
+            <button
+              aria-disabled={!shareState.shareEnabled || !shareState.shareId}
+              className={`rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] ${
+                !shareState.shareEnabled || !shareState.shareId ? "cursor-not-allowed opacity-40" : ""
+              }`}
+              onClick={() => {
+                if (shareState.shareId) {
+                  copyShare(shareState.shareId);
+                }
+              }}
+              type="button"
+            >
+              Copy
+            </button>
+            {shareState.shareEnabled && shareLink ? (
+              <Link
+                className="rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-center text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                href={shareLink}
+                target="_blank"
+              >
+                Open
+              </Link>
+            ) : (
+              <span className="rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-center text-xs font-medium text-[#94a3b8]">
+                Open
+              </span>
+            )}
+          </div>
+
+          <div className="mt-3 grid gap-1 text-[11px] text-[#64748b]">
+            <p>Last saved: {formatShareDate(shareState.updatedAt)}</p>
+            <p>Last published: {formatShareDate(shareState.sharedAt)}</p>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function TemplateActions({
+  canDelete,
+  deleteTemplate,
+  duplicateTemplate,
+  exportNext,
+  exportStatic,
+  exportTemplate,
+}: {
+  canDelete: boolean;
+  deleteTemplate: () => void;
+  duplicateTemplate: () => void;
+  exportNext: () => void;
+  exportStatic: () => void;
+  exportTemplate: () => void;
+}) {
+  return (
+    <div className="col-span-2 grid gap-2 rounded-md border border-[#e2e8f0] bg-white p-2">
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
+          onClick={duplicateTemplate}
+          type="button"
+        >
+          Duplicate
+        </button>
+        <button
+          aria-disabled={!canDelete}
+          className={`rounded-md border border-[#fecaca] bg-white px-3 py-2 text-sm font-medium text-[#b91c1c] hover:bg-[#fef2f2] ${
+            canDelete ? "" : "cursor-not-allowed opacity-40"
+          }`}
+          onClick={() => {
+            if (canDelete) {
+              deleteTemplate();
+            }
+          }}
+          type="button"
+        >
+          Delete
+        </button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          className="rounded-md border border-[#d8dde5] bg-[#f8fafc] px-2 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+          onClick={exportTemplate}
+          type="button"
+        >
+          Package
+        </button>
+        <button
+          className="rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-2 py-2 text-xs font-medium text-[#1d4ed8] hover:bg-[#dbeafe]"
+          onClick={exportStatic}
+          type="button"
+        >
+          Site
+        </button>
+        <button
+          className="rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-2 py-2 text-xs font-medium text-[#15803d] hover:bg-[#dcfce7]"
+          onClick={exportNext}
+          type="button"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function formatShareDate(value?: string | null) {
+  if (!value) {
+    return "Not yet";
+  }
+
+  return value.replace("T", " ").slice(0, 16);
 }
 
 function Metric({ label, value }: { label: string; value: number | string }) {
@@ -401,6 +694,13 @@ function StarterPickerModal({
               <p className="text-sm font-semibold text-[#111827]">{starter.name}</p>
               <p className="mt-1 text-xs capitalize text-[#64748b]">{starter.category}</p>
               <p className="mt-3 text-xs leading-5 text-[#475569]">{starter.description}</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {starter.products.slice(0, 3).map((product) => (
+                  <span className="rounded-full border border-[#e2e8f0] bg-[#f8fafc] px-2 py-1 text-[11px] font-medium text-[#475569]" key={product.id}>
+                    {product.category}
+                  </span>
+                ))}
+              </div>
             </button>
           ))}
         </div>

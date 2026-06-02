@@ -423,6 +423,16 @@ function PreviewSection({
               ))}
             </div>
             <p className="mt-4 max-w-xl text-base leading-7 text-[var(--store-muted)]">{String(settings.subtitle)}</p>
+            <div className="mt-5 rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] p-4">
+              <div className="flex items-center justify-between gap-4 text-xs font-black uppercase tracking-[0.14em] text-[var(--store-muted)]">
+                <span>Inventory</span>
+                <span>Ready to ship</span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--store-canvas)]">
+                <div className="h-full w-[38%] rounded-full bg-[var(--store-primary)]" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-[var(--store-text)]">Low stock for this preview selection.</p>
+            </div>
             <div className="mt-7">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--store-muted)]">Variant</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -502,6 +512,16 @@ function PreviewSection({
             <div className="mt-4 rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] px-4 py-3 text-sm font-semibold text-[var(--store-muted)]">
               {String(settings.incentive)}
             </div>
+            <div className={`mt-4 grid gap-3 ${isForcedMobile ? "" : "sm:grid-cols-3"}`}>
+              {["Secure checkout", "Easy returns", "Tracked delivery"].map((label) => (
+                <div
+                  className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] px-3 py-3 text-xs font-black text-[var(--store-text)]"
+                  key={label}
+                >
+                  {label}
+                </div>
+              ))}
+            </div>
             <div className={`mt-6 ${densityStack(density)}`}>
               {cartProducts.length > 0 ? cartProducts.map(({ item, product }) => (
                 <div
@@ -520,18 +540,24 @@ function PreviewSection({
                       backgroundSize: `${product.imageZoom ?? 100}%`,
                     }}
                   />
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-black text-[var(--store-text)]">{product.name}</p>
                     <p className="mt-1 text-sm text-[var(--store-muted)]">{product.category}</p>
-                    <div className="mt-3 inline-flex rounded-full border border-[var(--store-border)] px-3 py-1 text-xs font-bold text-[var(--store-text)]">
-                      Qty {item.quantity}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex rounded-full border border-[var(--store-border)] px-3 py-1 text-xs font-bold text-[var(--store-text)]">
+                        Qty {item.quantity}
+                      </span>
+                      <span className="text-xs font-semibold text-[var(--store-muted)]">Ships in 2 days</span>
                     </div>
                   </div>
                   <p className={`col-start-2 font-black text-[var(--store-text)] ${isForcedMobile ? "" : "sm:col-start-auto"}`}>${product.price * item.quantity}</p>
                 </div>
               )) : (
-                <div className="border-[var(--store-border)] border-t pt-5">
-                  <p className="text-sm font-semibold text-[var(--store-muted)]">Your preview cart is empty.</p>
+                <div className="rounded-[calc(var(--store-radius)+6px)] border border-dashed border-[var(--store-border)] bg-[var(--store-canvas)] p-5">
+                  <p className="text-sm font-black text-[var(--store-text)]">The preview cart is empty.</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--store-muted)]">
+                    Use product cards, Quick add, or the product page Add to cart button to test this cart state.
+                  </p>
                   <button
                     className={`${primaryButtonClass} mt-4`}
                     onClick={() => navigateToPageType(template, "collection", onNavigatePage)}
@@ -556,7 +582,7 @@ function PreviewSection({
               <span>${subtotal + 12}</span>
             </div>
             <button
-              className={`${primaryButtonClass} mt-5 w-full`}
+              className={`${primaryButtonClass} mt-5 w-full ${cartProducts.length === 0 ? "cursor-not-allowed opacity-45" : ""}`}
               disabled={cartProducts.length === 0}
               onClick={() => navigateToPageType(template, "checkout", onNavigatePage)}
               type="button"
@@ -565,7 +591,7 @@ function PreviewSection({
             </button>
             <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] font-black uppercase tracking-[0.12em] text-[var(--store-muted)]">
               <span className="rounded border border-[var(--store-border)] bg-[var(--store-canvas)] py-2">Visa</span>
-              <span className="rounded border border-[var(--store-border)] bg-[var(--store-canvas)] py-2">Pay</span>
+              <span className="rounded border border-[var(--store-border)] bg-[var(--store-canvas)] py-2">Shop Pay</span>
               <span className="rounded border border-[var(--store-border)] bg-[var(--store-canvas)] py-2">SSL</span>
             </div>
             <div className={`mt-5 ${densityStack(density)}`}>
@@ -626,8 +652,14 @@ function PreviewSection({
               ))}
             </div>
             <div className={`mt-7 grid rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-5 ${densityGapClass}`}>
-              {["Email address", "Shipping address", "Delivery method", "Payment details"].map((field) => (
-                <div className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-4 py-3 text-sm font-semibold text-[var(--store-muted)]" key={field}>
+              {["Email address", "Shipping address", "Delivery method", "Payment details"].map((field, index) => (
+                <div
+                  className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-4 py-3 text-sm font-semibold text-[var(--store-muted)]"
+                  key={field}
+                >
+                  <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[var(--store-canvas)] text-[10px] font-black text-[var(--store-text)]">
+                    {index + 1}
+                  </span>
                   {field}
                 </div>
               ))}
@@ -658,8 +690,18 @@ function PreviewSection({
                 <p className={`col-start-2 text-sm font-black text-[var(--store-text)] ${isForcedMobile ? "" : "sm:col-start-auto"}`}>${product.price * item.quantity}</p>
               </div>
             )) : (
-              <div className="mt-5 rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-4 py-3 text-sm font-semibold text-[var(--store-muted)]">
-                Add a product before checking out.
+              <div className="mt-5 rounded-[calc(var(--store-radius)+6px)] border border-dashed border-[var(--store-border)] bg-[var(--store-surface)] p-4">
+                <p className="text-sm font-black text-[var(--store-text)]">Checkout needs cart items.</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--store-muted)]">
+                  Go to a collection or product page, add an item, then return here to preview checkout.
+                </p>
+                <button
+                  className={`${primaryButtonClass} mt-4`}
+                  onClick={() => navigateToPageType(template, "collection", onNavigatePage)}
+                  type="button"
+                >
+                  Browse products
+                </button>
               </div>
             )}
             <div className="mt-5 space-y-3 border-[var(--store-border)] border-t pt-5 text-sm">
@@ -1166,10 +1208,31 @@ function ProductCard({
         ) : null}
       </div>
       <div className={isMinimal ? "px-1 py-3" : productCardPadding(density)}>
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--store-muted)]">{product.category}</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--store-muted)]">{product.category}</p>
+          <p className="text-xs font-black text-[var(--store-primary)]">4.8</p>
+        </div>
         <button className="mt-2 block text-left" onClick={() => onOpenProduct?.(product.id)} type="button">
           <h3 className={`${isEditorial ? "text-lg" : "text-base"} font-black text-[var(--store-text)]`}>{product.name}</h3>
         </button>
+        <div className="mt-3 flex items-center gap-1.5">
+          {[product.imagePositionX ?? 42, product.imagePositionY ?? 58, product.imageZoom ?? 100].map((value, index) => (
+            <span
+              className="h-4 w-4 rounded-full border border-black/10"
+              key={`${product.id}-swatch-${index}`}
+              style={{
+                background:
+                  index === 0
+                    ? "var(--store-primary)"
+                    : index === 1
+                      ? "var(--store-secondary)"
+                      : "var(--store-accent)",
+                opacity: Math.max(0.45, Math.min(1, Number(value) / 100)),
+              }}
+            />
+          ))}
+          <span className="ml-1 text-xs font-semibold text-[var(--store-muted)]">In stock</span>
+        </div>
         <div className="mt-4 flex items-center justify-between gap-3">
           <p className="font-black text-[var(--store-text)]">${product.price}</p>
           {showQuickAdd ? (

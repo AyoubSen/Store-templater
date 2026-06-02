@@ -7,6 +7,16 @@ type StarterTemplateConfig = {
   category: StoreCategory;
   description: string;
   colors: StoreTemplate["theme"]["colors"];
+  hero: {
+    eyebrow: string;
+    title: string;
+    copy: string;
+    cta: string;
+  };
+  announcement: string;
+  categories: string[];
+  featurePoints: string[];
+  newsletterTitle: string;
   products: StoreTemplate["products"];
 };
 
@@ -17,6 +27,16 @@ export const starterTemplates: StarterTemplateConfig[] = [
     category: "fashion",
     description: "Editorial fashion storefront with calm product storytelling.",
     colors: sampleTemplate.theme.colors,
+    announcement: "Free shipping over $75",
+    hero: {
+      eyebrow: "Spring edit",
+      title: "Quiet staples for daily rotation.",
+      copy: "Build a polished fashion storefront around seasonal edits, premium basics, and restrained product storytelling.",
+      cta: "Shop the edit",
+    },
+    categories: ["New arrivals", "Essentials", "Accessories", "Sale"],
+    featurePoints: ["Reusable product stories", "Editorial collection pages", "Mobile-first buying paths"],
+    newsletterTitle: "Drop alerts, launches, and edits.",
     products: sampleTemplate.products,
   },
   {
@@ -34,6 +54,16 @@ export const starterTemplates: StarterTemplateConfig[] = [
       accent: "#f29f8f",
       border: "#ead7dd",
     },
+    announcement: "Complimentary samples with every routine",
+    hero: {
+      eyebrow: "Daily ritual",
+      title: "Skincare routines that feel considered.",
+      copy: "A soft commerce layout for bundles, ingredient-led stories, reviews, and repeat purchase flows.",
+      cta: "Build your routine",
+    },
+    categories: ["Cleansers", "Serums", "Moisturizers", "Kits"],
+    featurePoints: ["Routine-first merchandising", "Trust and review sections", "Bundle-friendly product grids"],
+    newsletterTitle: "Get routine notes and replenishment reminders.",
     products: [
       {
         id: "serum",
@@ -75,6 +105,16 @@ export const starterTemplates: StarterTemplateConfig[] = [
       accent: "#22d3ee",
       border: "#d8e0ec",
     },
+    announcement: "Fast dispatch on workspace essentials",
+    hero: {
+      eyebrow: "Desk upgrade",
+      title: "Sharper gear for focused work.",
+      copy: "A product-first electronics template with comparison-friendly cards, quick-add flows, and technical trust cues.",
+      cta: "Shop devices",
+    },
+    categories: ["Audio", "Workspace", "Accessories", "Chargers"],
+    featurePoints: ["Spec-ready product pages", "Accessory cross-sells", "Clean checkout confidence"],
+    newsletterTitle: "New gear, setup notes, and restock alerts.",
     products: [
       {
         id: "headphones",
@@ -116,6 +156,16 @@ export const starterTemplates: StarterTemplateConfig[] = [
       accent: "#d65a31",
       border: "#e6d9c5",
     },
+    announcement: "Local delivery windows open weekly",
+    hero: {
+      eyebrow: "Pantry drop",
+      title: "Small-batch staples for everyday shelves.",
+      copy: "A warm packaged-goods storefront for curated pantry edits, subscriptions, and local delivery messaging.",
+      cta: "Shop pantry",
+    },
+    categories: ["Breakfast", "Pantry", "Preserves", "Bundles"],
+    featurePoints: ["Batch and origin storytelling", "Simple subscriptions", "Delivery-first checkout cues"],
+    newsletterTitle: "Fresh batches, seasonal notes, and pantry picks.",
     products: [
       {
         id: "granola",
@@ -157,5 +207,61 @@ export function createTemplateFromStarter(starterId: string): StoreTemplate {
       colors: starter.colors,
     },
     products: starter.products,
+    pages: baseTemplate.pages.map((page) => ({
+      ...page,
+      seoTitle: page.type === "home" ? `${starter.name} storefront` : page.seoTitle,
+      sections: page.sections.map((section) => {
+        if (section.type === "announcement") {
+          return {
+            ...section,
+            settings: { ...section.settings, text: starter.announcement },
+          };
+        }
+
+        if (section.type === "header") {
+          return {
+            ...section,
+            settings: { ...section.settings, logo: starter.name.split(" ")[0].toUpperCase() },
+          };
+        }
+
+        if (section.type === "hero") {
+          return {
+            ...section,
+            settings: { ...section.settings, ...starter.hero },
+          };
+        }
+
+        if (section.type === "categoryStrip") {
+          return {
+            ...section,
+            settings: { ...section.settings, categories: starter.categories },
+          };
+        }
+
+        if (section.type === "productGrid") {
+          return {
+            ...section,
+            settings: { ...section.settings, title: `${starter.category} favorites`, productCount: starter.products.length },
+          };
+        }
+
+        if (section.type === "featureBand") {
+          return {
+            ...section,
+            settings: { ...section.settings, title: `${starter.name} is ready to customize`, points: starter.featurePoints },
+          };
+        }
+
+        if (section.type === "newsletter") {
+          return {
+            ...section,
+            settings: { ...section.settings, title: starter.newsletterTitle },
+          };
+        }
+
+        return section;
+      }),
+    })),
   };
 }

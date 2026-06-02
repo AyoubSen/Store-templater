@@ -57,7 +57,8 @@ export function SectionSidebar({
 }) {
   const [isStarterPickerOpen, setIsStarterPickerOpen] = useState(false);
   const [isPageSettingsOpen, setIsPageSettingsOpen] = useState(false);
-  const [isSectionLibraryOpen, setIsSectionLibraryOpen] = useState(false);
+  const [isTemplateActionsOpen, setIsTemplateActionsOpen] = useState(false);
+  const [sidebarMode, setSidebarMode] = useState<"pages" | "sections" | "library">("sections");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const sectionIds = sections.map((section) => section.id);
   const selectedPage = pages.find((page) => page.id === selectedPageId);
@@ -123,45 +124,79 @@ export function SectionSidebar({
               </option>
             ))}
           </select>
-          <div className="grid grid-cols-3 gap-1.5">
+          <button
+            className="flex w-full items-center justify-between rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+            onClick={() => setIsTemplateActionsOpen((current) => !current)}
+            type="button"
+          >
+            <span>Template actions</span>
+            <span className="text-[#94a3b8]">{isTemplateActionsOpen ? "Hide" : "Show"}</span>
+          </button>
+          {isTemplateActionsOpen ? (
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                className="rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                onClick={() => setIsStarterPickerOpen(true)}
+                type="button"
+              >
+                New
+              </button>
+              <button
+                className="rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+                onClick={duplicateTemplate}
+                type="button"
+              >
+                Copy
+              </button>
+              <button
+                aria-disabled={templates.length <= 1}
+                className={`rounded-md border border-[#fecaca] bg-white px-2 py-1.5 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2] ${
+                  templates.length <= 1 ? "cursor-not-allowed opacity-40" : ""
+                }`}
+                onClick={() => {
+                  if (templates.length > 1) {
+                    deleteTemplate(activeTemplateId);
+                  }
+                }}
+                type="button"
+              >
+                Delete
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="shrink-0 border-[#e2e8f0] border-b bg-white px-3 py-2">
+        <div className="grid grid-cols-3 rounded-md bg-[#f1f5f9] p-0.5">
+          {[
+            { label: "Pages", value: "pages" },
+            { label: "Sections", value: "sections" },
+            { label: "Add", value: "library" },
+          ].map((item) => (
             <button
-              className="rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
-              onClick={() => setIsStarterPickerOpen(true)}
-              type="button"
-            >
-              New
-            </button>
-            <button
-              className="rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
-              onClick={duplicateTemplate}
-              type="button"
-            >
-              Copy
-            </button>
-            <button
-              aria-disabled={templates.length <= 1}
-              className={`rounded-md border border-[#fecaca] bg-white px-2 py-1.5 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2] ${
-                templates.length <= 1 ? "cursor-not-allowed opacity-40" : ""
+              className={`rounded px-2 py-1.5 text-xs font-semibold ${
+                sidebarMode === item.value ? "bg-white text-[#111827] shadow-sm" : "text-[#64748b] hover:text-[#111827]"
               }`}
-              onClick={() => {
-                if (templates.length > 1) {
-                  deleteTemplate(activeTemplateId);
-                }
-              }}
+              key={item.value}
+              onClick={() => setSidebarMode(item.value as typeof sidebarMode)}
               type="button"
             >
-              Delete
+              {item.label}
             </button>
-          </div>
+          ))}
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <section className="px-3 py-4">
+        {sidebarMode === "pages" ? <section className="px-3 py-4">
           <div className="mb-2 flex items-center justify-between px-1">
             <h2 className="text-xs font-semibold uppercase text-[#475569]">Pages</h2>
             <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#64748b]">{pages.length}</span>
           </div>
+          <p className="mb-3 px-1 text-xs leading-5 text-[#64748b]">
+            Pages control what visitors can browse. Draft pages stay out of public share links.
+          </p>
           <div className="space-y-1">
             {pages.map((page) => (
               <PageRow
@@ -203,13 +238,16 @@ export function SectionSidebar({
               {isPageSettingsOpen ? <PageSettings page={selectedPage} updatePageField={updatePageField} /> : null}
             </div>
           ) : null}
-        </section>
+        </section> : null}
 
-        <section className="px-3 py-4">
+        {sidebarMode === "sections" ? <section className="px-3 py-4">
           <div className="mb-2 flex items-center justify-between px-1">
             <h2 className="text-xs font-semibold uppercase text-[#475569]">Sections</h2>
             <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#64748b]">{sections.length}</span>
           </div>
+          <p className="mb-3 px-1 text-xs leading-5 text-[#64748b]">
+            Select a section to edit it on the right. Drag rows to reorder the current page.
+          </p>
           {selectedSection ? (
             <div className="mb-3 rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2">
               <p className="text-[11px] font-semibold uppercase text-[#2563eb]">Selected section</p>
@@ -231,23 +269,15 @@ export function SectionSidebar({
               </div>
             </SortableContext>
           </DndContext>
-        </section>
+        </section> : null}
 
-        <section className="border-[#e2e8f0] border-t px-3 py-4">
+        {sidebarMode === "library" ? <section className="px-3 py-4">
           <div className="mb-2 px-1">
             <h2 className="text-xs font-semibold uppercase text-[#475569]">Add section</h2>
             <p className="mt-1 text-xs leading-5 text-[#64748b]">
               Inserts after {selectedSection ? sectionRegistry[selectedSection.type].label : "the selected block"}.
             </p>
           </div>
-          <button
-            className="w-full rounded-md bg-[#111827] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1f2937]"
-            onClick={() => setIsSectionLibraryOpen((isOpen) => !isOpen)}
-            type="button"
-          >
-            {isSectionLibraryOpen ? "Hide section library" : "Add a section"}
-          </button>
-          {isSectionLibraryOpen ? (
             <div className="mt-3 space-y-3">
               {sectionGroups.map((group) => (
                 <div key={group.label}>
@@ -259,7 +289,7 @@ export function SectionSidebar({
                         key={type}
                         onClick={() => {
                           addSection(type);
-                          setIsSectionLibraryOpen(false);
+                          setSidebarMode("sections");
                         }}
                         type="button"
                       >
@@ -273,10 +303,7 @@ export function SectionSidebar({
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="mt-2 px-1 text-xs leading-5 text-[#64748b]">Open this only when you need another storefront block.</p>
-          )}
-        </section>
+        </section> : null}
       </div>
       {isStarterPickerOpen ? (
         <StarterPickerModal

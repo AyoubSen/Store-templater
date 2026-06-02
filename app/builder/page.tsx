@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { deleteAccountTemplateAction, listAccountTemplatesAction, saveAccountTemplateAction } from "@/app/actions/templates";
+import {
+  deleteAccountTemplateAction,
+  getTemplateShareStateAction,
+  listAccountTemplatesAction,
+  saveAccountTemplateAction,
+  setTemplateShareEnabledAction,
+  type TemplateShareState,
+} from "@/app/actions/templates";
+import { deleteProductImageAction, deleteTemplateImagesAction } from "@/app/actions/images";
 import type { PreviewCartItem } from "@/components/storefront-preview";
 import { InspectorPanel, type InspectorTab } from "@/components/builder/inspector-panel";
 import { PreviewCanvas, type Device } from "@/components/builder/preview-canvas";
@@ -10,7 +18,7 @@ import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport }
 import { createPage } from "@/lib/templater/page-defaults";
 import { sampleTemplate } from "@/lib/templater/sample-template";
 import { createSection } from "@/lib/templater/section-defaults";
-import type { PageType, SectionType, StoreTemplate, TemplatePage, ThemeTokens } from "@/lib/templater/schema";
+import type { PageType, Product, SectionType, StoreTemplate, TemplatePage, ThemeTokens } from "@/lib/templater/schema";
 import { createTemplateFromStarter } from "@/lib/templater/starter-templates";
 import { syncStatusDescription, type TemplateSyncState } from "@/lib/templater/sync-status";
 import {
@@ -66,6 +74,8 @@ export default function Home() {
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
   const [previewProductId, setPreviewProductId] = useState(template.products[0]?.id ?? "");
   const [previewCartItems, setPreviewCartItems] = useState<PreviewCartItem[]>([]);
+  const [shareState, setShareState] = useState<TemplateShareState>({ shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null });
+  const [shareStatus, setShareStatus] = useState("Share links are off.");
   const hasLoadedStoredTemplate = useRef(false);
 
   const selectedPage = template.pages.find((page) => page.id === selectedPageId) ?? template.pages[0];
@@ -155,6 +165,30 @@ export default function Home() {
         : [...current, template],
     );
   }, [template]);
+
+  useEffect(() => {
+    if (!hasLoadedStoredTemplate.current) {
+      return;
+    }
+
+    setShareStatus("Checking share link.");
+    getTemplateShareStateAction(template.id).then((result) => {
+      if (!result.isDatabaseConfigured) {
+        setShareState({ shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null });
+        setShareStatus("Share links need account storage.");
+        return;
+      }
+
+      if (result.error) {
+        setShareState({ shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null });
+        setShareStatus(result.error);
+        return;
+      }
+
+      setShareState(result.data ?? { shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null });
+      setShareStatus(result.data?.shareEnabled ? "Public share link is live." : "Share links are off.");
+    });
+  }, [template.id]);
 
   const previewStyle = useMemo(
     () =>
@@ -373,7 +407,7 @@ export default function Home() {
     }));
   }
 
-  function updateProduct(productId: string, key: string, value: string | number) {
+  function updateProduct<K extends keyof Product>(productId: string, key: K, value: Product[K]) {
     commitTemplateUpdate((current) => ({
       ...current,
       products: current.products.map((product) => (product.id === productId ? { ...product, [key]: value } : product)),
@@ -427,6 +461,12 @@ export default function Home() {
     commitTemplateUpdate((current) => {
       if (current.products.length <= 1) {
         return current;
+      }
+
+      const product = current.products.find((currentProduct) => currentProduct.id === productId);
+
+      if (product?.imageStorage === "r2" && product.imageKey) {
+        void deleteProductImageAction(product.imageKey);
       }
 
       return {
@@ -650,6 +690,7 @@ export default function Home() {
     writeActiveTemplateId(nextTemplate.id);
     setTemplates(nextTemplates);
     replaceTemplate(nextTemplate);
+    void deleteTemplateImagesAction(templateId);
     setSaveState("saving");
     setSaveStatusMessage("Deleting template from your account.");
     deleteAccountTemplateAction(templateId).then((result) => {
@@ -691,6 +732,34 @@ export default function Home() {
 
   function exportActiveNextProject() {
     downloadNextProject(template);
+  }
+
+  async function toggleShareLink() {
+    setShareStatus(shareState.shareEnabled ? "Disabling share link." : "Publishing share link.");
+    const result = await setTemplateShareEnabledAction(template.id, !shareState.shareEnabled);
+
+    if (!result.isDatabaseConfigured) {
+      setShareStatus("Share links need account storage.");
+      return;
+    }
+
+    if (result.error) {
+      setShareStatus(result.error);
+      return;
+    }
+
+    const nextShareState = result.data ?? { shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null };
+    setShareState(nextShareState);
+    setShareStatus(nextShareState.shareEnabled ? "Public share link is live." : "Share link disabled.");
+  }
+
+  async function copyShareLink() {
+    if (!shareState.shareId) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(`${window.location.origin}/s/${shareState.shareId}`);
+    setShareStatus("Share link copied.");
   }
 
   function importLocalTemplatesToAccount() {
@@ -790,8 +859,15 @@ export default function Home() {
           selectedSectionId={selectedSectionId}
           selectPage={selectPage}
           setDevice={setDevice}
+          shareEnabled={shareState.shareEnabled}
+          shareLink={shareState.shareId ? `/s/${shareState.shareId}` : undefined}
+          sharedAt={shareState.sharedAt}
+          shareStatus={shareStatus}
+          shareUpdatedAt={shareState.updatedAt}
           setZoom={setZoom}
           template={template}
+          toggleShareLink={toggleShareLink}
+          copyShareLink={copyShareLink}
           undoTemplateChange={undoTemplateChange}
           zoom={zoom}
         />
@@ -905,8 +981,8 @@ function WelcomeChecklist({
         <div className="border-[#e2e8f0] border-b px-5 py-4">
           <h2 className="text-base font-semibold text-[#111827]">Start with the essentials</h2>
           <p className="mt-1 text-sm leading-6 text-[#64748b]">
-            The editor has a lot of power, but the first pass is simple: pick a section, edit its copy, adjust the theme,
-            then check mobile.
+            The sidebars edit the template. The center is a customer preview where you can click products, add cart items,
+            and test checkout behavior.
           </p>
         </div>
         <div className="space-y-2 px-5 py-4">
@@ -915,7 +991,8 @@ function WelcomeChecklist({
             "Use the right inspector for content and layout.",
             "Open Theme when you want colors and typography.",
             "Open Items when you want product names, prices, or images.",
-            "Use Preview after checking desktop, tablet, and mobile.",
+            "Use product cards and Add buttons in the preview to test cart and checkout.",
+            "Publish only when the public link should be visible.",
           ].map((step, index) => (
             <div className="flex gap-3 rounded-md bg-[#f8fafc] px-3 py-2.5" key={step}>
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#111827] text-[11px] font-semibold text-white">

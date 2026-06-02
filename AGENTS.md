@@ -70,10 +70,11 @@ Important files:
 - `lib/db/schema.ts`: Drizzle schema for account-owned templates
 - `lib/db/index.ts`: Neon/Drizzle database client factory
 - `app/actions/templates.ts`: Clerk-authenticated server actions for template list/load/save/delete
+- `lib/templater/shared-preview.ts`: public shared-preview template lookup by generated share id
 - `lib/storage/r2.ts`: Cloudflare R2 upload helper using the S3-compatible API
 - `app/actions/images.ts`: Clerk-authenticated product image upload action
 - `lib/templater/storage.ts`: localStorage persistence for active template and local template library
-- `components/builder/section-sidebar.tsx`: template switcher, page list, section list, section library, drag reorder
+- `components/builder/section-sidebar.tsx`: compact template switcher, page/section/library sidebar modes, section list, section library, drag reorder
 - `components/builder/preview-canvas.tsx`: editor toolbar, device controls, zoom, preview canvas
 - `components/builder/inspector-panel.tsx`: Store/Theme/Items/Section inspector tabs
 - `components/builder/section-inspector.tsx`: section-specific editing controls
@@ -83,21 +84,26 @@ Important files:
 - `app/builder/page.tsx`: builder state/persistence orchestration
 - `app/preview/page.tsx`: active-template preview fallback
 - `app/preview/[templateId]/page.tsx`: explicit local template preview route
+- `app/s/[shareId]/[[...pageSlug]]/page.tsx`: public shared storefront route for published templates and page slugs
 
 Avoid duplicating storefront rendering logic between the builder and preview page. The builder canvas and preview route should use `components/storefront-preview.tsx`.
 
 ## Current Feature Set
 
 - Local multi-template library stored in localStorage
-- Starter template picker for new templates
+- Starter template picker for new templates, with category-specific copy, products, categories, and section defaults
 - Explicit `/preview/[templateId]` preview URLs with selected-page query support
+- Public `/s/[shareId]` and `/s/[shareId]/[page-slug]` share links backed by account templates in Neon
+- Compact publish/share panels in the builder and `/templates` dashboard with private/published state, copy/open/unpublish actions, and saved/published timestamps
 - Browsable preview navigation for published template pages, product cards, cart, and checkout
 - Store settings for name/category
 - Theme color tokens, theme presets, and typography presets
 - Product editing, add/duplicate/delete
 - Local product image import as data URLs
-- Product image upload to Cloudflare R2, plus repositioning, reset/remove, and zoom inside fixed `4/5` media frames
+- Product image upload to Cloudflare R2, with client-side compression, upload retry state, repositioning, reset/remove, and zoom inside fixed `4/5` media frames
 - Existing product image data URLs remain valid as legacy/local fallback, but new uploads should store public R2 URLs
+- R2 uploads store product `imageStorage` and `imageKey` metadata so owned objects can be cleaned up safely
+- Replacing/removing product images, deleting products, and deleting templates should delete only known owned R2 keys/prefixes
 - Lightweight local preview cart state for add-to-cart, cart summary, and checkout summary flows
 - Basic page management for home, collection, product, cart, checkout, about, and contact pages
 - Page metadata for slug, SEO title, and draft/published status
@@ -105,11 +111,12 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Shared section style controls for spacing, density, background, alignment, button style, and desktop/tablet/mobile visibility on main storefront sections
 - Richer ecommerce controls for product count, product card style, quick-add visibility, collection filter/sort visibility, product media layout, and product detail media emphasis
 - Page-specific ecommerce preview polish for editable collection description/status chips, filter states, editable product social proof/trust details, editable cart shipping incentives, and editable checkout express payment options
+- Public storefront polish for commerce pages, including richer product cards, product inventory cues, cart trust signals, and checkout step framing
 - Mobile, tablet, and wide desktop storefront fixes for hero composition, product grids, collection filters, product detail pages, quick-add buttons, cart line items, sticky purchase panels, and checkout summaries
 - Section add/duplicate/delete/hide/show
 - Drag-and-drop section reorder using `@dnd-kit`
 - Undo/redo for template edits
-- `/templates` dashboard with JSON import/export
+- `/templates` dashboard with search, published/private filtering, sorting, JSON import/export, grouped export actions, and collapsed share controls
 - Local-first `.store-template.json` export packages and multi-page static storefront zip exports for active templates and dashboard templates
 - Generated Next storefront project zip exports with pnpm scripts, App Router pages, shared storefront component, template data, and theme CSS
 - Zod validation and versioning for stored/imported templates
@@ -121,9 +128,11 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Account template persistence actions backed by `DATABASE_URL`, with localStorage fallback when the database is not configured
 - Builder sync status distinguishes loading, saving, saved-to-account, local-only, and failed account sync states
 - Local browser templates can be imported into the signed-in account from the builder sync prompt
-- `/templates` dashboard create, duplicate, delete, and import flows report account sync results instead of silently ignoring failures
+- `/templates` dashboard create, duplicate, delete, import, and share flows report account sync results instead of silently ignoring failures
 - First-run welcome checklist with compact guidance for section, theme, item, device, and preview workflows
+- Contextual preview guidance for customer interactions such as product clicks, cart state, and checkout state
 - Progressive disclosure in the builder: page settings, section library, and advanced section layout controls stay collapsed until needed
+- Left sidebar separates Pages, Sections, and Add-section workflows so users are not shown every navigation/editing control at once
 
 ## Builder UX Direction
 
@@ -135,6 +144,7 @@ The builder shell should feel closer to Framer/Webflow/Shopify theme editor:
 - Design-tool-like preview canvas
 - Real inspector controls instead of raw JSON
 - Progressive disclosure for secondary/advanced controls so new users are not greeted by every option at once
+- Keep export/reset and other secondary actions out of the main toolbar when possible.
 - No oversized marketing sections inside the builder UI
 
 Do not make the builder itself visually compete with the storefront template.
@@ -165,7 +175,7 @@ Expected section types over time:
 
 1. Continue polishing storefront visuals so templates feel sellable, not just functional.
 2. Polish the `/templates` dashboard for larger local libraries.
-3. Add hosted preview URLs.
+3. Improve hosted preview controls and status polish.
 4. Add richer controls for responsive layout variants beyond visibility.
 5. Add real backend persistence and auth after local editor workflows settle.
 
@@ -175,6 +185,7 @@ Expected section types over time:
 - Keep template data serializable as JSON.
 - Use CSS variables/theme tokens for storefront customization.
 - Keep localStorage as a draft/fallback cache, but account persistence should surface explicit status when `DATABASE_URL` is configured.
+- Never infer deletable storage objects from arbitrary public URLs; delete only R2 keys stored in owned template metadata.
 - Introduce dependencies only when they solve a real product need.
 - Existing notable dependencies:
   - `@dnd-kit` for section reorder

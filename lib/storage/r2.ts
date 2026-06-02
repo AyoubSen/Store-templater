@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -83,7 +83,52 @@ export async function uploadProductImageToR2({
     }),
   );
 
-  return `${config.publicUrl}/${key}`;
+  return {
+    key,
+    url: `${config.publicUrl}/${key}`,
+  };
+}
+
+export async function deleteR2Object(key: string) {
+  const config = getR2Config();
+  const client = getR2Client();
+
+  await client.send(
+    new DeleteObjectCommand({
+      Bucket: config.bucketName,
+      Key: key,
+    }),
+  );
+}
+
+export async function deleteR2Prefix(prefix: string) {
+  const config = getR2Config();
+  const client = getR2Client();
+  let continuationToken: string | undefined;
+
+  do {
+    const listedObjects = await client.send(
+      new ListObjectsV2Command({
+        Bucket: config.bucketName,
+        ContinuationToken: continuationToken,
+        Prefix: prefix,
+      }),
+    );
+    const objects = listedObjects.Contents?.map((object) => ({ Key: object.Key })).filter((object): object is { Key: string } => Boolean(object.Key));
+
+    if (objects?.length) {
+      await client.send(
+        new DeleteObjectsCommand({
+          Bucket: config.bucketName,
+          Delete: {
+            Objects: objects,
+          },
+        }),
+      );
+    }
+
+    continuationToken = listedObjects.NextContinuationToken;
+  } while (continuationToken);
 }
 
 function extensionForImageType(type: string) {

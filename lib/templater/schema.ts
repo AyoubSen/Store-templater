@@ -59,6 +59,8 @@ export type Product = {
   imagePositionX?: number;
   imagePositionY?: number;
   imageZoom?: number;
+  imageStorage?: "r2";
+  imageKey?: string;
   badge?: string;
 };
 

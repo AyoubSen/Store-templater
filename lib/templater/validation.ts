@@ -58,6 +58,8 @@ const productSchema = z.object({
   imagePositionX: z.number().optional(),
   imagePositionY: z.number().optional(),
   imageZoom: z.number().optional(),
+  imageStorage: z.enum(["r2"]).optional(),
+  imageKey: z.string().optional(),
   badge: z.string().optional(),
 });
 

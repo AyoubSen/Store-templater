@@ -9,29 +9,33 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 ## Next
 
 - Continue simplifying first-use UX with clearer primary actions and fewer visible controls by default.
+- Continue reducing always-visible builder/dashboard controls through progressive disclosure.
+- Keep improving sidebar ergonomics with keyboard navigation and richer section row actions once needed.
 - Improve the public landing page with stronger examples once generated/storefront visuals settle.
 - Continue polishing storefront visuals so templates feel sellable, not just functional.
 - Deepen mock storefront interactions beyond navigation/cart, including filter state and checkout step state.
 - Add richer static export interactions beyond linked pages, such as optional lightweight cart JavaScript.
 - Harden generated Next storefront output with an extracted fixture build check and closer parity with the live preview renderer.
-- Polish the `/templates` dashboard for larger local template libraries.
-- Add hosted/shareable preview URLs.
+- Continue polishing the `/templates` dashboard for larger libraries with bulk actions and stronger import review.
+- Polish hosted/shareable preview controls and status messaging.
+- Continue refining share panels with stronger disabled states, optional expiry, and publish history.
 - Add richer controls for responsive layout variants beyond visibility.
 - Improve account persistence polish with manual retry controls and last-synced timestamps.
-- Improve image upload UX with compression, thumbnails, and explicit upload retry states.
+- Continue image upload polish with generated thumbnails, better crop presets, and upload observability.
 
 ## Soon
 
 - Improve product image handling:
   - keep existing data URLs as legacy fallback
-  - add storage cleanup for replaced/deleted R2 images
+  - add generated thumbnails for dashboard/product lists after upload
 - Add navigation menu controls that can target page slugs.
 - Add more section-level layout controls for storefront density and media emphasis where section-specific variants are still missing.
 
 ## Later
 
-- Add hosted preview URLs.
+- Add hosted preview lifecycle controls, including optional expiry policies and publish history.
 - Add a stronger local-to-account import review flow for selecting which local templates to import.
+- Add dashboard bulk actions for export, delete, publish, and unpublish once libraries grow.
 - Expand auth from Clerk sign-in to user dashboards, account-owned templates, and team/org workflows.
 - Add Shopify/WooCommerce export or mapping.
 - Expand generated Next storefront projects toward production integrations.
@@ -48,5 +52,6 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 
 - Templates sync to account storage when `DATABASE_URL` is configured, with localStorage as a local draft/fallback cache.
 - Existing local product images may still be data URLs; new uploads use R2 when storage is configured.
-- `/preview/[templateId]` is local-only and not shareable across devices yet.
+- R2 cleanup exists for known uploaded keys, but failed cleanup is currently best-effort and should get retry/observability later.
+- `/preview/[templateId]` remains private/local-context preview; public `/s/[shareId]` links load published account templates from Neon.
 - Saved template validation/migration exists and should grow with future schema versions.

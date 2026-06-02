@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { uploadProductImageAction } from "@/app/actions/images";
+import { deleteProductImageAction, uploadProductImageAction } from "@/app/actions/images";
 import { ColorTokenControl, GradientField, NumberField, RangeControl, TextField } from "@/components/builder/controls";
 import { SectionInspector } from "@/components/builder/section-inspector";
 import { sectionRegistry } from "@/lib/templater/registry";
-import type { StoreTemplate, TemplateSection, ThemeTokens } from "@/lib/templater/schema";
+import type { Product, StoreTemplate, TemplateSection, ThemeTokens } from "@/lib/templater/schema";
 import { themePresets } from "@/lib/templater/theme-presets";
 import { typographyPresets } from "@/lib/templater/typography-presets";
 
@@ -50,7 +50,7 @@ export function InspectorPanel({
   applyThemePreset: (colors: ThemeTokens["colors"]) => void;
   applyTypographyPreset: (typography: ThemeTokens["typography"]) => void;
   updateLayout: (key: keyof ThemeTokens["layout"], value: number | ThemeTokens["layout"]["density"]) => void;
-  updateProduct: (productId: string, key: string, value: string | number) => void;
+  updateProduct: (productId: string, key: keyof Product, value: Product[keyof Product]) => void;
   updateSectionSetting: (sectionId: string, key: string, value: unknown) => void;
   updateTemplateField: <K extends "name" | "category">(key: K, value: StoreTemplate[K]) => void;
 }) {
@@ -270,6 +270,11 @@ export function InspectorPanel({
                             updateProduct(product.id, "imagePositionX", 50);
                             updateProduct(product.id, "imagePositionY", 50);
                             updateProduct(product.id, "imageZoom", 100);
+                            updateProduct(product.id, "imageStorage", undefined);
+                            updateProduct(product.id, "imageKey", undefined);
+                            if (product.imageStorage === "r2" && product.imageKey) {
+                              void deleteProductImageAction(product.imageKey);
+                            }
                           }}
                           type="button"
                         >
@@ -394,6 +399,8 @@ export function InspectorPanel({
           currentPositionX={imageProduct.imagePositionX ?? 50}
           currentPositionY={imageProduct.imagePositionY ?? 50}
           currentZoom={imageProduct.imageZoom ?? 100}
+          currentImageKey={imageProduct.imageKey}
+          currentImageStorage={imageProduct.imageStorage}
           productId={imageProduct.id}
           onClose={() => setImageProductId(null)}
           onRemove={() => {
@@ -401,13 +408,23 @@ export function InspectorPanel({
             updateProduct(imageProduct.id, "imagePositionX", 50);
             updateProduct(imageProduct.id, "imagePositionY", 50);
             updateProduct(imageProduct.id, "imageZoom", 100);
+            updateProduct(imageProduct.id, "imageStorage", undefined);
+            updateProduct(imageProduct.id, "imageKey", undefined);
+            if (imageProduct.imageStorage === "r2" && imageProduct.imageKey) {
+              void deleteProductImageAction(imageProduct.imageKey);
+            }
             setImageProductId(null);
           }}
-          onSave={(image, positionX, positionY, zoom) => {
+          onSave={(image, positionX, positionY, zoom, imageKey) => {
             updateProduct(imageProduct.id, "image", image);
             updateProduct(imageProduct.id, "imagePositionX", positionX);
             updateProduct(imageProduct.id, "imagePositionY", positionY);
             updateProduct(imageProduct.id, "imageZoom", zoom);
+            updateProduct(imageProduct.id, "imageStorage", imageKey ? "r2" : undefined);
+            updateProduct(imageProduct.id, "imageKey", imageKey);
+            if (imageProduct.imageStorage === "r2" && imageProduct.imageKey && imageProduct.imageKey !== imageKey) {
+              void deleteProductImageAction(imageProduct.imageKey);
+            }
             setImageProductId(null);
           }}
           templateId={template.id}
@@ -420,6 +437,8 @@ export function InspectorPanel({
 
 function ImageImportModal({
   currentImage,
+  currentImageKey,
+  currentImageStorage,
   currentPositionX,
   currentPositionY,
   currentZoom,
@@ -431,22 +450,25 @@ function ImageImportModal({
   templateId,
 }: {
   currentImage: string;
+  currentImageKey?: string;
+  currentImageStorage?: "r2";
   currentPositionX: number;
   currentPositionY: number;
   currentZoom: number;
   onClose: () => void;
   onRemove: () => void;
-  onSave: (image: string, positionX: number, positionY: number, zoom: number) => void;
+  onSave: (image: string, positionX: number, positionY: number, zoom: number, imageKey?: string) => void;
   productId: string;
   productName: string;
   templateId: string;
 }) {
   const [preview, setPreview] = useState(currentImage);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imageStatus, setImageStatus] = useState("");
   const [position, setPosition] = useState({ x: currentPositionX, y: currentPositionY });
   const [zoom, setZoom] = useState(currentZoom);
   const [error, setError] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadState, setUploadState] = useState<"idle" | "preparing" | "uploading" | "failed" | "saved">("idle");
   const dragStartRef = useRef<{ pointerX: number; pointerY: number; positionX: number; positionY: number } | null>(null);
 
   function startImageDrag(event: React.PointerEvent<HTMLDivElement>) {
@@ -477,33 +499,41 @@ function ImageImportModal({
     });
   }
 
-  function importFile(file: File) {
-    if (!file.type.startsWith("image/")) {
-      setError("Choose an image file.");
+  async function importFile(file: File) {
+    setError("");
+    setImageStatus("");
+
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setError("Choose a PNG, JPG, or WebP image.");
       return;
     }
 
-    if (file.size > 5_000_000) {
-      setError("Use an image under 5 MB.");
+    if (file.size > 20_000_000) {
+      setError("Use an image under 20 MB. Very large originals are hard to process in the browser.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreview(`url("${reader.result}")`);
-      setSelectedFile(file);
-      setError("");
-    };
-    reader.readAsDataURL(file);
+    setUploadState("preparing");
+
+    try {
+      const preparedImage = await prepareImageForUpload(file);
+      setPreview(`url("${preparedImage.dataUrl}")`);
+      setSelectedFile(preparedImage.file);
+      setImageStatus(preparedImage.message);
+      setUploadState("idle");
+    } catch (error) {
+      setUploadState("failed");
+      setError(error instanceof Error ? error.message : "Could not prepare this image.");
+    }
   }
 
   async function saveImage() {
     if (!selectedFile) {
-      onSave(preview, position.x, position.y, zoom);
+      onSave(preview, position.x, position.y, zoom, currentImageStorage === "r2" ? currentImageKey : undefined);
       return;
     }
 
-    setIsUploading(true);
+    setUploadState("uploading");
     setError("");
 
     const formData = new FormData();
@@ -512,14 +542,15 @@ function ImageImportModal({
     formData.set("productId", productId);
 
     const result = await uploadProductImageAction(formData);
-    setIsUploading(false);
 
     if (!result.imageUrl) {
+      setUploadState("failed");
       setError(result.error ?? "Could not upload image.");
       return;
     }
 
-    onSave(`url("${result.imageUrl}")`, position.x, position.y, zoom);
+    setUploadState("saved");
+    onSave(`url("${result.imageUrl}")`, position.x, position.y, zoom, result.imageKey);
   }
 
   return (
@@ -574,7 +605,7 @@ function ImageImportModal({
           </label>
           <label className="mt-4 flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-[#cbd5e1] bg-[#f8fafc] px-4 py-6 text-center hover:bg-[#f1f5f9]">
             <span className="text-sm font-medium text-[#334155]">{isImportedImage(preview) ? "Replace image" : "Choose image"}</span>
-            <span className="mt-1 text-xs text-[#64748b]">PNG, JPG, or WebP under 5 MB</span>
+            <span className="mt-1 text-xs text-[#64748b]">PNG, JPG, or WebP. Large images are compressed before upload.</span>
             <input
               accept="image/png,image/jpeg,image/webp"
               className="sr-only"
@@ -587,6 +618,21 @@ function ImageImportModal({
               type="file"
             />
           </label>
+          {imageStatus ? (
+            <p className="mt-3 rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-2 text-xs font-medium text-[#166534]">
+              {imageStatus}
+            </p>
+          ) : null}
+          {uploadState === "preparing" ? (
+            <p className="mt-3 rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2 text-xs font-medium text-[#1d4ed8]">
+              Preparing image for upload.
+            </p>
+          ) : null}
+          {uploadState === "failed" && selectedFile ? (
+            <p className="mt-3 rounded-md border border-[#fed7aa] bg-[#fff7ed] px-3 py-2 text-xs font-medium text-[#9a3412]">
+              Upload failed. Check the message below, then save again to retry.
+            </p>
+          ) : null}
           {error ? <p className="mt-3 text-xs font-medium text-[#b91c1c]">{error}</p> : null}
         </div>
         <div className="flex justify-end gap-2 border-[#e2e8f0] border-t px-4 py-3">
@@ -616,11 +662,11 @@ function ImageImportModal({
           </button>
           <button
             className="rounded-md bg-[#111827] px-3 py-2 text-xs font-medium text-white hover:bg-[#1f2937]"
-            disabled={isUploading}
+            disabled={uploadState === "preparing" || uploadState === "uploading"}
             onClick={saveImage}
             type="button"
           >
-            {isUploading ? "Uploading..." : "Save image"}
+            {uploadState === "preparing" ? "Preparing..." : uploadState === "uploading" ? "Uploading..." : uploadState === "failed" ? "Retry upload" : "Save image"}
           </button>
         </div>
       </div>
@@ -630,6 +676,101 @@ function ImageImportModal({
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+async function prepareImageForUpload(file: File) {
+  const image = await loadImage(file);
+  const maxDimension = 1800;
+  const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("This browser could not prepare the image.");
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  context.drawImage(image, 0, 0, width, height);
+
+  const blob = await canvasToBlob(canvas, "image/webp", 0.84);
+
+  if (blob.size > 5_000_000) {
+    throw new Error("This image is still over 5 MB after compression. Try a smaller image.");
+  }
+
+  const preparedFile =
+    blob.size < file.size || file.size > 5_000_000
+      ? new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.webp`, { type: "image/webp" })
+      : file;
+  const dataUrl = await readFileAsDataUrl(preparedFile);
+  const originalSize = formatFileSize(file.size);
+  const finalSize = formatFileSize(preparedFile.size);
+  const dimensions = `${width}x${height}`;
+  const message =
+    preparedFile === file
+      ? `Ready to upload: ${dimensions}, ${finalSize}.`
+      : `Compressed from ${originalSize} to ${finalSize} at ${dimensions}.`;
+
+  return {
+    dataUrl,
+    file: preparedFile,
+    message,
+  };
+}
+
+function loadImage(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Could not read this image."));
+    };
+    image.src = objectUrl;
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+          return;
+        }
+
+        reject(new Error("Could not compress this image."));
+      },
+      type,
+      quality,
+    );
+  });
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not preview this image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatFileSize(size: number) {
+  if (size >= 1_000_000) {
+    return `${(size / 1_000_000).toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(size / 1_000))} KB`;
 }
 
 function isImportedImage(image: string) {

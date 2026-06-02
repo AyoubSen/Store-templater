@@ -2,6 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { eq, and } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { getDb, hasDatabaseUrl } from "@/lib/db";
 import { templates } from "@/lib/db/schema";
 import type { StoreTemplate } from "@/lib/templater/schema";
@@ -13,6 +14,13 @@ type TemplateActionResult<T> = {
   isDatabaseConfigured: boolean;
 };
 
+export type TemplateShareState = {
+  shareEnabled: boolean;
+  shareId: string | null;
+  sharedAt: string | null;
+  updatedAt: string | null;
+};
+
 async function getUserId() {
   const { userId } = await auth();
 
@@ -21,6 +29,10 @@ async function getUserId() {
   }
 
   return userId;
+}
+
+function createShareId() {
+  return randomUUID().replaceAll("-", "").slice(0, 18);
 }
 
 export async function listAccountTemplatesAction(): Promise<TemplateActionResult<StoreTemplate[]>> {
@@ -136,6 +148,102 @@ export async function deleteAccountTemplateAction(templateId: string): Promise<T
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Could not delete the template.",
+      isDatabaseConfigured: true,
+    };
+  }
+}
+
+export async function getTemplateShareStateAction(templateId: string): Promise<TemplateActionResult<TemplateShareState>> {
+  if (!hasDatabaseUrl()) {
+    return {
+      data: { shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null },
+      isDatabaseConfigured: false,
+    };
+  }
+
+  try {
+    const userId = await getUserId();
+    const db = getDb();
+    const [row] = await db
+      .select({
+        shareEnabled: templates.shareEnabled,
+        shareId: templates.shareId,
+        sharedAt: templates.sharedAt,
+        updatedAt: templates.updatedAt,
+      })
+      .from(templates)
+      .where(and(eq(templates.id, templateId), eq(templates.userId, userId)))
+      .limit(1);
+
+    return {
+      data: {
+        shareEnabled: row?.shareEnabled ?? false,
+        shareId: row?.shareId ?? null,
+        sharedAt: row?.sharedAt?.toISOString() ?? null,
+        updatedAt: row?.updatedAt?.toISOString() ?? null,
+      },
+      isDatabaseConfigured: true,
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not load sharing state.",
+      isDatabaseConfigured: true,
+    };
+  }
+}
+
+export async function setTemplateShareEnabledAction(
+  templateId: string,
+  shareEnabled: boolean,
+): Promise<TemplateActionResult<TemplateShareState>> {
+  if (!hasDatabaseUrl()) {
+    return {
+      data: { shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null },
+      isDatabaseConfigured: false,
+    };
+  }
+
+  try {
+    const userId = await getUserId();
+    const db = getDb();
+    const [row] = await db
+      .select({
+        shareId: templates.shareId,
+        updatedAt: templates.updatedAt,
+      })
+      .from(templates)
+      .where(and(eq(templates.id, templateId), eq(templates.userId, userId)))
+      .limit(1);
+
+    if (!row) {
+      return { error: "Save this template before sharing it.", isDatabaseConfigured: true };
+    }
+
+    const shareId = row.shareId ?? createShareId();
+    const now = new Date();
+
+    await db
+      .update(templates)
+      .set({
+        shareEnabled,
+        shareId,
+        sharedAt: shareEnabled ? now : null,
+        updatedAt: now,
+      })
+      .where(and(eq(templates.id, templateId), eq(templates.userId, userId)));
+
+    return {
+      data: {
+        shareEnabled,
+        shareId,
+        sharedAt: shareEnabled ? now.toISOString() : null,
+        updatedAt: now.toISOString(),
+      },
+      isDatabaseConfigured: true,
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not update sharing.",
       isDatabaseConfigured: true,
     };
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { StorefrontPreview } from "@/components/storefront-preview";
 import type { PreviewCartItem } from "@/components/storefront-preview";
@@ -27,8 +28,15 @@ export function PreviewCanvas({
   selectedSectionId,
   selectPage,
   setDevice,
+  shareEnabled,
+  shareLink,
+  sharedAt,
+  shareStatus,
+  shareUpdatedAt,
   setZoom,
   template,
+  toggleShareLink,
+  copyShareLink,
   undoTemplateChange,
   zoom,
 }: {
@@ -50,11 +58,21 @@ export function PreviewCanvas({
   selectedSectionId: string;
   selectPage: (pageId: string) => void;
   setDevice: (device: Device) => void;
+  shareEnabled: boolean;
+  shareLink?: string;
+  sharedAt?: string | null;
+  shareStatus?: string;
+  shareUpdatedAt?: string | null;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
   template: StoreTemplate;
+  toggleShareLink: () => void;
+  copyShareLink: () => void;
   undoTemplateChange: () => void;
   zoom: number;
 }) {
+  const [isSharePanelOpen, setIsSharePanelOpen] = useState(false);
+  const [isMorePanelOpen, setIsMorePanelOpen] = useState(false);
+
   return (
     <section className="flex min-h-0 flex-col bg-[#eef0f3]">
       <header className="flex h-14 shrink-0 flex-wrap items-center justify-between gap-3 border-[#d8dde5] border-b bg-white px-4">
@@ -64,17 +82,29 @@ export function PreviewCanvas({
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={!canUndo}
-            onClick={undoTemplateChange}
+            aria-disabled={!canUndo}
+            className={`rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] ${
+              canUndo ? "" : "cursor-not-allowed opacity-40"
+            }`}
+            onClick={() => {
+              if (canUndo) {
+                undoTemplateChange();
+              }
+            }}
             type="button"
           >
             Undo
           </button>
           <button
-            className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={!canRedo}
-            onClick={redoTemplateChange}
+            aria-disabled={!canRedo}
+            className={`rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9] ${
+              canRedo ? "" : "cursor-not-allowed opacity-40"
+            }`}
+            onClick={() => {
+              if (canRedo) {
+                redoTemplateChange();
+              }
+            }}
             type="button"
           >
             Redo
@@ -100,36 +130,47 @@ export function PreviewCanvas({
           >
             Preview
           </Link>
-          <div className="flex rounded-md border border-[#d8dde5] bg-white p-0.5">
+          <div className="relative">
             <button
-              className="rounded px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
-              onClick={exportTemplatePackage}
+              className={`rounded-md border px-3 py-2 text-xs font-semibold ${
+                shareEnabled
+                  ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d] hover:bg-[#dcfce7]"
+                  : "border-[#d8dde5] bg-white text-[#334155] hover:bg-[#f1f5f9]"
+              }`}
+              onClick={() => setIsSharePanelOpen((current) => !current)}
               type="button"
             >
-              Package
+              {shareEnabled ? "Published" : "Publish"}
             </button>
-            <button
-              className="rounded bg-[#eff6ff] px-2.5 py-1.5 text-xs font-medium text-[#1d4ed8] hover:bg-[#dbeafe]"
-              onClick={exportStaticStorefront}
-              type="button"
-            >
-              Site
-            </button>
-            <button
-              className="rounded bg-[#f0fdf4] px-2.5 py-1.5 text-xs font-medium text-[#15803d] hover:bg-[#dcfce7]"
-              onClick={exportNextProject}
-              type="button"
-            >
-              Next app
-            </button>
+            {isSharePanelOpen ? (
+              <SharePanel
+                copyShareLink={copyShareLink}
+                shareEnabled={shareEnabled}
+                shareLink={shareLink}
+                sharedAt={sharedAt}
+                shareStatus={shareStatus}
+                shareUpdatedAt={shareUpdatedAt}
+                toggleShareLink={toggleShareLink}
+              />
+            ) : null}
           </div>
-          <button
-            className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
-            onClick={resetTemplate}
-            type="button"
-          >
-            Reset
-          </button>
+          <div className="relative">
+            <button
+              className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+              onClick={() => setIsMorePanelOpen((current) => !current)}
+              type="button"
+            >
+              More
+            </button>
+            {isMorePanelOpen ? (
+              <MorePanel
+                exportNextProject={exportNextProject}
+                exportStaticStorefront={exportStaticStorefront}
+                exportTemplatePackage={exportTemplatePackage}
+                resetTemplate={resetTemplate}
+              />
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -173,6 +214,9 @@ export function PreviewCanvas({
             </div>
             <span>{selectedSection ? sectionRegistry[selectedSection.type].label : "No section selected"}</span>
           </div>
+          <div className="mb-3 rounded-md border border-[#d8dde5] bg-white/90 px-3 py-2 text-xs text-[#475569] shadow-sm">
+            <span className="font-semibold text-[#111827]">Preview mode:</span> click product cards to open the product page, use Add/Quick add to fill the cart, then test cart and checkout.
+          </div>
           <StorePreview
             device={device}
             activeProductId={activeProductId}
@@ -190,6 +234,136 @@ export function PreviewCanvas({
       </div>
     </section>
   );
+}
+
+function SharePanel({
+  copyShareLink,
+  shareEnabled,
+  shareLink,
+  sharedAt,
+  shareStatus,
+  shareUpdatedAt,
+  toggleShareLink,
+}: {
+  copyShareLink: () => void;
+  shareEnabled: boolean;
+  shareLink?: string;
+  sharedAt?: string | null;
+  shareStatus?: string;
+  shareUpdatedAt?: string | null;
+  toggleShareLink: () => void;
+}) {
+  return (
+    <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-80 rounded-lg border border-[#d8dde5] bg-white p-4 text-left shadow-2xl shadow-slate-950/20">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-[#111827]">Public sharing</p>
+          <p className="mt-1 text-xs leading-5 text-[#64748b]">Only pages marked as published are visible on the public link.</p>
+        </div>
+        <span
+          className={`rounded-md border px-2 py-1 text-xs font-semibold ${
+            shareEnabled ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]" : "border-[#e2e8f0] bg-[#f8fafc] text-[#64748b]"
+          }`}
+        >
+          {shareEnabled ? "Published" : "Private"}
+        </span>
+      </div>
+
+      {shareEnabled && shareLink ? (
+        <div className="mt-4 rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3">
+          <p className="truncate text-xs font-medium text-[#334155]">{shareLink}</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+              onClick={copyShareLink}
+              type="button"
+            >
+              Copy link
+            </button>
+            <Link
+              className="rounded-md bg-[#111827] px-3 py-2 text-center text-xs font-medium text-white hover:bg-[#1f2937]"
+              href={shareLink}
+              target="_blank"
+            >
+              Open preview
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mt-4 space-y-1.5 text-xs text-[#64748b]">
+        <p>{shareStatus}</p>
+        <p>Last saved: {formatShareDate(shareUpdatedAt)}</p>
+        <p>Last published: {formatShareDate(sharedAt)}</p>
+      </div>
+
+      <button
+        className={`mt-4 w-full rounded-md px-3 py-2 text-xs font-semibold ${
+          shareEnabled ? "border border-[#fecaca] bg-white text-[#b91c1c] hover:bg-[#fef2f2]" : "bg-[#111827] text-white hover:bg-[#1f2937]"
+        }`}
+        onClick={toggleShareLink}
+        type="button"
+      >
+        {shareEnabled ? "Unpublish" : "Publish share link"}
+      </button>
+    </div>
+  );
+}
+
+function MorePanel({
+  exportNextProject,
+  exportStaticStorefront,
+  exportTemplatePackage,
+  resetTemplate,
+}: {
+  exportNextProject: () => void;
+  exportStaticStorefront: () => void;
+  exportTemplatePackage: () => void;
+  resetTemplate: () => void;
+}) {
+  return (
+    <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-72 rounded-lg border border-[#d8dde5] bg-white p-3 text-left shadow-2xl shadow-slate-950/20">
+      <p className="px-1 text-xs font-semibold uppercase text-[#64748b]">Secondary actions</p>
+      <div className="mt-2 grid gap-2">
+        <button
+          className="rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-left text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+          onClick={exportTemplatePackage}
+          type="button"
+        >
+          Download editing package
+        </button>
+        <button
+          className="rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2 text-left text-xs font-medium text-[#1d4ed8] hover:bg-[#dbeafe]"
+          onClick={exportStaticStorefront}
+          type="button"
+        >
+          Export static site
+        </button>
+        <button
+          className="rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-2 text-left text-xs font-medium text-[#15803d] hover:bg-[#dcfce7]"
+          onClick={exportNextProject}
+          type="button"
+        >
+          Export Next app
+        </button>
+        <button
+          className="rounded-md border border-[#fecaca] bg-white px-3 py-2 text-left text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2]"
+          onClick={resetTemplate}
+          type="button"
+        >
+          Reset active template
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function formatShareDate(value?: string | null) {
+  if (!value) {
+    return "Not yet";
+  }
+
+  return value.replace("T", " ").slice(0, 16);
 }
 
 function deviceLabel(device: Device) {
