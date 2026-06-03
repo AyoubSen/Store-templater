@@ -82,6 +82,7 @@ Important files:
 - `components/builder/preview-canvas.tsx`: editor toolbar, device controls, zoom, preview canvas
 - `components/builder/inspector-panel.tsx`: Store/Theme/Items/Section inspector tabs
 - `components/builder/section-inspector.tsx`: section-specific editing controls
+- `components/template-creation-flow.tsx`: guided New template flow shared by the builder and dashboard
 - `components/builder/controls.tsx`: reusable controls including color picker and field editors
 - `components/storefront-preview.tsx`: shared storefront renderer
 - `app/page.tsx`: public landing page
@@ -95,8 +96,8 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 ## Current Feature Set
 
 - Local multi-template library stored in localStorage
-- Starter template picker for new templates, with category-specific copy, products, categories, and section defaults
 - Guided template creation flow for choosing store type, visual direction, starting page structure, and optional template name
+- Starter generator with category-specific products, palettes, page copy, page sets, section defaults, and digital-product starter content
 - Explicit `/preview/[templateId]` preview URLs with selected-page query support
 - Public `/s/[shareId]` and `/s/[shareId]/[page-slug]` share links backed by account templates in Neon
 - Compact publish/share panels in the builder and `/templates` dashboard with private/published state, copy/open/unpublish actions, and saved/published timestamps
@@ -114,6 +115,7 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Page metadata for slug, SEO title, and draft/published status
 - Ecommerce page sections for collection grids, product details, cart summaries, and checkout summaries
 - Shared section style controls for spacing, density, background, alignment, button style, and desktop/tablet/mobile visibility on main storefront sections
+- Section layout variants for hero composition and product/collection grid composition, including split/centered/product-spotlight heroes and grid/editorial/compact product layouts
 - Richer ecommerce controls for product count, product card style, quick-add visibility, collection filter/sort visibility, product media layout, and product detail media emphasis
 - Page-specific ecommerce preview polish for editable collection description/status chips, filter states, editable product social proof/trust details, editable cart shipping incentives, and editable checkout express payment options
 - Public storefront polish for commerce pages, including richer product cards, product inventory cues, cart trust signals, and checkout step framing
@@ -124,6 +126,7 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - `/templates` dashboard with search, published/private filtering, sorting, JSON import/export, grouped export actions, and collapsed share controls
 - Local-first `.store-template.json` export packages and multi-page static storefront zip exports for active templates and dashboard templates
 - Generated Next storefront project zip exports with pnpm scripts, App Router pages, shared storefront component, template data, and theme CSS
+- Static and generated Next storefront exports preserve the current hero and product-grid layout variants closely enough for visual parity checks
 - Zod validation and versioning for stored/imported templates
 - Desktop/tablet/mobile preview modes
 - Preview zoom controls
@@ -182,11 +185,11 @@ Expected section types over time:
 
 ## Near-Term Priorities
 
-1. Continue polishing storefront visuals so templates feel sellable, not just functional.
-2. Polish the `/templates` dashboard for larger local libraries.
-3. Improve hosted preview controls and status polish.
-4. Add richer controls for responsive layout variants beyond visibility.
-5. Add real backend persistence and auth after local editor workflows settle.
+1. Add dashboard visual thumbnails/previews so visually distinct templates are easier to recognize.
+2. Continue polishing storefront visuals and section variants so templates feel sellable, not just functional.
+3. Polish the `/templates` dashboard for larger local libraries.
+4. Improve hosted preview controls and status polish.
+5. Add richer controls for responsive layout variants beyond visibility.
 
 ## Implementation Notes
 

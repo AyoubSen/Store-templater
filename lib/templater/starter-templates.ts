@@ -18,7 +18,39 @@ export type StarterTemplateConfig = {
   categories: string[];
   featurePoints: string[];
   newsletterTitle: string;
+  pageCopy: StarterPageCopy;
   products: StoreTemplate["products"];
+};
+
+type StarterPageCopy = {
+  cart: {
+    incentive: string;
+    note: string;
+    perks: string[];
+  };
+  checkout: {
+    paymentMethods: string[];
+    reassurance: string;
+    subtitle: string;
+  };
+  collection: {
+    description: string;
+    filters: string[];
+    sortLabel: string;
+    statusChips: string[];
+  };
+  contact: {
+    faqTitle: string;
+    questions: string[];
+  };
+  product: {
+    details: string[];
+    socialProof: string[];
+    trustItems: string[];
+    variants: string[];
+  };
+  reviews: string[];
+  trustItems: string[];
 };
 
 export type TemplateVisualStyle = "minimal" | "editorial" | "bold" | "premium" | "playful";
@@ -78,6 +110,36 @@ export const starterTemplates: StarterTemplateConfig[] = [
     categories: ["New arrivals", "Essentials", "Accessories", "Sale"],
     featurePoints: ["Reusable product stories", "Editorial collection pages", "Mobile-first buying paths"],
     newsletterTitle: "Drop alerts, launches, and edits.",
+    pageCopy: {
+      cart: {
+        incentive: "Add one more staple to unlock free shipping and complete the seasonal edit.",
+        note: "You are close to free shipping.",
+        perks: ["Free shipping over $75", "Easy size exchanges", "Tracked delivery"],
+      },
+      checkout: {
+        paymentMethods: ["Shop Pay", "Apple Pay", "Card"],
+        reassurance: "Secure checkout, tracked shipping, and easy exchanges on every order.",
+        subtitle: "A clean checkout flow for apparel drops, bundles, and everyday staples.",
+      },
+      collection: {
+        description: "Browse seasonal staples, accessories, and everyday essentials designed for repeat wear.",
+        filters: ["Category", "Size", "Color", "Price"],
+        sortLabel: "New arrivals",
+        statusChips: ["In stock", "Seasonal edit", "Ships in 2 days"],
+      },
+      contact: {
+        faqTitle: "Fit, shipping, and returns",
+        questions: ["How do I choose my size?", "How fast does my order ship?", "Can I exchange an item?"],
+      },
+      product: {
+        details: ["Premium natural textures", "Easy-care construction", "Ships in 2 business days"],
+        socialProof: ["★★★★★ 4.9", "Loved by capsule wardrobes", "Low stock"],
+        trustItems: ["Size exchanges", "Tracked shipping", "Secure checkout"],
+        variants: ["XS", "S", "M", "L", "XL"],
+      },
+      reviews: ["The pieces feel refined without trying too hard.", "Sizing was clear and the checkout felt easy.", "A polished drop page that made the collection feel premium."],
+      trustItems: ["Free shipping over $75", "Easy exchanges", "Secure checkout", "Human support"],
+    },
     products: sampleTemplate.products,
   },
   {
@@ -105,6 +167,36 @@ export const starterTemplates: StarterTemplateConfig[] = [
     categories: ["Lighting", "Textiles", "Tabletop", "Decor"],
     featurePoints: ["Room-based product stories", "Calm collection grids", "Trust cues for shipping and materials"],
     newsletterTitle: "Room notes, restocks, and seasonal edits.",
+    pageCopy: {
+      cart: {
+        incentive: "Complete the room edit to unlock complimentary delivery on your order.",
+        note: "Your room edit is almost delivery-ready.",
+        perks: ["Careful packaging", "Tracked delivery", "Material notes included"],
+      },
+      checkout: {
+        paymentMethods: ["Card", "PayPal", "Apple Pay"],
+        reassurance: "Careful packaging, tracked delivery, and support for fragile goods.",
+        subtitle: "A calm checkout path for home goods, room edits, and considered objects.",
+      },
+      collection: {
+        description: "Explore curated objects by room, material, and function.",
+        filters: ["Room", "Material", "Price", "Availability"],
+        sortLabel: "Room edit",
+        statusChips: ["Ready to ship", "Curated edit", "Giftable"],
+      },
+      contact: {
+        faqTitle: "Delivery, care, and materials",
+        questions: ["How are fragile items packed?", "Do you include care instructions?", "Can I send this as a gift?"],
+      },
+      product: {
+        details: ["Made for everyday rooms", "Material and care notes included", "Packed for safe delivery"],
+        socialProof: ["★★★★★ 4.8", "Styled in 400+ homes", "Limited room edit"],
+        trustItems: ["Careful packing", "Tracked delivery", "Responsive support"],
+        variants: ["Natural", "Warm", "Dark", "Mixed"],
+      },
+      reviews: ["The object looked even better in person.", "Packaging was thoughtful and arrived safely.", "The room edit made styling easy."],
+      trustItems: ["Careful packaging", "Tracked delivery", "Gift-ready notes", "Human support"],
+    },
     products: [
       {
         id: "lamp",
@@ -155,6 +247,36 @@ export const starterTemplates: StarterTemplateConfig[] = [
     categories: ["Cleansers", "Serums", "Moisturizers", "Kits"],
     featurePoints: ["Routine-first merchandising", "Trust and review sections", "Bundle-friendly product grids"],
     newsletterTitle: "Get routine notes and replenishment reminders.",
+    pageCopy: {
+      cart: {
+        incentive: "Add a routine companion to unlock complimentary samples.",
+        note: "You are one step away from a complete routine.",
+        perks: ["Complimentary samples", "Routine guidance", "Easy replenishment"],
+      },
+      checkout: {
+        paymentMethods: ["Shop Pay", "Apple Pay", "Card"],
+        reassurance: "Encrypted checkout, sample selection, and replenishment reminders included.",
+        subtitle: "A gentle checkout flow for routines, refills, and bundle-friendly skincare.",
+      },
+      collection: {
+        description: "Shop by routine step, skin goal, and replenishment needs.",
+        filters: ["Routine step", "Skin goal", "Bundle", "Price"],
+        sortLabel: "Routine order",
+        statusChips: ["Derm-tested", "Samples included", "Routine ready"],
+      },
+      contact: {
+        faqTitle: "Routine and ingredient questions",
+        questions: ["Which product fits my routine?", "Are samples included?", "How often should I replenish?"],
+      },
+      product: {
+        details: ["Routine-friendly formula", "Made for daily use", "Pairs well with the full kit"],
+        socialProof: ["★★★★★ 4.9", "2,000+ routines built", "Derm-tested"],
+        trustItems: ["Ingredient notes", "Complimentary samples", "Secure checkout"],
+        variants: ["Daily", "Sensitive", "Travel", "Refill"],
+      },
+      reviews: ["My routine finally feels simple.", "The bundle made choosing products easier.", "The product page answered every ingredient question."],
+      trustItems: ["Complimentary samples", "Routine support", "Secure checkout", "Easy replenishment"],
+    },
     products: [
       {
         id: "serum",
@@ -206,6 +328,36 @@ export const starterTemplates: StarterTemplateConfig[] = [
     categories: ["Audio", "Workspace", "Accessories", "Chargers"],
     featurePoints: ["Spec-ready product pages", "Accessory cross-sells", "Clean checkout confidence"],
     newsletterTitle: "New gear, setup notes, and restock alerts.",
+    pageCopy: {
+      cart: {
+        incentive: "Add an accessory to complete the setup and unlock faster dispatch.",
+        note: "Your workspace setup is almost complete.",
+        perks: ["Fast dispatch", "Warranty support", "Setup-ready accessories"],
+      },
+      checkout: {
+        paymentMethods: ["Card", "Apple Pay", "Google Pay"],
+        reassurance: "Encrypted checkout, warranty support, and tracked dispatch included.",
+        subtitle: "A conversion-focused checkout for devices, accessories, and workspace upgrades.",
+      },
+      collection: {
+        description: "Compare workspace gear by category, compatibility, and setup need.",
+        filters: ["Category", "Compatibility", "Use case", "Price"],
+        sortLabel: "Recommended setup",
+        statusChips: ["In stock", "Fast dispatch", "Warranty included"],
+      },
+      contact: {
+        faqTitle: "Compatibility and setup",
+        questions: ["Will this work with my setup?", "How fast does it ship?", "What warranty is included?"],
+      },
+      product: {
+        details: ["Setup-ready specs", "Compatible with modern workstations", "Warranty support included"],
+        socialProof: ["★★★★★ 4.8", "Setup favorite", "Fast dispatch"],
+        trustItems: ["Warranty support", "Tracked dispatch", "Secure checkout"],
+        variants: ["Black", "Silver", "Desk kit", "Travel kit"],
+      },
+      reviews: ["The specs were clear and easy to compare.", "It fit my desk setup perfectly.", "Fast dispatch and simple checkout."],
+      trustItems: ["Fast dispatch", "Warranty support", "Secure checkout", "Setup guidance"],
+    },
     products: [
       {
         id: "headphones",
@@ -257,6 +409,36 @@ export const starterTemplates: StarterTemplateConfig[] = [
     categories: ["Templates", "Assets", "Courses", "Bundles"],
     featurePoints: ["Instant file delivery", "License and update messaging", "Bundle-friendly product pages"],
     newsletterTitle: "New drops, update notes, and creator resources.",
+    pageCopy: {
+      cart: {
+        incentive: "Add the launch bundle to unlock bonus assets and future updates.",
+        note: "Your digital toolkit is ready for instant access.",
+        perks: ["Instant download", "Lifetime updates", "Commercial license notes"],
+      },
+      checkout: {
+        paymentMethods: ["Card", "PayPal", "Apple Pay"],
+        reassurance: "Secure payment, instant access, and clear license details after checkout.",
+        subtitle: "A streamlined checkout for templates, assets, courses, and downloadable bundles.",
+      },
+      collection: {
+        description: "Browse templates, asset packs, and resource bundles built for faster creative work.",
+        filters: ["Format", "License", "Skill level", "Bundle"],
+        sortLabel: "Most useful",
+        statusChips: ["Instant access", "Lifetime updates", "Commercial license"],
+      },
+      contact: {
+        faqTitle: "Downloads, licenses, and updates",
+        questions: ["How do I access files?", "Can I use this commercially?", "Are future updates included?"],
+      },
+      product: {
+        details: ["Instant download after checkout", "License notes included", "Future updates included"],
+        socialProof: ["★★★★★ 4.9", "Used by 1,200+ creators", "Lifetime updates"],
+        trustItems: ["Instant access", "License included", "Secure checkout"],
+        variants: ["Personal", "Commercial", "Team", "Bundle"],
+      },
+      reviews: ["The files were organized and ready to use.", "The license details were clear.", "The bundle saved hours on launch prep."],
+      trustItems: ["Instant download", "Lifetime updates", "License included", "Secure checkout"],
+    },
     products: [
       {
         id: "notion-dashboard",
@@ -308,6 +490,36 @@ export const starterTemplates: StarterTemplateConfig[] = [
     categories: ["Breakfast", "Pantry", "Preserves", "Bundles"],
     featurePoints: ["Batch and origin storytelling", "Simple subscriptions", "Delivery-first checkout cues"],
     newsletterTitle: "Fresh batches, seasonal notes, and pantry picks.",
+    pageCopy: {
+      cart: {
+        incentive: "Add one more pantry item to unlock local delivery perks.",
+        note: "Your pantry box is almost full.",
+        perks: ["Fresh batch notes", "Local delivery windows", "Careful packing"],
+      },
+      checkout: {
+        paymentMethods: ["Card", "Apple Pay", "PayPal"],
+        reassurance: "Secure checkout, delivery-window updates, and careful packing included.",
+        subtitle: "A friendly checkout flow for pantry drops, bundles, and local delivery.",
+      },
+      collection: {
+        description: "Shop small-batch pantry staples by batch, flavor, and delivery window.",
+        filters: ["Batch", "Flavor", "Delivery", "Bundle"],
+        sortLabel: "Fresh batch",
+        statusChips: ["Small batch", "Local delivery", "Freshly packed"],
+      },
+      contact: {
+        faqTitle: "Delivery, freshness, and batches",
+        questions: ["When are delivery windows?", "How fresh are batches?", "Can I build a bundle?"],
+      },
+      product: {
+        details: ["Made in small batches", "Packed for freshness", "Pairs well with pantry bundles"],
+        socialProof: ["★★★★★ 4.9", "Small batch favorite", "Freshly packed"],
+        trustItems: ["Fresh batch notes", "Local delivery", "Secure checkout"],
+        variants: ["Single", "Pair", "Family size", "Gift bundle"],
+      },
+      reviews: ["The batch notes made it feel special.", "Delivery was smooth and well packed.", "The bundle was perfect for gifting."],
+      trustItems: ["Small batch", "Local delivery", "Fresh packing", "Secure checkout"],
+    },
     products: [
       {
         id: "granola",
@@ -392,6 +604,36 @@ function customizeSectionsForStructure(page: TemplatePage, structure: TemplatePa
   return page.sections.filter((section) => landingSections.has(section.type));
 }
 
+function heroVariantForStyle(
+  structure: TemplatePageStructure,
+  productCardStyle: "elevated" | "minimal" | "editorial",
+) {
+  if (structure === "landing") {
+    return "centered";
+  }
+
+  if (productCardStyle === "minimal" || productCardStyle === "elevated") {
+    return "productSpotlight";
+  }
+
+  return "split";
+}
+
+function productGridLayoutForStarter(
+  category: StoreCategory,
+  productCardStyle: "elevated" | "minimal" | "editorial",
+) {
+  if (category === "digital" || category === "electronics" || category === "food") {
+    return "compact";
+  }
+
+  if (productCardStyle === "editorial" || productCardStyle === "minimal") {
+    return "editorial";
+  }
+
+  return "grid";
+}
+
 function customizeSection(
   section: TemplateSection,
   {
@@ -423,7 +665,7 @@ function customizeSection(
   if (section.type === "hero") {
     return {
       ...section,
-      settings: { ...section.settings, ...starter.hero },
+      settings: { ...section.settings, ...starter.hero, variant: heroVariantForStyle(structure, productCardStyle) },
     };
   }
 
@@ -439,9 +681,12 @@ function customizeSection(
       ...section,
       settings: {
         ...section.settings,
-        description: `Browse ${starter.name}'s core categories and featured edits.`,
+        description: starter.pageCopy.collection.description,
+        filters: starter.pageCopy.collection.filters,
         productCount: starter.products.length,
-        statusChips: starter.categories.slice(0, 3),
+        productGridLayout: productGridLayoutForStarter(starter.category, productCardStyle),
+        sortLabel: starter.pageCopy.collection.sortLabel,
+        statusChips: starter.pageCopy.collection.statusChips,
         title: `${starter.category} collection`,
       },
     };
@@ -454,6 +699,7 @@ function customizeSection(
         ...section.settings,
         cardStyle: productCardStyle,
         productCount: starter.products.length,
+        productGridLayout: productGridLayoutForStarter(starter.category, productCardStyle),
         quickAdd: structure === "landing" ? "show" : section.settings.quickAdd,
         title: `${starter.category} favorites`,
       },
@@ -465,8 +711,35 @@ function customizeSection(
       ...section,
       settings: {
         ...section.settings,
-        socialProof: starter.featurePoints,
+        details: starter.pageCopy.product.details,
+        socialProof: starter.pageCopy.product.socialProof,
+        trustItems: starter.pageCopy.product.trustItems,
         subtitle: starter.hero.copy,
+        variants: starter.pageCopy.product.variants,
+      },
+    };
+  }
+
+  if (section.type === "cartSummary") {
+    return {
+      ...section,
+      settings: {
+        ...section.settings,
+        incentive: starter.pageCopy.cart.incentive,
+        note: starter.pageCopy.cart.note,
+        perks: starter.pageCopy.cart.perks,
+      },
+    };
+  }
+
+  if (section.type === "checkoutSummary") {
+    return {
+      ...section,
+      settings: {
+        ...section.settings,
+        paymentMethods: starter.pageCopy.checkout.paymentMethods,
+        reassurance: starter.pageCopy.checkout.reassurance,
+        subtitle: starter.pageCopy.checkout.subtitle,
       },
     };
   }
@@ -483,7 +756,26 @@ function customizeSection(
       ...section,
       settings: {
         ...section.settings,
+        reviews: starter.pageCopy.reviews,
         title: structure === "landing" ? "Why customers come back" : section.settings.title,
+      },
+    };
+  }
+
+  if (section.type === "trustBand") {
+    return {
+      ...section,
+      settings: { ...section.settings, items: starter.pageCopy.trustItems },
+    };
+  }
+
+  if (section.type === "faq") {
+    return {
+      ...section,
+      settings: {
+        ...section.settings,
+        questions: starter.pageCopy.contact.questions,
+        title: starter.pageCopy.contact.faqTitle,
       },
     };
   }

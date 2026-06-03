@@ -22,6 +22,7 @@ const defaultSettingsByType: Record<SectionType, TemplateSection["settings"]> = 
   },
   hero: {
     ...defaultStyle,
+    variant: "split",
     eyebrow: "New collection",
     title: "A storefront built around your brand.",
     copy: "Customize every section, token, and product story from a visual builder.",
@@ -38,6 +39,7 @@ const defaultSettingsByType: Record<SectionType, TemplateSection["settings"]> = 
     description: "Browse a storefront-ready collection page with filters, sorting, and product cards.",
     statusChips: ["In stock", "Ships in 2 days"],
     productCount: 6,
+    productGridLayout: "grid",
     productCardStyle: "elevated",
     showQuickAdd: true,
     showFilters: true,
@@ -77,6 +79,7 @@ const defaultSettingsByType: Record<SectionType, TemplateSection["settings"]> = 
     title: "Featured products",
     columns: 3,
     productCount: 3,
+    productGridLayout: "grid",
     productCardStyle: "elevated",
     showQuickAdd: true,
   },

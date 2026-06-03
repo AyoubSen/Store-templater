@@ -42,6 +42,7 @@ export function TemplateCreationFlow({
   const selectedStyle = visualStyleOptions.find((option) => option.id === visualStyle) ?? visualStyleOptions[0];
   const selectedStructure = pageStructureOptions.find((option) => option.id === structure) ?? pageStructureOptions[0];
   const previewColors = resolveStarterPalette(starter.colors, visualStyle);
+  const includedSections = useMemo(() => getIncludedSections(selectedStructure.pages), [selectedStructure.pages]);
 
   function createTemplate() {
     onCreate({
@@ -188,16 +189,36 @@ export function TemplateCreationFlow({
                     <SummaryItem label={t("starter.summaryStyle")} value={selectedStyle.name} />
                     <SummaryItem label={t("starter.summaryPages")} value={`${selectedStructure.name} (${selectedStructure.pages.length})`} />
                   </div>
+                  {structure === "landing" ? (
+                    <p className="mt-3 rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2 text-xs leading-5 text-[#1d4ed8]">
+                      {t("starter.landingNote")}
+                    </p>
+                  ) : null}
+                  <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                    <SummaryPanel title={t("starter.summaryIncludedPages")}>
+                      <ChipList items={selectedStructure.pages.map(formatPageLabel)} />
+                    </SummaryPanel>
+                    <SummaryPanel title={t("starter.summaryProducts")}>
+                      <p className="text-xs leading-5 text-[#64748b]">
+                        {starter.products.length} {t("starter.summaryProductsSuffix")}
+                      </p>
+                      <ChipList items={starter.products.map((product) => product.name)} />
+                    </SummaryPanel>
+                    <SummaryPanel title={t("starter.summarySections")}>
+                      <ChipList items={includedSections} />
+                    </SummaryPanel>
+                    <SummaryPanel title={t("starter.summaryContent")}>
+                      <ChipList items={starter.categories.concat(starter.featurePoints.slice(0, 2))} />
+                    </SummaryPanel>
+                  </div>
                   <div className="mt-3 rounded-md border border-[#e2e8f0] bg-white p-3">
                     <p className="text-[11px] font-semibold uppercase text-[#94a3b8]">{t("starter.summaryColors")}</p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                       {Object.entries(previewColors).map(([name, color]) => (
-                        <span
-                          className="h-7 w-7 rounded-full border border-black/10"
-                          key={name}
-                          style={{ background: color }}
-                          title={`${name}: ${color}`}
-                        />
+                        <div className="flex min-w-0 items-center gap-2 rounded-md border border-[#e2e8f0] bg-[#f8fafc] px-2 py-1.5" key={name}>
+                          <span className="h-5 w-5 shrink-0 rounded-full border border-black/10" style={{ background: color }} />
+                          <span className="min-w-0 truncate text-[11px] font-medium capitalize text-[#475569]">{name}</span>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -261,4 +282,65 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
       <p className="mt-1 text-sm font-semibold text-[#111827]">{value}</p>
     </div>
   );
+}
+
+function SummaryPanel({ children, title }: { children: React.ReactNode; title: string }) {
+  return (
+    <div className="rounded-md border border-[#e2e8f0] bg-white p-3">
+      <p className="text-[11px] font-semibold uppercase text-[#94a3b8]">{title}</p>
+      <div className="mt-2">{children}</div>
+    </div>
+  );
+}
+
+function ChipList({ items }: { items: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((item) => (
+        <span className="rounded-full border border-[#e2e8f0] bg-[#f8fafc] px-2 py-1 text-[11px] font-medium text-[#475569]" key={item}>
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function formatPageLabel(page: string) {
+  return page
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getIncludedSections(pages: string[]) {
+  const sections = new Set<string>(["Hero", "Header", "Product cards"]);
+
+  if (pages.includes("collection")) {
+    sections.add("Collection grid");
+    sections.add("Filters");
+  }
+
+  if (pages.includes("product")) {
+    sections.add("Product detail");
+    sections.add("FAQ");
+  }
+
+  if (pages.includes("cart")) {
+    sections.add("Cart summary");
+    sections.add("Trust band");
+  }
+
+  if (pages.includes("checkout")) {
+    sections.add("Checkout summary");
+  }
+
+  if (pages.includes("about")) {
+    sections.add("Brand story");
+  }
+
+  if (pages.includes("contact")) {
+    sections.add("Contact FAQ");
+  }
+
+  return Array.from(sections);
 }

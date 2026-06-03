@@ -180,74 +180,14 @@ function PreviewSection({
   if (section.type === "hero") {
     return (
       <section className={sectionShell(settings, "canvas", "spacious", selectedClass)}>
-        <div
-          className={`mx-auto grid max-w-[var(--store-max-width)] gap-8 py-8 ${
-            isForcedMobile ? "" : `md:grid-cols-[0.92fr_1.08fr] md:items-center md:py-14 ${isForcedTablet ? "" : "xl:gap-12"}`
-          }`}
-        >
-          <div className={`min-w-0 self-center ${alignmentClass}`}>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--store-primary)]">
-              {String(settings.eyebrow)}
-            </p>
-            <h2
-              className={`mt-4 max-w-2xl font-black leading-[1.04] text-[var(--store-text)] ${
-                isForcedMobile
-                  ? "text-[calc(2.25rem*var(--store-heading-scale))]"
-                  : "text-[calc(2.25rem*var(--store-heading-scale))] md:text-[calc(3.75rem*var(--store-heading-scale))]"
-              }`}
-            >
-              {String(settings.title)}
-            </h2>
-            <p
-              className={`mt-5 max-w-xl text-[calc(1rem*var(--store-body-scale))] leading-7 text-[var(--store-muted)] ${
-                isForcedMobile ? "" : "md:text-[calc(1.125rem*var(--store-body-scale))]"
-              }`}
-            >
-              {String(settings.copy)}
-            </p>
-            <div className={`mt-8 flex flex-wrap gap-3 ${alignmentClass === "text-center" ? "justify-center" : ""}`}>
-              <button className={primaryButtonClass} onClick={() => navigateToPageType(template, "collection", onNavigatePage)} type="button">
-                {String(settings.cta)}
-              </button>
-              <button
-                className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-5 py-3 text-sm font-bold text-[var(--store-text)]"
-                onClick={() => navigateToPageType(template, "about", onNavigatePage)}
-                type="button"
-              >
-                View lookbook
-              </button>
-            </div>
-            <div className={`mt-8 grid max-w-md gap-3 border-[var(--store-border)] border-t pt-5 text-sm ${isForcedMobile ? "grid-cols-3" : "sm:grid-cols-3"} ${alignmentClass === "text-center" ? "mx-auto" : ""}`}>
-              <div className="rounded-[var(--store-radius)] bg-[var(--store-surface)]/70 px-3 py-2">
-                <p className="font-black text-[var(--store-text)]">4.9/5</p>
-                <p className="mt-1 text-xs text-[var(--store-muted)]">Customer rating</p>
-              </div>
-              <div className="rounded-[var(--store-radius)] bg-[var(--store-surface)]/70 px-3 py-2">
-                <p className="font-black text-[var(--store-text)]">2-day</p>
-                <p className="mt-1 text-xs text-[var(--store-muted)]">Fast dispatch</p>
-              </div>
-              <div className="rounded-[var(--store-radius)] bg-[var(--store-surface)]/70 px-3 py-2">
-                <p className="font-black text-[var(--store-text)]">30-day</p>
-                <p className="mt-1 text-xs text-[var(--store-muted)]">Easy returns</p>
-              </div>
-            </div>
-          </div>
-          <div
-            className={`relative min-h-[300px] min-w-0 overflow-hidden rounded-[calc(var(--store-radius)+10px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-4 shadow-2xl shadow-black/10 ${
-              isForcedMobile ? "aspect-[4/5]" : `md:min-h-[420px] ${isForcedTablet ? "" : "xl:min-h-[500px]"}`
-            }`}
-          >
-            <div className="absolute inset-4 rounded-[var(--store-radius)] bg-[linear-gradient(135deg,var(--store-secondary),var(--store-accent))]" />
-            <div className="absolute right-5 top-5 rounded-full bg-white/90 px-4 py-2 text-xs font-black text-[var(--store-text)] shadow-lg md:right-7 md:top-7">
-              New drop
-            </div>
-            <div className="absolute bottom-5 left-5 right-5 min-w-0 rounded-[var(--store-radius)] bg-white/85 p-4 shadow-xl backdrop-blur md:bottom-7 md:left-7 md:right-7 xl:p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--store-primary)]">Featured set</p>
-              <p className="mt-2 text-xl font-black text-[var(--store-text)]">Curated everyday essentials</p>
-              <p className="mt-1 text-sm text-[var(--store-muted)]">Three-piece capsule bundle from $164.</p>
-            </div>
-          </div>
-        </div>
+        <HeroSection
+          isForcedMobile={isForcedMobile}
+          isForcedTablet={isForcedTablet}
+          onNavigatePage={onNavigatePage}
+          primaryButtonClass={primaryButtonClass}
+          settings={settings}
+          template={template}
+        />
       </section>
     );
   }
@@ -274,6 +214,7 @@ function PreviewSection({
     const products = template.products.slice(0, numberSetting(settings.productCount, template.products.length));
     const columns = numberSetting(settings.columns, 3);
     const productCardStyle = styleValue(settings.productCardStyle, "elevated");
+    const productGridLayout = styleValue(settings.productGridLayout, "grid");
     const showQuickAdd = booleanSetting(settings.showQuickAdd, true);
 
     return (
@@ -292,7 +233,7 @@ function PreviewSection({
               Shop all
             </button>
           </div>
-          <div className={`mt-8 grid ${densityGapClass} ${isForcedMobile ? "grid-cols-1" : productGridColumns(columns, isForcedTablet)}`}>
+          <div className={productGridClass(productGridLayout, columns, isForcedMobile, isForcedTablet, densityGapClass)}>
             {products.map((product) => (
               <ProductCard
                 density={density}
@@ -303,7 +244,7 @@ function PreviewSection({
                 onOpenProduct={onOpenProduct}
                 product={product}
                 showQuickAdd={showQuickAdd}
-                variant={productCardStyle}
+                variant={productGridLayout === "compact" ? "compact" : productCardStyle}
               />
             ))}
           </div>
@@ -319,6 +260,7 @@ function PreviewSection({
     const showFilters = booleanSetting(settings.showFilters, true);
     const showSort = booleanSetting(settings.showSort, true);
     const productCardStyle = styleValue(settings.productCardStyle, "elevated");
+    const productGridLayout = styleValue(settings.productGridLayout, "grid");
     const showQuickAdd = booleanSetting(settings.showQuickAdd, true);
 
     return (
@@ -382,9 +324,13 @@ function PreviewSection({
               </aside>
             ) : null}
             <div
-              className={`grid ${densityGapClass} ${
-                isForcedMobile ? "" : isForcedTablet ? "sm:grid-cols-2" : `sm:grid-cols-2 ${showFilters ? "xl:grid-cols-3" : "lg:grid-cols-3 xl:grid-cols-4"}`
-              }`}
+              className={productGridClass(
+                productGridLayout,
+                showFilters ? 3 : 4,
+                isForcedMobile,
+                isForcedTablet,
+                densityGapClass,
+              )}
             >
               {products.map((product) => (
                 <ProductCard
@@ -396,7 +342,7 @@ function PreviewSection({
                   onOpenProduct={onOpenProduct}
                   product={product}
                   showQuickAdd={showQuickAdd}
-                  variant={productCardStyle}
+                  variant={productGridLayout === "compact" ? "compact" : productCardStyle}
                 />
               ))}
             </div>
@@ -928,6 +874,206 @@ function navigateToPageType(template: StoreTemplate, type: PageType, onNavigateP
   }
 }
 
+function HeroSection({
+  isForcedMobile,
+  isForcedTablet,
+  onNavigatePage,
+  primaryButtonClass,
+  settings,
+  template,
+}: {
+  isForcedMobile: boolean;
+  isForcedTablet: boolean;
+  onNavigatePage?: (pageId: string) => void;
+  primaryButtonClass: string;
+  settings: TemplateSection["settings"];
+  template: StoreTemplate;
+}) {
+  const variant = styleValue(settings.variant, "split");
+  const product = template.products[0];
+
+  if (variant === "centered") {
+    return (
+      <div className="mx-auto max-w-[var(--store-max-width)] py-8 text-center md:py-14">
+        <HeroCopy
+          align="center"
+          cta={String(settings.cta)}
+          eyebrow={String(settings.eyebrow)}
+          isForcedMobile={isForcedMobile}
+          onNavigatePage={onNavigatePage}
+          primaryButtonClass={primaryButtonClass}
+          template={template}
+          textSize="large"
+          title={String(settings.title)}
+          copy={String(settings.copy)}
+        />
+        <div className={`mx-auto mt-10 grid max-w-5xl gap-4 ${isForcedMobile ? "" : isForcedTablet ? "sm:grid-cols-3" : "md:grid-cols-3"}`}>
+          {template.products.slice(0, 3).map((item) => (
+            <div className="rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-3 shadow-xl shadow-black/5" key={item.id}>
+              <div className="aspect-[4/3] rounded-[var(--store-radius)] bg-cover bg-center" style={productImageStyle(item)} />
+              <p className="mt-3 truncate text-sm font-black text-[var(--store-text)]">{item.name}</p>
+              <p className="mt-1 text-xs font-semibold text-[var(--store-muted)]">${item.price}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "productSpotlight") {
+    return (
+      <div
+        className={`mx-auto grid max-w-[var(--store-max-width)] gap-8 py-8 ${
+          isForcedMobile ? "" : `md:grid-cols-[1.12fr_0.88fr] md:items-center md:py-14 ${isForcedTablet ? "" : "xl:gap-12"}`
+        }`}
+      >
+        <div
+          className={`relative min-h-[320px] min-w-0 overflow-hidden rounded-[calc(var(--store-radius)+12px)] border border-[var(--store-border)] bg-cover bg-center shadow-2xl shadow-black/10 ${
+            isForcedMobile ? "aspect-[4/5]" : `md:min-h-[460px] ${isForcedTablet ? "" : "xl:min-h-[560px]"}`
+          }`}
+          style={productImageStyle(product)}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black/38 via-transparent to-transparent" />
+          {product?.badge ? (
+            <div className="absolute left-5 top-5 rounded-full bg-white/92 px-4 py-2 text-xs font-black text-[var(--store-text)] shadow-lg">
+              {product.badge}
+            </div>
+          ) : null}
+          <div className="absolute bottom-5 left-5 right-5 rounded-[var(--store-radius)] bg-white/88 p-4 shadow-xl backdrop-blur">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--store-primary)]">Spotlight</p>
+            <p className="mt-2 text-xl font-black text-[var(--store-text)]">{product?.name ?? "Featured product"}</p>
+            <p className="mt-1 text-sm text-[var(--store-muted)]">{product ? `$${product.price} / ${product.category}` : "Ready to customize."}</p>
+          </div>
+        </div>
+        <HeroCopy
+          align="left"
+          cta={String(settings.cta)}
+          eyebrow={String(settings.eyebrow)}
+          isForcedMobile={isForcedMobile}
+          onNavigatePage={onNavigatePage}
+          primaryButtonClass={primaryButtonClass}
+          template={template}
+          textSize="standard"
+          title={String(settings.title)}
+          copy={String(settings.copy)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`mx-auto grid max-w-[var(--store-max-width)] gap-8 py-8 ${
+        isForcedMobile ? "" : `md:grid-cols-[0.92fr_1.08fr] md:items-center md:py-14 ${isForcedTablet ? "" : "xl:gap-12"}`
+      }`}
+    >
+      <HeroCopy
+        align={styleValue(settings.alignment, "left") === "center" ? "center" : "left"}
+        cta={String(settings.cta)}
+        eyebrow={String(settings.eyebrow)}
+        isForcedMobile={isForcedMobile}
+        onNavigatePage={onNavigatePage}
+        primaryButtonClass={primaryButtonClass}
+        template={template}
+        textSize="standard"
+        title={String(settings.title)}
+        copy={String(settings.copy)}
+      />
+      <HeroArtCard isForcedMobile={isForcedMobile} isForcedTablet={isForcedTablet} />
+    </div>
+  );
+}
+
+function HeroCopy({
+  align,
+  copy,
+  cta,
+  eyebrow,
+  isForcedMobile,
+  onNavigatePage,
+  primaryButtonClass,
+  template,
+  textSize,
+  title,
+}: {
+  align: "center" | "left";
+  copy: string;
+  cta: string;
+  eyebrow: string;
+  isForcedMobile: boolean;
+  onNavigatePage?: (pageId: string) => void;
+  primaryButtonClass: string;
+  template: StoreTemplate;
+  textSize: "large" | "standard";
+  title: string;
+}) {
+  const isCentered = align === "center";
+
+  return (
+    <div className={`min-w-0 self-center ${isCentered ? "text-center" : "text-left"}`}>
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--store-primary)]">{eyebrow}</p>
+      <h2
+        className={`mt-4 ${isCentered ? "mx-auto" : ""} max-w-3xl font-black leading-[1.04] text-[var(--store-text)] ${
+          isForcedMobile
+            ? "text-[calc(2.25rem*var(--store-heading-scale))]"
+            : textSize === "large"
+              ? "text-[calc(2.5rem*var(--store-heading-scale))] md:text-[calc(4.25rem*var(--store-heading-scale))]"
+              : "text-[calc(2.25rem*var(--store-heading-scale))] md:text-[calc(3.75rem*var(--store-heading-scale))]"
+        }`}
+      >
+        {title}
+      </h2>
+      <p className={`mt-5 ${isCentered ? "mx-auto" : ""} max-w-xl text-[calc(1rem*var(--store-body-scale))] leading-7 text-[var(--store-muted)] md:text-[calc(1.125rem*var(--store-body-scale))]`}>
+        {copy}
+      </p>
+      <div className={`mt-8 flex flex-wrap gap-3 ${isCentered ? "justify-center" : ""}`}>
+        <button className={primaryButtonClass} onClick={() => navigateToPageType(template, "collection", onNavigatePage)} type="button">
+          {cta}
+        </button>
+        <button
+          className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] px-5 py-3 text-sm font-bold text-[var(--store-text)]"
+          onClick={() => navigateToPageType(template, "about", onNavigatePage)}
+          type="button"
+        >
+          View lookbook
+        </button>
+      </div>
+      <div className={`mt-8 grid max-w-md gap-3 border-[var(--store-border)] border-t pt-5 text-sm ${isForcedMobile ? "grid-cols-3" : "sm:grid-cols-3"} ${isCentered ? "mx-auto" : ""}`}>
+        {[
+          ["4.9/5", "Customer rating"],
+          ["2-day", "Fast dispatch"],
+          ["30-day", "Easy returns"],
+        ].map(([value, label]) => (
+          <div className="rounded-[var(--store-radius)] bg-[var(--store-surface)]/70 px-3 py-2" key={label}>
+            <p className="font-black text-[var(--store-text)]">{value}</p>
+            <p className="mt-1 text-xs text-[var(--store-muted)]">{label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HeroArtCard({ isForcedMobile, isForcedTablet }: { isForcedMobile: boolean; isForcedTablet: boolean }) {
+  return (
+    <div
+      className={`relative min-h-[300px] min-w-0 overflow-hidden rounded-[calc(var(--store-radius)+10px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-4 shadow-2xl shadow-black/10 ${
+        isForcedMobile ? "aspect-[4/5]" : `md:min-h-[420px] ${isForcedTablet ? "" : "xl:min-h-[500px]"}`
+      }`}
+    >
+      <div className="absolute inset-4 rounded-[var(--store-radius)] bg-[linear-gradient(135deg,var(--store-secondary),var(--store-accent))]" />
+      <div className="absolute right-5 top-5 rounded-full bg-white/90 px-4 py-2 text-xs font-black text-[var(--store-text)] shadow-lg md:right-7 md:top-7">
+        New drop
+      </div>
+      <div className="absolute bottom-5 left-5 right-5 min-w-0 rounded-[var(--store-radius)] bg-white/85 p-4 shadow-xl backdrop-blur md:bottom-7 md:left-7 md:right-7 xl:p-5">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--store-primary)]">Featured set</p>
+        <p className="mt-2 text-xl font-black text-[var(--store-text)]">Curated everyday essentials</p>
+        <p className="mt-1 text-sm text-[var(--store-muted)]">Three-piece capsule bundle from $164.</p>
+      </div>
+    </div>
+  );
+}
+
 function typographyScale(scale: "compact" | "balanced" | "editorial") {
   if (scale === "compact") {
     return { heading: "0.88", body: "0.95" };
@@ -1082,6 +1228,24 @@ function productGridColumns(columns: number, isForcedTablet = false) {
   return "sm:grid-cols-2 lg:grid-cols-3";
 }
 
+function productGridClass(
+  layout: string,
+  columns: number,
+  isForcedMobile: boolean,
+  isForcedTablet: boolean,
+  gapClass: string,
+) {
+  if (layout === "compact") {
+    return `mt-8 grid ${isForcedMobile ? "grid-cols-2" : isForcedTablet ? "grid-cols-2" : "grid-cols-2 md:grid-cols-3 xl:grid-cols-4"} gap-3`;
+  }
+
+  if (layout === "editorial") {
+    return `mt-8 grid ${gapClass} ${isForcedMobile ? "grid-cols-1" : isForcedTablet ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"} [&>*:first-child]:sm:col-span-2`;
+  }
+
+  return `mt-8 grid ${gapClass} ${isForcedMobile ? "grid-cols-1" : productGridColumns(columns, isForcedTablet)}`;
+}
+
 function ProductMedia({
   isForcedMobile,
   isForcedTablet,
@@ -1174,11 +1338,14 @@ function ProductCard({
 }) {
   const isMinimal = variant === "minimal";
   const isEditorial = variant === "editorial";
+  const isCompact = variant === "compact";
 
   return (
     <article
       className={`group flex h-full min-w-0 flex-col overflow-hidden rounded-[calc(var(--store-radius)+6px)] bg-[var(--store-surface)] transition hover:-translate-y-1 ${
-        isMinimal
+        isCompact
+          ? "border border-[var(--store-border)] shadow-sm"
+          : isMinimal
           ? "border border-transparent"
           : isEditorial
             ? "border border-[var(--store-border)] shadow-xl shadow-black/5"
@@ -1187,7 +1354,9 @@ function ProductCard({
     >
       <div
         aria-label={`Open ${product.name}`}
-        className={`relative shrink-0 overflow-hidden bg-cover bg-center transition duration-300 group-hover:scale-[1.01] ${isEditorial ? "aspect-[3/4]" : "aspect-[4/5]"}`}
+        className={`relative shrink-0 overflow-hidden bg-cover bg-center transition duration-300 group-hover:scale-[1.01] ${
+          isCompact ? "aspect-square" : isEditorial ? "aspect-[3/4]" : "aspect-[4/5]"
+        }`}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
@@ -1225,15 +1394,15 @@ function ProductCard({
           </button>
         ) : null}
       </div>
-      <div className={`${isMinimal ? "px-1 py-3" : productCardPadding(density)} flex flex-1 flex-col`}>
+      <div className={`${isCompact ? "p-3" : isMinimal ? "px-1 py-3" : productCardPadding(density)} flex flex-1 flex-col`}>
         <div className="flex items-center justify-between gap-3">
           <p className="min-w-0 truncate text-xs font-semibold uppercase tracking-[0.14em] text-[var(--store-muted)]">{product.category}</p>
           <p className="text-xs font-black text-[var(--store-primary)]">4.8</p>
         </div>
         <button className="mt-2 block text-left" onClick={() => onOpenProduct?.(product.id)} type="button">
-          <h3 className={`${isEditorial ? "text-lg" : "text-base"} line-clamp-2 font-black leading-tight text-[var(--store-text)]`}>{product.name}</h3>
+          <h3 className={`${isCompact ? "text-sm" : isEditorial ? "text-lg" : "text-base"} line-clamp-2 font-black leading-tight text-[var(--store-text)]`}>{product.name}</h3>
         </button>
-        <div className="mt-3 flex items-center gap-1.5">
+        <div className={`${isCompact ? "mt-2" : "mt-3"} flex items-center gap-1.5`}>
           {[product.imagePositionX ?? 42, product.imagePositionY ?? 58, product.imageZoom ?? 100].map((value, index) => (
             <span
               className="h-4 w-4 rounded-full border border-black/10"
@@ -1249,9 +1418,9 @@ function ProductCard({
               }}
             />
           ))}
-          <span className="ml-1 text-xs font-semibold text-[var(--store-muted)]">In stock</span>
+          {isCompact ? null : <span className="ml-1 text-xs font-semibold text-[var(--store-muted)]">In stock</span>}
         </div>
-        <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+        <div className={`mt-auto flex items-center justify-between gap-3 ${isCompact ? "pt-3" : "pt-4"}`}>
           <p className="font-black text-[var(--store-text)]">${product.price}</p>
           {showQuickAdd ? (
             <button

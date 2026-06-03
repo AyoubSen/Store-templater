@@ -204,8 +204,12 @@ p { margin: 0; }
 .button.outline { border: 1px solid var(--store-border); background: var(--store-surface); color: var(--store-text); }
 .button.full { width: 100%; margin-top: 20px; }
 .heroGrid { display: grid; grid-template-columns: .92fr 1.08fr; gap: 48px; align-items: center; }
+.heroGrid.spotlight { grid-template-columns: 1.12fr .88fr; }
+.heroCentered { text-align: center; }
+.heroCentered .heroCopy { margin-left: auto; margin-right: auto; }
 .heroCopy, .sectionCopy { margin-top: 18px; max-width: 620px; color: var(--store-muted); font-size: 18px; line-height: 1.7; }
 .actions, .chips { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+.heroCentered .actions { justify-content: center; }
 .details { margin-top: 28px; display: grid; gap: 10px; font-weight: 700; }
 .proofRow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; color: var(--store-muted); font-size: 12px; font-weight: 800; }
 .proofRow span:first-child { border-radius: 999px; background: var(--store-surface); color: var(--store-primary); padding: 6px 10px; }
@@ -218,12 +222,19 @@ p { margin: 0; }
 .cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .cols4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .productGrid { margin-top: 32px; }
+.productGrid.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.productGrid.editorial { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.productGrid.editorial > *:first-child { grid-column: span 2; }
+.productGrid.compact { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .card { position: relative; border: 1px solid var(--store-border); border-radius: calc(var(--store-radius) + 8px); background: var(--store-surface); overflow: hidden; box-shadow: 0 14px 28px rgb(15 23 42 / .06); }
 .card { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
 .card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--store-primary) 35%, var(--store-border)); box-shadow: 0 20px 42px rgb(15 23 42 / .1); }
 .cardBody { padding: 18px; }
+.card.compact .cardBody { padding: 12px; }
+.card.compact h3 { font-size: 15px; }
 .badge { position: absolute; left: 14px; top: 14px; z-index: 2; border-radius: 999px; background: rgb(255 255 255 / .92); color: var(--store-text); padding: 7px 11px; font-size: 12px; font-weight: 900; box-shadow: 0 8px 20px rgb(15 23 42 / .1); }
 .productImage { aspect-ratio: 4 / 5; background-color: #f8fafc; background-position: center; background-repeat: no-repeat; background-size: cover; }
+.card.compact .productImage { aspect-ratio: 1; }
 .productImage.large { border: 1px solid var(--store-border); border-radius: calc(var(--store-radius) + 10px); }
 .quickAdd { position: absolute; right: 14px; bottom: 14px; border: 0; border-radius: 999px; background: var(--store-text); color: white; padding: 9px 13px; font-size: 12px; font-weight: 800; cursor: pointer; }
 .price { margin-top: 16px; font-size: 26px; font-weight: 900; }
@@ -246,7 +257,9 @@ p { margin: 0; }
   .nav { display: none; }
   h1 { font-size: calc(38px * var(--store-heading-scale)); }
   h2 { font-size: calc(28px * var(--store-heading-scale)); }
-  .heroGrid, .cols3, .cols4, .newsletter, .collectionLayout, .trustGrid { grid-template-columns: 1fr; }
+  .heroGrid, .heroGrid.spotlight, .cols3, .cols4, .newsletter, .collectionLayout, .trustGrid, .productGrid.grid, .productGrid.editorial { grid-template-columns: 1fr; }
+  .productGrid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .productGrid.editorial > *:first-child { grid-column: span 1; }
   .heroCard { min-height: 320px; }
   .floatingCard { left: 20px; right: 20px; bottom: 20px; }
   .cartLine { grid-template-columns: 72px 1fr; }
@@ -382,29 +395,7 @@ function Section({
   }
 
   if (section.type === 'hero') {
-    return (
-      <section className={sectionClass(section, 'spacious')}>
-        <div className="wrap heroGrid">
-          <div>
-            <p className="eyebrow">{String(settings.eyebrow ?? '')}</p>
-            <h1>{String(settings.title ?? '')}</h1>
-            <p className="heroCopy">{String(settings.copy ?? '')}</p>
-            <div className="actions">
-              <Link className={primaryButtonClass} href={pathFor(pages, 'collection')}>{String(settings.cta ?? 'Shop now')}</Link>
-              <Link className="button outline" href={pathFor(pages, 'about')}>View lookbook</Link>
-            </div>
-          </div>
-          <div className="heroCard">
-            <div className="heroArt" />
-            <div className="floatingCard">
-              <p className="eyebrow">Featured set</p>
-              <h3>Curated everyday essentials</h3>
-              <p className="muted">Three-piece capsule bundle from $164.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
+    return <HeroSection pages={pages} primaryButtonClass={primaryButtonClass} section={section} />;
   }
 
   if (section.type === 'categoryStrip') {
@@ -427,6 +418,7 @@ function Section({
     const products = template.products.slice(0, numberSetting(settings.productCount, section.type === 'collectionGrid' ? 6 : 3));
     const filters = arraySetting(settings.filters);
     const showFilters = settings.showFilters !== false && filters.length > 0;
+    const layout = styleSetting(settings.productGridLayout, 'grid');
     return (
       <section className={sectionClass(section, 'surface')}>
         <div className="wrap">
@@ -440,10 +432,11 @@ function Section({
                 {filters.map((filter) => <button className="filterButton" key={filter} type="button"><span>{filter}</span><span>Any</span></button>)}
               </aside>
             ) : null}
-            <div className="grid cols3">
+            <div className={'productGrid ' + layout}>
               {products.map((product) => (
                 <ProductCard
                   addToCart={addToCart}
+                  compact={layout === 'compact'}
                   href={productPage}
                   key={product.id}
                   product={product}
@@ -620,6 +613,80 @@ function ProductCard({
   );
 }
 
+function HeroSection({
+  pages,
+  primaryButtonClass,
+  section,
+}: {
+  pages: TemplatePage[];
+  primaryButtonClass: string;
+  section: TemplateSection;
+}) {
+  const settings = section.settings as Record<string, unknown>;
+  const variant = styleSetting(settings.variant, 'split');
+  const copy = (
+    <div>
+      <p className="eyebrow">{String(settings.eyebrow ?? '')}</p>
+      <h1>{String(settings.title ?? '')}</h1>
+      <p className="heroCopy">{String(settings.copy ?? '')}</p>
+      <div className="actions">
+        <Link className={primaryButtonClass} href={pathFor(pages, 'collection')}>{String(settings.cta ?? 'Shop now')}</Link>
+        <Link className="button outline" href={pathFor(pages, 'about')}>View lookbook</Link>
+      </div>
+    </div>
+  );
+
+  if (variant === 'centered') {
+    return (
+      <section className={sectionClass(section, 'spacious')}>
+        <div className="wrap heroCentered">
+          {copy}
+          <div className="productGrid grid">
+            {template.products.slice(0, 3).map((product) => (
+              <ProductCard addToCart={() => undefined} href={pathFor(pages, 'product')} key={product.id} product={product} setActiveProductId={() => undefined} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (variant === 'productSpotlight') {
+    const product = template.products[0];
+
+    return (
+      <section className={sectionClass(section, 'spacious')}>
+        <div className="wrap heroGrid spotlight">
+          <div className="heroCard" style={productImageStyle(product)}>
+            <div className="floatingCard">
+              <p className="eyebrow">Spotlight</p>
+              <h3>{product?.name ?? 'Featured product'}</h3>
+              <p className="muted">{product ? '$' + product.price + ' / ' + product.category : 'Ready to customize.'}</p>
+            </div>
+          </div>
+          {copy}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className={sectionClass(section, 'spacious')}>
+      <div className="wrap heroGrid">
+        {copy}
+        <div className="heroCard">
+          <div className="heroArt" />
+          <div className="floatingCard">
+            <p className="eyebrow">Featured set</p>
+            <h3>Curated everyday essentials</h3>
+            <p className="muted">Three-piece capsule bundle from $164.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ProductImage({ large, product }: { large?: boolean; product?: Product }) {
   return (
     <div
@@ -631,6 +698,15 @@ function ProductImage({ large, product }: { large?: boolean; product?: Product }
       }}
     />
   );
+}
+
+function productImageStyle(product?: Product) {
+  return {
+    backgroundImage: product?.image,
+    backgroundPosition: \`\${product?.imagePositionX ?? 50}% \${product?.imagePositionY ?? 50}%\`,
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: \`\${product?.imageZoom ?? 100}%\`,
+  };
 }
 
 function SimpleListSection({ items, section, title }: { items: string[]; section: TemplateSection; title: string }) {
@@ -671,6 +747,10 @@ function arraySetting(value: unknown) {
 
 function numberSetting(value: unknown, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function styleSetting(value: unknown, fallback: string) {
+  return typeof value === 'string' ? value : fallback;
 }
 `;
 }

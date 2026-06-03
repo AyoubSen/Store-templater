@@ -44,6 +44,18 @@ export function SectionInspector({
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
+        <ControlGroup title={t("inspector.heroLayout")}>
+          <SelectControl
+            label={t("inspector.variant")}
+            onChange={(value) => setValue("variant", value)}
+            options={[
+              { label: t("inspector.variant.split"), value: "split" },
+              { label: t("inspector.variant.centered"), value: "centered" },
+              { label: t("inspector.variant.productSpotlight"), value: "productSpotlight" },
+            ]}
+            value={styleSetting(settings.variant, "split")}
+          />
+        </ControlGroup>
         <ControlGroup title={t("inspector.content")}>
           <TextField label={t("inspector.eyebrow")} onChange={(value) => setValue("eyebrow", value)} value={stringSetting(settings.eyebrow)} />
           <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
@@ -379,6 +391,16 @@ function ProductCardControls({
     <div className="rounded-md border border-[#e2e8f0] bg-white p-3 shadow-sm">
       <p className="mb-3 text-xs font-semibold uppercase text-[#475569]">{t("inspector.productCards")}</p>
       <div className="space-y-3">
+        <SelectControl
+          label={t("inspector.productGridLayout")}
+          onChange={(value) => setValue("productGridLayout", value)}
+          options={[
+            { label: t("inspector.variant.grid"), value: "grid" },
+            { label: t("inspector.variant.editorialLayout"), value: "editorial" },
+            { label: t("inspector.variant.compactCatalog"), value: "compact" },
+          ]}
+          value={styleSetting(settings.productGridLayout, "grid")}
+        />
         <SelectControl
           label={t("inspector.cardStyle")}
           onChange={(value) => setValue("productCardStyle", value)}

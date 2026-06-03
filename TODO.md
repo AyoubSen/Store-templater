@@ -10,15 +10,16 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 
 - Continue simplifying first-use UX with clearer primary actions, better empty states, and fewer visible controls by default.
 - Continue reducing always-visible builder/dashboard controls through progressive disclosure.
+- Add visual thumbnails/previews to the `/templates` dashboard so generated templates are recognizable by layout and style.
 - Keep improving sidebar ergonomics with keyboard navigation and richer section row actions once needed.
 - Refine guided tours with better mobile positioning and optional per-step deep links as the app grows.
-- Refine guided template creation with better generated copy, more industry variants, and optional AI-assisted briefs later.
+- Refine guided template creation with more industry variants, better section-variant previews, and optional AI-assisted briefs later.
 - Expand French i18n coverage from key app chrome/help text to more dashboard, inspector, and settings labels.
 - Improve the public landing page with stronger examples once generated/storefront visuals settle.
 - Continue polishing storefront visuals so templates feel sellable, not just functional.
 - Deepen mock storefront interactions beyond navigation/cart, including filter state and checkout step state.
 - Add richer static export interactions beyond linked pages, such as optional lightweight cart JavaScript.
-- Harden generated Next storefront output with an extracted fixture build check and closer parity with the live preview renderer.
+- Harden generated Next storefront output with an extracted fixture build check.
 - Continue polishing the `/templates` dashboard for larger libraries with bulk actions and stronger import review.
 - Polish hosted/shareable preview controls and status messaging.
 - Continue refining share panels with stronger disabled states, optional expiry, and publish history.
@@ -33,7 +34,7 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
   - keep existing data URLs as legacy fallback
   - add generated thumbnails for dashboard/product lists after upload
 - Add navigation menu controls that can target page slugs.
-- Add more section-level layout controls for storefront density and media emphasis where section-specific variants are still missing.
+- Add more section-level layout variants beyond hero and product grids where they materially change storefront personality.
 
 ## Later
 

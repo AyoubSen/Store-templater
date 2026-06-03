@@ -24,7 +24,7 @@ export const sectionRegistry: Record<SectionType, SectionCapability> = {
     type: "hero",
     label: "Hero",
     description: "First viewport merchandising section.",
-    editableSettings: ["eyebrow", "title", "copy", "cta"],
+    editableSettings: ["variant", "eyebrow", "title", "copy", "cta"],
   },
   categoryStrip: {
     type: "categoryStrip",
@@ -36,7 +36,7 @@ export const sectionRegistry: Record<SectionType, SectionCapability> = {
     type: "collectionGrid",
     label: "Collection grid",
     description: "Collection page header, filters, sort, and products.",
-    editableSettings: ["eyebrow", "title", "description", "statusChips", "filters", "sortLabel"],
+    editableSettings: ["eyebrow", "title", "description", "statusChips", "filters", "sortLabel", "productGridLayout"],
   },
   productDetail: {
     type: "productDetail",
@@ -60,7 +60,7 @@ export const sectionRegistry: Record<SectionType, SectionCapability> = {
     type: "productGrid",
     label: "Product grid",
     description: "Reusable product listing module.",
-    editableSettings: ["title", "columns", "productCount", "productCardStyle", "showQuickAdd"],
+    editableSettings: ["title", "columns", "productCount", "productGridLayout", "productCardStyle", "showQuickAdd"],
   },
   promoTiles: {
     type: "promoTiles",
