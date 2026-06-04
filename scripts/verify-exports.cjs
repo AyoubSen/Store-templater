@@ -63,7 +63,7 @@ assertFiles(
 );
 
 assertIncludes(nextFiles, `${projectName}/package.json`, ['"dev": "next dev"', '"build": "next build"', '"next": "16.2.6"']);
-assertIncludes(nextFiles, `${projectName}/components/storefront.tsx`, ["StorefrontProvider", "StorefrontApp", "Cart {cartCount}", "Add to cart"]);
+assertIncludes(nextFiles, `${projectName}/components/storefront.tsx`, ["StorefrontProvider", "StorefrontApp", "cartLabel", "{cartCount}", "Add to cart"]);
 assertIncludes(nextFiles, `${projectName}/data/template.ts`, ["Atelier Minimal", "linen-shirt"]);
 
 assertFiles(staticFiles, ["index.html", "assets/storefront.css", "template-data.json"], "Static storefront export");

@@ -126,49 +126,37 @@ function PreviewSection({
   }
 
   if (section.type === "header") {
-    const navPages = customerPages(template).filter((page) => page.type !== "checkout");
+    const navLinks = headerNavLinks(template, settings);
     const cartPage = findPageByType(template, "cart");
+    const showCart = settings.showCartLink !== false;
+    const cartLabel = textSetting(settings.labelCart, "Cart");
 
     return (
       <div className={`sticky top-0 z-[5] border-[var(--store-border)] border-b bg-[var(--store-surface)]/95 backdrop-blur ${selectedClass}`}>
         <div className="mx-auto flex max-w-[var(--store-max-width)] flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-8">
           <div className="min-w-0 text-base font-black tracking-[0.16em] text-[var(--store-text)]">{String(settings.logo)}</div>
           <div className={`${isForcedMobile ? "hidden" : "hidden md:flex"} gap-6 text-sm font-medium text-[var(--store-muted)]`}>
-            {navPages.map((page) => (
-              <button
-                className={`font-medium hover:text-[var(--store-text)] ${currentPage?.id === page.id ? "text-[var(--store-text)]" : ""}`}
-                key={page.id}
-                onClick={() => onNavigatePage?.(page.id)}
-                type="button"
-              >
-                {page.name}
-              </button>
+            {navLinks.map((link) => (
+              <HeaderNavButton currentPageId={currentPage?.id} key={link.id} link={link} onNavigatePage={onNavigatePage} />
             ))}
           </div>
-          <button
-            className="shrink-0 rounded-full border border-[var(--store-border)] bg-[var(--store-canvas)] px-4 py-2 text-xs font-semibold text-[var(--store-text)] transition hover:border-[var(--store-primary)]"
-            onClick={() => {
-              if (cartPage) {
-                onNavigatePage?.(cartPage.id);
-              }
-            }}
-            type="button"
-          >
-            Cart {cartQuantity}
-          </button>
+          {showCart ? (
+            <button
+              className="shrink-0 rounded-full border border-[var(--store-border)] bg-[var(--store-canvas)] px-4 py-2 text-xs font-semibold text-[var(--store-text)] transition hover:border-[var(--store-primary)]"
+              onClick={() => {
+                if (cartPage) {
+                  onNavigatePage?.(cartPage.id);
+                }
+              }}
+              type="button"
+            >
+              {cartLabel} {cartQuantity}
+            </button>
+          ) : null}
           {isForcedMobile ? (
             <div className="flex basis-full gap-2 overflow-x-auto pt-1 text-xs font-bold text-[var(--store-muted)]">
-              {navPages.slice(0, 4).map((page) => (
-                <button
-                  className={`shrink-0 rounded-full border border-[var(--store-border)] bg-[var(--store-canvas)] px-3 py-1.5 ${
-                    currentPage?.id === page.id ? "text-[var(--store-text)]" : ""
-                  }`}
-                  key={page.id}
-                  onClick={() => onNavigatePage?.(page.id)}
-                  type="button"
-                >
-                  {page.name}
-                </button>
+              {navLinks.slice(0, 4).map((link) => (
+                <HeaderNavButton currentPageId={currentPage?.id} isMobile key={link.id} link={link} onNavigatePage={onNavigatePage} />
               ))}
             </div>
           ) : null}
@@ -858,12 +846,161 @@ function PreviewSection({
   );
 }
 
+function HeaderNavButton({
+  currentPageId,
+  isMobile = false,
+  link,
+  onNavigatePage,
+}: {
+  currentPageId?: string;
+  isMobile?: boolean;
+  link: HeaderNavLink;
+  onNavigatePage?: (pageId: string) => void;
+}) {
+  const className = isMobile
+    ? `shrink-0 rounded-full border border-[var(--store-border)] bg-[var(--store-canvas)] px-3 py-1.5 ${
+        link.page?.id === currentPageId ? "text-[var(--store-text)]" : ""
+      }`
+    : `font-medium hover:text-[var(--store-text)] ${link.page?.id === currentPageId ? "text-[var(--store-text)]" : ""}`;
+
+  if (link.href) {
+    return (
+      <a className={className} href={link.href} rel="noreferrer" target={link.href.startsWith("/") ? undefined : "_blank"}>
+        {link.label}
+      </a>
+    );
+  }
+
+  return (
+    <button className={className} onClick={() => link.page && onNavigatePage?.(link.page.id)} type="button">
+      {link.label}
+    </button>
+  );
+}
+
 function customerPages(template: StoreTemplate) {
-  return template.pages.filter((page) => page.status === "published");
+  return template.pages;
 }
 
 function findPageByType(template: StoreTemplate, type: PageType) {
   return customerPages(template).find((page) => page.type === type);
+}
+
+function headerNavLinks(template: StoreTemplate, settings: TemplateSection["settings"]): HeaderNavLink[] {
+  const navItems = structuredNavItems(settings.navItems);
+
+  if (navItems.length > 0) {
+    return navItems
+      .flatMap((item): HeaderNavLink[] => {
+        if (item.targetType === "url") {
+          return [{ href: item.url, id: item.id, label: item.label, page: undefined }];
+        }
+
+        const page = findPageByType(template, item.pageType);
+
+        if (!page) {
+          return [];
+        }
+
+        return [{ href: undefined, id: item.id, label: item.label || page.name, page }];
+      });
+  }
+
+  return (["home", "collection", "about", "contact"] as const)
+    .filter((type) => headerLinkVisible(type, settings))
+    .flatMap((type): HeaderNavLink[] => {
+      const page = findPageByType(template, type);
+
+      if (!page) {
+        return [];
+      }
+
+      return [{
+        href: undefined,
+        id: page.id,
+        label: headerLinkLabel(type, page, settings),
+        page,
+      }];
+    });
+}
+
+type HeaderNavLink = {
+  href?: string;
+  id: string;
+  label: string;
+  page?: TemplatePage;
+};
+
+type HeaderNavItem = {
+  id: string;
+  label: string;
+  pageType: PageType;
+  targetType: "page" | "url";
+  url: string;
+};
+
+function structuredNavItems(value: unknown): HeaderNavItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item, index) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const navItem = item as Record<string, unknown>;
+      const targetType = navItem.targetType === "url" ? "url" : "page";
+      const pageType = pageTypeSetting(navItem.pageType);
+      const url = typeof navItem.url === "string" ? navItem.url.trim() : "";
+      const label = textSetting(navItem.label, targetType === "url" ? "Link" : pageType);
+
+      if (targetType === "url" && !url) {
+        return null;
+      }
+
+      return {
+        id: textSetting(navItem.id, `nav-${index}`),
+        label,
+        pageType,
+        targetType,
+        url,
+      };
+    })
+    .filter((item): item is HeaderNavItem => Boolean(item));
+}
+
+function pageTypeSetting(value: unknown): PageType {
+  const pageTypes: PageType[] = ["home", "collection", "product", "cart", "checkout", "about", "contact"];
+  return typeof value === "string" && pageTypes.includes(value as PageType) ? (value as PageType) : "home";
+}
+
+function headerLinkVisible(type: "about" | "collection" | "contact" | "home", settings: TemplateSection["settings"]) {
+  const visibilityKeys = {
+    about: "showAboutLink",
+    collection: "showCollectionLink",
+    contact: "showContactLink",
+    home: "showHomeLink",
+  };
+
+  return settings[visibilityKeys[type]] !== false;
+}
+
+function headerLinkLabel(
+  type: "about" | "collection" | "contact" | "home",
+  page: TemplatePage,
+  settings: TemplateSection["settings"],
+) {
+  const labelKeys = {
+    about: "labelAbout",
+    collection: "labelCollection",
+    contact: "labelContact",
+    home: "labelHome",
+  };
+  const value = settings[labelKeys[type]];
+
+  return typeof value === "string" && value.trim() ? value : page.name;
 }
 
 function navigateToPageType(template: StoreTemplate, type: PageType, onNavigatePage?: (pageId: string) => void) {
@@ -1198,6 +1335,10 @@ function buttonClass(settings: TemplateSection["settings"]) {
 
 function styleValue(value: unknown, fallback: string) {
   return typeof value === "string" ? value : fallback;
+}
+
+function textSetting(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value : fallback;
 }
 
 function numberSetting(value: unknown, fallback: number) {

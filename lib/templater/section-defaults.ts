@@ -19,6 +19,22 @@ const defaultSettingsByType: Record<SectionType, TemplateSection["settings"]> = 
   header: {
     logo: "STUDIO",
     links: ["Shop", "About", "Contact"],
+    labelHome: "Home",
+    labelCollection: "Shop",
+    labelAbout: "About",
+    labelContact: "Contact",
+    labelCart: "Cart",
+    showHomeLink: true,
+    showCollectionLink: true,
+    showAboutLink: true,
+    showContactLink: true,
+    showCartLink: true,
+    navItems: [
+      { id: "nav-home", label: "Home", targetType: "page", pageType: "home" },
+      { id: "nav-shop", label: "Shop", targetType: "page", pageType: "collection" },
+      { id: "nav-about", label: "About", targetType: "page", pageType: "about" },
+      { id: "nav-contact", label: "Contact", targetType: "page", pageType: "contact" },
+    ],
   },
   hero: {
     ...defaultStyle,

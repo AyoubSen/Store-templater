@@ -43,7 +43,7 @@ export default function PreviewPage({
   }
 
   function openProduct(productId: string) {
-    const productPage = template.pages.find((page) => page.type === "product" && page.status === "published");
+    const productPage = template.pages.find((page) => page.type === "product");
 
     setActiveProductId(productId);
 

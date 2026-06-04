@@ -113,6 +113,7 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Lightweight local preview cart state for add-to-cart, cart summary, and checkout summary flows
 - Basic page management for home, collection, product, cart, checkout, about, and contact pages
 - Page metadata for slug, SEO title, and draft/published status
+- Header navigation supports ordered custom nav items targeting template pages or URLs, with configurable cart pill; private previews can browse draft pages while public share/export navigation uses published pages
 - Ecommerce page sections for collection grids, product details, cart summaries, and checkout summaries
 - Shared section style controls for spacing, density, background, alignment, button style, and desktop/tablet/mobile visibility on main storefront sections
 - Section layout variants for hero composition and product/collection grid composition, including split/centered/product-spotlight heroes and grid/editorial/compact product layouts
@@ -123,7 +124,7 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Section add/duplicate/delete/hide/show
 - Drag-and-drop section reorder using `@dnd-kit`
 - Undo/redo for template edits
-- `/templates` dashboard with search, published/private filtering, sorting, JSON import/export, grouped export actions, and collapsed share controls
+- `/templates` dashboard with search, published/private filtering, sorting, visual template thumbnails, primary edit/preview actions, and progressive secondary controls for sharing, exports, duplicate, and delete
 - Local-first `.store-template.json` export packages and multi-page static storefront zip exports for active templates and dashboard templates
 - Generated Next storefront project zip exports with pnpm scripts, App Router pages, shared storefront component, template data, and theme CSS
 - Static and generated Next storefront exports preserve the current hero and product-grid layout variants closely enough for visual parity checks
@@ -143,7 +144,9 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Contextual preview guidance for customer interactions such as product clicks, cart state, and checkout state
 - Contextual help popovers for important workflows such as pages, adding sections, preview behavior, and dashboard filters
 - Progressive disclosure in the builder: page settings, section library, and advanced section layout controls stay collapsed until needed
+- Right inspector uses compact summaries for advanced layout/theme/product-card controls so common content edits stay prominent
 - Left sidebar separates Pages, Sections, and Add-section workflows so users are not shown every navigation/editing control at once
+- Left sidebar keeps template actions, add-page controls, and secondary add-section groups collapsed or compact so the current page/section remains prominent
 - Lightweight Playwright visual QA captures public, authenticated, share-preview, mobile, desktop, and French states when the required auth/share setup is present
 
 ## Builder UX Direction
@@ -185,11 +188,10 @@ Expected section types over time:
 
 ## Near-Term Priorities
 
-1. Add dashboard visual thumbnails/previews so visually distinct templates are easier to recognize.
-2. Continue polishing storefront visuals and section variants so templates feel sellable, not just functional.
-3. Polish the `/templates` dashboard for larger local libraries.
-4. Improve hosted preview controls and status polish.
-5. Add richer controls for responsive layout variants beyond visibility.
+1. Continue polishing storefront visuals and section variants so templates feel sellable, not just functional.
+2. Polish the `/templates` dashboard for larger local libraries.
+3. Improve hosted preview controls and status polish.
+4. Add richer controls for responsive layout variants beyond visibility.
 
 ## Implementation Notes
 

@@ -10,7 +10,6 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 
 - Continue simplifying first-use UX with clearer primary actions, better empty states, and fewer visible controls by default.
 - Continue reducing always-visible builder/dashboard controls through progressive disclosure.
-- Add visual thumbnails/previews to the `/templates` dashboard so generated templates are recognizable by layout and style.
 - Keep improving sidebar ergonomics with keyboard navigation and richer section row actions once needed.
 - Refine guided tours with better mobile positioning and optional per-step deep links as the app grows.
 - Refine guided template creation with more industry variants, better section-variant previews, and optional AI-assisted briefs later.
@@ -33,7 +32,7 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 - Improve product image handling:
   - keep existing data URLs as legacy fallback
   - add generated thumbnails for dashboard/product lists after upload
-- Add navigation menu controls that can target page slugs.
+- Add richer navigation menu controls for nested menus or per-device nav behavior once needed.
 - Add more section-level layout variants beyond hero and product grids where they materially change storefront personality.
 
 ## Later

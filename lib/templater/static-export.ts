@@ -75,8 +75,9 @@ function renderStaticSection(section: StaticSection, context: StaticContext) {
   }
 
   if (section.type === "header") {
-    const navPages = pages.filter((page) => page.type !== "checkout");
-    return `<header class="header"><div class="wrap header-inner"><a class="logo" href="index.html">${escapeHtml(String(settings.logo ?? template.name))}</a><nav class="nav">${navPages.map((page) => `<a href="${pageFileName(page)}">${escapeHtml(page.name)}</a>`).join("")}</nav><a class="pill" href="${hrefForPageType(pages, "cart")}">Cart</a></div></header>`;
+    const navLinks = headerNavLinks(pages, settings);
+    const cartLink = settings.showCartLink === false ? "" : `<a class="pill" href="${hrefForPageType(pages, "cart")}">${escapeHtml(textSetting(settings.labelCart, "Cart"))}</a>`;
+    return `<header class="header"><div class="wrap header-inner"><a class="logo" href="index.html">${escapeHtml(String(settings.logo ?? template.name))}</a><nav class="nav">${navLinks.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}</nav>${cartLink}</div></header>`;
   }
 
   if (section.type === "hero") {
@@ -175,6 +176,118 @@ function customerPages(template: StoreTemplate) {
   return publishedPages.length > 0 ? publishedPages : template.pages;
 }
 
+type StaticHeaderNavLink = {
+  href: string;
+  id: string;
+  label: string;
+  page?: TemplatePage;
+};
+
+type StaticHeaderNavItem = {
+  id: string;
+  label: string;
+  pageType: PageType;
+  targetType: "page" | "url";
+  url: string;
+};
+
+function headerNavLinks(pages: TemplatePage[], settings: StaticSection["settings"]): StaticHeaderNavLink[] {
+  const navItems = structuredNavItems(settings.navItems);
+
+  if (navItems.length > 0) {
+    return navItems
+      .flatMap((item): StaticHeaderNavLink[] => {
+        if (item.targetType === "url") {
+          return [{ href: item.url, id: item.id, label: item.label, page: undefined }];
+        }
+
+        const page = pages.find((templatePage) => templatePage.type === item.pageType);
+
+        if (!page) {
+          return [];
+        }
+
+        return [{ href: pageFileName(page), id: item.id, label: item.label || page.name, page }];
+      });
+  }
+
+  return (["home", "collection", "about", "contact"] as const)
+    .filter((type) => headerLinkVisible(type, settings))
+    .flatMap((type): StaticHeaderNavLink[] => {
+      const page = pages.find((templatePage) => templatePage.type === type);
+
+      if (!page) {
+        return [];
+      }
+
+      return [{
+        href: pageFileName(page),
+        id: page.id,
+        label: headerLinkLabel(type, page, settings),
+        page,
+      }];
+    });
+}
+
+function structuredNavItems(value: unknown): StaticHeaderNavItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item, index) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const navItem = item as Record<string, unknown>;
+      const targetType = navItem.targetType === "url" ? "url" : "page";
+      const pageType = pageTypeSetting(navItem.pageType);
+      const url = textSetting(navItem.url, "");
+      const label = textSetting(navItem.label, targetType === "url" ? "Link" : pageType);
+
+      if (targetType === "url" && !url) {
+        return null;
+      }
+
+      return {
+        id: textSetting(navItem.id, `nav-${index}`),
+        label,
+        pageType,
+        targetType,
+        url,
+      };
+    })
+    .filter((item): item is StaticHeaderNavItem => Boolean(item));
+}
+
+function pageTypeSetting(value: unknown): PageType {
+  const pageTypes: PageType[] = ["home", "collection", "product", "cart", "checkout", "about", "contact"];
+  return typeof value === "string" && pageTypes.includes(value as PageType) ? (value as PageType) : "home";
+}
+
+function headerLinkVisible(type: "about" | "collection" | "contact" | "home", settings: StaticSection["settings"]) {
+  const visibilityKeys = {
+    about: "showAboutLink",
+    collection: "showCollectionLink",
+    contact: "showContactLink",
+    home: "showHomeLink",
+  };
+
+  return settings[visibilityKeys[type]] !== false;
+}
+
+function headerLinkLabel(type: "about" | "collection" | "contact" | "home", page: TemplatePage, settings: StaticSection["settings"]) {
+  const labelKeys = {
+    about: "labelAbout",
+    collection: "labelCollection",
+    contact: "labelContact",
+    home: "labelHome",
+  };
+
+  return textSetting(settings[labelKeys[type]], page.name);
+}
+
 function pageFileName(page: TemplatePage) {
   return page.type === "home" || page.slug === "/" ? "index.html" : `${slugify(page.slug.replace(/^\//, "") || page.name)}.html`;
 }
@@ -183,6 +296,10 @@ function hrefForPageType(pages: TemplatePage[], type: PageType) {
   const page = pages.find((templatePage) => templatePage.type === type);
 
   return page ? pageFileName(page) : "#";
+}
+
+function textSetting(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value : fallback;
 }
 
 function sectionClasses(section: StaticSection, fallback: string) {

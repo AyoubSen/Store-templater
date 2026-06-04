@@ -101,15 +101,13 @@ export function SectionSidebar({
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
           <button
-            className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2.5 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2.5 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
             onClick={onStartTour}
             type="button"
           >
             {t("builder.tour")}
           </button>
-          <div className="flex shrink-0 items-center justify-end">
-            <AuthControls />
-          </div>
+          <AuthControls />
         </div>
       </div>
 
@@ -124,63 +122,65 @@ export function SectionSidebar({
           </span>
         </div>
         {saveStatusMessage ? <p className="mt-2 text-[11px] leading-4 text-[#64748b]">{saveStatusMessage}</p> : null}
-        <div className="mt-3 space-y-2">
-          <Link
-            className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-[#d8dde5] bg-white px-3 py-1.5 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
-            href="/templates"
-            title={t("builder.manageTemplates")}
-          >
-            {t("builder.manageTemplates")}
-          </Link>
-          <select
-            className="w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] shadow-sm"
-            onChange={(event) => selectTemplate(event.target.value)}
-            value={activeTemplateId}
-          >
-            {templates.map((storedTemplate) => (
-              <option key={storedTemplate.id} value={storedTemplate.id}>
-                {storedTemplate.name}
-              </option>
-            ))}
-          </select>
+        <div className="mt-3">
           <button
             className="flex min-h-9 w-full items-center justify-between gap-3 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
             onClick={() => setIsTemplateActionsOpen((current) => !current)}
             type="button"
           >
-            <span className="min-w-0 truncate">{t("builder.templateActions")}</span>
+            <span className="min-w-0 truncate">{t("builder.manageTemplates")}</span>
             <span className="shrink-0 text-[#94a3b8]">{isTemplateActionsOpen ? t("builder.hide") : t("builder.show")}</span>
           </button>
           {isTemplateActionsOpen ? (
-            <div className="grid grid-cols-3 gap-1.5">
-              <button
-                className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-1.5 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
-                onClick={() => setIsStarterPickerOpen(true)}
-                type="button"
+            <div className="mt-2 space-y-2 rounded-md border border-[#e2e8f0] bg-white p-2">
+              <select
+                className="w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155]"
+                onChange={(event) => selectTemplate(event.target.value)}
+                value={activeTemplateId}
               >
-                {t("builder.new")}
-              </button>
-              <button
-                className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-1.5 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
-                onClick={duplicateTemplate}
-                type="button"
-              >
-                {t("common.copy")}
-              </button>
-              <button
-                aria-disabled={templates.length <= 1}
-                className={`min-h-8 rounded-md border border-[#fecaca] bg-white px-1.5 py-1.5 text-[11px] font-medium leading-4 text-[#b91c1c] hover:bg-[#fef2f2] ${
-                  templates.length <= 1 ? "cursor-not-allowed opacity-40" : ""
-                }`}
-                onClick={() => {
-                  if (templates.length > 1) {
-                    deleteTemplate(activeTemplateId);
-                  }
-                }}
-                type="button"
-              >
-                {t("common.delete")}
-              </button>
+                {templates.map((storedTemplate) => (
+                  <option key={storedTemplate.id} value={storedTemplate.id}>
+                    {storedTemplate.name}
+                  </option>
+                ))}
+              </select>
+              <div className="grid grid-cols-2 gap-1.5">
+                <Link
+                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-center text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+                  href="/templates"
+                  title={t("builder.manageTemplates")}
+                >
+                  {t("common.open")}
+                </Link>
+                <button
+                  className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+                  onClick={() => setIsStarterPickerOpen(true)}
+                  type="button"
+                >
+                  {t("builder.new")}
+                </button>
+                <button
+                  className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+                  onClick={duplicateTemplate}
+                  type="button"
+                >
+                  {t("common.copy")}
+                </button>
+                <button
+                  aria-disabled={templates.length <= 1}
+                  className={`min-h-8 rounded-md border border-[#fecaca] bg-white px-2 py-1.5 text-[11px] font-medium leading-4 text-[#b91c1c] hover:bg-[#fef2f2] ${
+                    templates.length <= 1 ? "cursor-not-allowed opacity-40" : ""
+                  }`}
+                  onClick={() => {
+                    if (templates.length > 1) {
+                      deleteTemplate(activeTemplateId);
+                    }
+                  }}
+                  type="button"
+                >
+                  {t("common.delete")}
+                </button>
+              </div>
             </div>
           ) : null}
         </div>
@@ -216,9 +216,6 @@ export function SectionSidebar({
             </div>
             <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#64748b]">{pages.length}</span>
           </div>
-          <p className="mb-3 px-1 text-xs leading-5 text-[#64748b]">
-            {t("builder.pagesHelp.body")}
-          </p>
           <div className="space-y-1">
             {pages.map((page) => (
               <PageRow
@@ -231,22 +228,25 @@ export function SectionSidebar({
               />
             ))}
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-1.5">
-            {pageTypes.map((type) => {
-              const existingPage = pages.find((page) => page.type === type);
+          <details className="mt-3 rounded-md border border-[#e2e8f0] bg-white p-2">
+            <summary className="cursor-pointer list-none text-xs font-semibold text-[#475569]">{t("builder.addPage")}</summary>
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              {pageTypes.map((type) => {
+                const existingPage = pages.find((page) => page.type === type);
 
-              return (
-                <button
-                  className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
-                  key={type}
-                  onClick={() => addPage(type)}
-                  type="button"
-                >
-                  {existingPage ? `${t("common.open")} ${pageTypeLabels[type]}` : `${t("builder.add")} ${pageTypeLabels[type]}`}
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+                    key={type}
+                    onClick={() => addPage(type)}
+                    type="button"
+                  >
+                    {existingPage ? pageTypeLabels[type] : `+ ${pageTypeLabels[type]}`}
+                  </button>
+                );
+              })}
+            </div>
+          </details>
           {selectedPage ? (
             <div className="mt-3">
               <button
@@ -267,9 +267,6 @@ export function SectionSidebar({
             <h2 className="text-xs font-semibold uppercase text-[#475569]">{t("builder.sections")}</h2>
             <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#64748b]">{sections.length}</span>
           </div>
-          <p className="mb-3 px-1 text-xs leading-5 text-[#64748b]">
-            Select a section to edit it on the right. Drag rows to reorder the current page.
-          </p>
           {selectedSection ? (
             <div className="mb-3 rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2">
               <p className="text-[11px] font-semibold uppercase text-[#2563eb]">{t("builder.selectedSection")}</p>
@@ -305,12 +302,12 @@ export function SectionSidebar({
           </div>
             <div className="mt-3 space-y-3">
               {sectionGroups.map((group) => (
-                <div key={group.label}>
-                  <p className="mb-1.5 px-1 text-[11px] font-semibold uppercase text-[#94a3b8]">{group.label}</p>
-                  <div className="grid grid-cols-2 gap-1.5">
+                <details className="rounded-md border border-[#e2e8f0] bg-white p-2" key={group.label} open={group === sectionGroups[0]}>
+                  <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase text-[#64748b]">{group.label}</summary>
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
                     {group.sections.map((type) => (
                       <button
-                        className="min-h-20 rounded-md border border-[#e2e8f0] bg-white px-2.5 py-2 text-left shadow-sm hover:border-[#93c5fd] hover:bg-[#eff6ff]"
+                        className="min-h-12 rounded-md border border-[#e2e8f0] bg-[#f8fafc] px-2.5 py-2 text-left hover:border-[#93c5fd] hover:bg-[#eff6ff]"
                         key={type}
                         onClick={() => {
                           addSection(type);
@@ -319,13 +316,13 @@ export function SectionSidebar({
                         type="button"
                       >
                         <span className="block text-xs font-semibold text-[#334155]">{sectionRegistry[type].label}</span>
-                        <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-[#64748b]">
+                        <span className="mt-0.5 line-clamp-1 block text-[11px] leading-4 text-[#64748b]">
                           {sectionRegistry[type].description}
                         </span>
                       </button>
                     ))}
                   </div>
-                </div>
+                </details>
               ))}
             </div>
         </section> : null}

@@ -379,16 +379,23 @@ function Section({
   }
 
   if (section.type === 'header') {
+    const navLinks = headerNavLinks(pages, settings);
+    const cartLabel = textSetting(settings.labelCart, 'Cart');
+
     return (
       <header className="header">
         <div className="wrap headerInner">
           <Link className="logo" href="/">{String(settings.logo ?? template.name)}</Link>
           <nav className="nav">
-            {pages.filter((candidate) => candidate.type !== 'checkout').map((candidate) => (
-              <Link href={pagePaths[candidate.type as PageType] ?? '/'} key={candidate.id}>{candidate.name}</Link>
+            {navLinks.map((link) => (
+              link.href.startsWith('/') ? (
+                <Link href={link.href} key={link.id}>{link.label}</Link>
+              ) : (
+                <a href={link.href} key={link.id} rel="noreferrer" target="_blank">{link.label}</a>
+              )
             ))}
           </nav>
-          <Link className="pill" href={pathFor(pages, 'cart')}>Cart {cartCount}</Link>
+          {settings.showCartLink === false ? null : <Link className="pill" href={pathFor(pages, 'cart')}>{cartLabel} {cartCount}</Link>}
         </div>
       </header>
     );
@@ -727,6 +734,117 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 function pathFor(pages: TemplatePage[], type: PageType) {
   const page = pages.find((candidate) => candidate.type === type);
   return page ? pagePaths[page.type as PageType] : '#';
+}
+
+function headerNavLinks(pages: TemplatePage[], settings: Record<string, unknown>) {
+  const navItems = structuredNavItems(settings.navItems);
+
+  if (navItems.length > 0) {
+    return navItems
+      .map((item) => {
+        if (item.targetType === 'url') {
+          return { href: item.url, id: item.id, label: item.label, page: undefined };
+        }
+
+        const page = pages.find((candidate) => candidate.type === item.pageType);
+
+        if (!page) {
+          return null;
+        }
+
+        return { href: pagePaths[page.type as PageType] ?? '/', id: item.id, label: item.label || page.name, page };
+      })
+      .filter((link): link is { href: string; id: string; label: string; page?: TemplatePage } => Boolean(link));
+  }
+
+  return (['home', 'collection', 'about', 'contact'] as const)
+    .filter((type) => headerLinkVisible(type, settings))
+    .map((type) => {
+      const page = pages.find((candidate) => candidate.type === type);
+
+      if (!page) {
+        return null;
+      }
+
+      return {
+        href: pagePaths[page.type as PageType] ?? '/',
+        id: page.id,
+        label: headerLinkLabel(type, page, settings),
+        page,
+      };
+    })
+    .filter((link): link is { href: string; id: string; label: string; page?: TemplatePage } => Boolean(link));
+}
+
+type HeaderNavItem = {
+  id: string;
+  label: string;
+  pageType: PageType;
+  targetType: 'page' | 'url';
+  url: string;
+};
+
+function structuredNavItems(value: unknown): HeaderNavItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item, index) => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+
+      const navItem = item as Record<string, unknown>;
+      const targetType = navItem.targetType === 'url' ? 'url' : 'page';
+      const pageType = pageTypeSetting(navItem.pageType);
+      const url = textSetting(navItem.url, '');
+      const label = textSetting(navItem.label, targetType === 'url' ? 'Link' : pageType);
+
+      if (targetType === 'url' && !url) {
+        return null;
+      }
+
+      return {
+        id: textSetting(navItem.id, \`nav-\${index}\`),
+        label,
+        pageType,
+        targetType,
+        url,
+      };
+    })
+    .filter((item): item is HeaderNavItem => Boolean(item));
+}
+
+function pageTypeSetting(value: unknown): PageType {
+  const pageTypes: PageType[] = ['home', 'collection', 'product', 'cart', 'checkout', 'about', 'contact'];
+  return typeof value === 'string' && pageTypes.includes(value as PageType) ? (value as PageType) : 'home';
+}
+
+function headerLinkVisible(type: 'about' | 'collection' | 'contact' | 'home', settings: Record<string, unknown>) {
+  const visibilityKeys = {
+    about: 'showAboutLink',
+    collection: 'showCollectionLink',
+    contact: 'showContactLink',
+    home: 'showHomeLink',
+  };
+
+  return settings[visibilityKeys[type]] !== false;
+}
+
+function headerLinkLabel(type: 'about' | 'collection' | 'contact' | 'home', page: TemplatePage, settings: Record<string, unknown>) {
+  const labelKeys = {
+    about: 'labelAbout',
+    collection: 'labelCollection',
+    contact: 'labelContact',
+    home: 'labelHome',
+  };
+
+  return textSetting(settings[labelKeys[type]], page.name);
+}
+
+function textSetting(value: unknown, fallback: string) {
+  return typeof value === 'string' && value.trim() ? value : fallback;
 }
 
 function sectionClass(section: TemplateSection, fallback: string) {

@@ -15,6 +15,7 @@ import { AuthControls } from "@/components/auth-controls";
 import { ContextualHelp } from "@/components/contextual-help";
 import { GuidedTour, type GuidedTourStep } from "@/components/guided-tour";
 import { TemplateCreationFlow } from "@/components/template-creation-flow";
+import { TemplateThumbnail } from "@/components/template-thumbnail";
 import { useI18n } from "@/lib/i18n";
 import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport, parseTemplateExport } from "@/lib/templater/export";
 import type { StoreTemplate } from "@/lib/templater/schema";
@@ -444,76 +445,28 @@ export default function TemplatesPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {visibleTemplates.map((template) => (
-            <article className="rounded-lg border border-[#d8dde5] bg-white p-4 shadow-sm" data-tour="dashboard-template-card" key={template.id}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="truncate text-lg font-semibold">{template.name}</h2>
-                  <p className="mt-1 text-sm capitalize text-[#64748b]">{template.category}</p>
-                </div>
-                {activeTemplateId === template.id ? (
-                  <span className="shrink-0 rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-2 py-1 text-xs font-medium text-[#15803d]">
-                    Active
-                  </span>
-                ) : null}
-              </div>
+          {visibleTemplates.map((template) => {
+            const shareState = shareStates[template.id] ?? emptyShareState();
+            const isActive = activeTemplateId === template.id;
 
-              <div className="mt-4 flex gap-1.5">
-                {Object.values(template.theme.colors)
-                  .slice(0, 6)
-                  .map((color, index) => (
-                    <span className="h-6 w-6 rounded-full border border-black/10" key={`${color}-${index}`} style={{ background: color }} />
-                  ))}
-              </div>
-
-              <dl className="mt-4 grid grid-cols-3 gap-2 text-xs text-[#64748b]">
-                <div>
-                  <dt className="font-medium text-[#475569]">Sections</dt>
-                  <dd className="mt-1">{template.pages[0]?.sections.length ?? 0}</dd>
-                </div>
-                <div>
-                  <dt className="font-medium text-[#475569]">Products</dt>
-                  <dd className="mt-1">{template.products.length}</dd>
-                </div>
-                <div>
-                  <dt className="font-medium text-[#475569]">Exports</dt>
-                  <dd className="mt-1">3 targets</dd>
-                </div>
-              </dl>
-
-              <div className="mt-5 grid grid-cols-2 gap-2">
-                <Link
-                  className="inline-flex min-h-10 items-center justify-center rounded-md bg-[#111827] px-3 py-2 text-center text-sm font-medium text-white hover:bg-[#1f2937]"
-                  href="/builder"
-                  onClick={() => openTemplate(template.id)}
-                >
-                  {t("common.edit")}
-                </Link>
-                <Link
-                  className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-center text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
-                  href={`/preview/${template.id}`}
-                  target="_blank"
-                >
-                  {t("builder.preview")}
-                </Link>
-                <div className="col-span-2">
-                  <TemplateSharePanel
-                    copyShare={copyShare}
-                    shareState={shareStates[template.id] ?? emptyShareState()}
-                    toggleShare={() => toggleShare(template.id)}
-                  />
-                </div>
-                <TemplateActions
-                  canDelete={templates.length > 1}
-                  deleteTemplate={() => deleteTemplate(template.id)}
-                  duplicateTemplate={() => duplicateTemplate(template)}
-                  exportNext={() => exportNext(template)}
-                  exportStatic={() => exportStatic(template)}
-                  exportTemplate={() => exportTemplate(template)}
-                />
-              </div>
-            </article>
-          ))}
+            return (
+              <TemplateCard
+                canDelete={templates.length > 1}
+                copyShare={copyShare}
+                deleteTemplate={() => deleteTemplate(template.id)}
+                duplicateTemplate={() => duplicateTemplate(template)}
+                exportNext={() => exportNext(template)}
+                exportStatic={() => exportStatic(template)}
+                exportTemplate={() => exportTemplate(template)}
+                isActive={isActive}
+                key={template.id}
+                openTemplate={() => openTemplate(template.id)}
+                shareState={shareState}
+                template={template}
+                toggleShare={() => toggleShare(template.id)}
+              />
+            );
+          })}
         </div>
         {visibleTemplates.length === 0 ? (
           <div className="rounded-lg border border-[#d8dde5] bg-white p-8 text-center shadow-sm">
@@ -548,6 +501,126 @@ function filterLabel(filter: "all" | "published" | "private", t: ReturnType<type
   };
 
   return labels[filter];
+}
+
+function TemplateCard({
+  canDelete,
+  copyShare,
+  deleteTemplate,
+  duplicateTemplate,
+  exportNext,
+  exportStatic,
+  exportTemplate,
+  isActive,
+  openTemplate,
+  shareState,
+  template,
+  toggleShare,
+}: {
+  canDelete: boolean;
+  copyShare: (shareId: string) => void;
+  deleteTemplate: () => void;
+  duplicateTemplate: () => void;
+  exportNext: () => void;
+  exportStatic: () => void;
+  exportTemplate: () => void;
+  isActive: boolean;
+  openTemplate: () => void;
+  shareState: TemplateShareState;
+  template: StoreTemplate;
+  toggleShare: () => void;
+}) {
+  const { t } = useI18n();
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const statusLabel = shareState.shareEnabled ? t("builder.published") : t("common.private");
+  const statusClassName = shareState.shareEnabled
+    ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]"
+    : "border-[#e2e8f0] bg-[#f8fafc] text-[#64748b]";
+
+  return (
+    <article className="rounded-lg border border-[#d8dde5] bg-white p-4 shadow-sm" data-tour="dashboard-template-card">
+      <TemplateThumbnail
+        activeLabel={t("common.active")}
+        isActive={isActive}
+        isPublished={shareState.shareEnabled}
+        privateLabel={t("common.private")}
+        publishedLabel={t("builder.published")}
+        template={template}
+      />
+
+      <div className="mt-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-lg font-semibold">{template.name}</h2>
+          <p className="mt-1 text-sm capitalize text-[#64748b]">{template.category}</p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {isActive ? (
+            <span className="rounded-md border border-[#bbf7d0] bg-[#f0fdf4] px-2 py-1 text-xs font-medium text-[#15803d]">
+              {t("common.active")}
+            </span>
+          ) : null}
+          <span className={`rounded-md border px-2 py-1 text-xs font-medium ${statusClassName}`}>{statusLabel}</span>
+        </div>
+      </div>
+
+      <dl className="mt-4 grid grid-cols-3 gap-2 text-xs text-[#64748b]">
+        <div>
+          <dt className="font-medium text-[#475569]">{t("dashboard.card.sections")}</dt>
+          <dd className="mt-1">{template.pages[0]?.sections.length ?? 0}</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-[#475569]">{t("dashboard.card.products")}</dt>
+          <dd className="mt-1">{template.products.length}</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-[#475569]">{t("dashboard.card.updated")}</dt>
+          <dd className="mt-1 truncate">
+            {formatDashboardDate(shareState.updatedAt, t("common.notYet"), t("dashboard.today"), t("dashboard.yesterday"))}
+          </dd>
+        </div>
+      </dl>
+
+      <div className="mt-5 grid grid-cols-[1fr_1fr_auto] gap-2">
+        <Link
+          className="inline-flex min-h-10 items-center justify-center rounded-md bg-[#111827] px-3 py-2 text-center text-sm font-medium text-white hover:bg-[#1f2937]"
+          href="/builder"
+          onClick={openTemplate}
+        >
+          {t("common.edit")}
+        </Link>
+        <Link
+          className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-center text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
+          href={`/preview/${template.id}`}
+          target="_blank"
+        >
+          {t("builder.preview")}
+        </Link>
+        <button
+          aria-expanded={isActionsOpen}
+          className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
+          data-tour="dashboard-share"
+          onClick={() => setIsActionsOpen((current) => !current)}
+          type="button"
+        >
+          {isActionsOpen ? t("dashboard.hideActions") : t("common.more")}
+        </button>
+      </div>
+
+      {isActionsOpen ? (
+        <div className="mt-3 grid gap-3 border-[#e2e8f0] border-t pt-3">
+          <TemplateSharePanel copyShare={copyShare} shareState={shareState} toggleShare={toggleShare} />
+          <TemplateActions
+            canDelete={canDelete}
+            deleteTemplate={deleteTemplate}
+            duplicateTemplate={duplicateTemplate}
+            exportNext={exportNext}
+            exportStatic={exportStatic}
+            exportTemplate={exportTemplate}
+          />
+        </div>
+      ) : null}
+    </article>
+  );
 }
 
 function TemplateSharePanel({
@@ -667,7 +740,7 @@ function TemplateActions({
   const { t } = useI18n();
 
   return (
-    <div className="col-span-2 grid gap-2 rounded-md border border-[#e2e8f0] bg-white p-2">
+    <div className="grid gap-2 rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-2">
       <div className="grid grid-cols-2 gap-2">
         <button
           className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium leading-5 text-[#334155] hover:bg-[#f1f5f9]"
@@ -724,6 +797,32 @@ function formatShareDate(value: string | null | undefined, fallback = "Not yet")
   }
 
   return value.replace("T", " ").slice(0, 16);
+}
+
+function formatDashboardDate(value: string | null | undefined, fallback = "Not yet", todayLabel = "Today", yesterdayLabel = "Yesterday") {
+  if (!value) {
+    return fallback;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value.replace("T", " ").slice(0, 10);
+  }
+
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return todayLabel;
+  }
+
+  if (date.toDateString() === yesterday.toDateString()) {
+    return yesterdayLabel;
+  }
+
+  return value.replace("T", " ").slice(0, 10);
 }
 
 function Metric({ label, value }: { label: string; value: number | string }) {

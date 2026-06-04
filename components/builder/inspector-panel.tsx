@@ -139,14 +139,25 @@ export function InspectorPanel({
               </div>
             </section>
 
-            <section className="border-[#e2e8f0] border-b px-4 py-4">
-              <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.themeTokens")}</h3>
-              <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <details className="border-[#e2e8f0] border-b bg-white px-4 py-4">
+              <summary className="cursor-pointer list-none">
+                <span className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.themeTokens")}</span>
+                  <span className="flex shrink-0 gap-1">
+                    {Object.values(template.theme.colors)
+                      .slice(0, 4)
+                      .map((color) => (
+                        <span className="h-4 w-4 rounded-full border border-black/10" key={color} style={{ background: color }} />
+                      ))}
+                  </span>
+                </span>
+              </summary>
+              <div className="mt-3 grid grid-cols-2 gap-2.5 border-[#e2e8f0] border-t pt-3">
                 {colorControls.map((key) => (
                   <ColorTokenControl key={key} label={key} onChange={(value) => updateColor(key, value)} value={template.theme.colors[key]} />
                 ))}
               </div>
-            </section>
+            </details>
 
             <section className="border-[#e2e8f0] border-b px-4 py-4">
               <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.typography")}</h3>
@@ -167,9 +178,16 @@ export function InspectorPanel({
               </div>
             </section>
 
-            <section className="border-[#e2e8f0] border-b px-4 py-4">
-              <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.layout")}</h3>
-              <div className="mt-3 space-y-4">
+            <details className="border-[#e2e8f0] border-b bg-white px-4 py-4">
+              <summary className="cursor-pointer list-none">
+                <span className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.layout")}</span>
+                  <span className="truncate text-[11px] font-medium text-[#64748b]">
+                    {template.theme.layout.maxWidth}px / {template.theme.layout.radius}px
+                  </span>
+                </span>
+              </summary>
+              <div className="mt-3 space-y-4 border-[#e2e8f0] border-t pt-3">
                 <RangeControl label={t("inspector.radius")} max={24} min={0} onChange={(value) => updateLayout("radius", value)} value={template.theme.layout.radius} />
                 <RangeControl label={t("inspector.spacing")} max={32} min={10} onChange={(value) => updateLayout("spacing", value)} value={template.theme.layout.spacing} />
                 <RangeControl
@@ -181,7 +199,7 @@ export function InspectorPanel({
                   value={template.theme.layout.maxWidth}
                 />
               </div>
-            </section>
+            </details>
           </>
         ) : null}
 

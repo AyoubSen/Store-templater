@@ -2,7 +2,7 @@ import { z } from "zod";
 import { sampleTemplate } from "./sample-template";
 import type { StoreTemplate } from "./schema";
 
-export const CURRENT_TEMPLATE_SCHEMA_VERSION = 8;
+export const CURRENT_TEMPLATE_SCHEMA_VERSION = 10;
 
 const storeCategorySchema = z.enum(["fashion", "beauty", "electronics", "home", "food", "digital"]);
 const pageTypeSchema = z.enum(["home", "collection", "product", "cart", "checkout", "about", "contact"]);
@@ -179,6 +179,23 @@ function migrateSectionSettings(type: unknown, settings: unknown) {
     ...(settings && typeof settings === "object" ? settings : {}),
   };
 
+  if (type === "header") {
+    return {
+      labelHome: "Home",
+      labelCollection: "Shop",
+      labelAbout: "About",
+      labelContact: "Contact",
+      labelCart: "Cart",
+      showHomeLink: true,
+      showCollectionLink: true,
+      showAboutLink: true,
+      showContactLink: true,
+      showCartLink: true,
+      ...currentSettings,
+      navItems: migrateHeaderNavItems(currentSettings),
+    };
+  }
+
   if (type === "productGrid") {
     return {
       productCount: 3,
@@ -227,4 +244,45 @@ function migrateSectionSettings(type: unknown, settings: unknown) {
   }
 
   return currentSettings;
+}
+
+function migrateHeaderNavItems(settings: Record<string, unknown>) {
+  if (Array.isArray(settings.navItems)) {
+    const navItems = settings.navItems
+      .map((item, index) => {
+        if (!item || typeof item !== "object") {
+          return null;
+        }
+
+        const navItem = item as Record<string, unknown>;
+        const targetType = navItem.targetType === "url" ? "url" : "page";
+        const pageType = typeof navItem.pageType === "string" ? navItem.pageType : "home";
+        const url = typeof navItem.url === "string" ? navItem.url : "";
+        const label = typeof navItem.label === "string" && navItem.label.trim() ? navItem.label : targetType === "url" ? "Link" : pageType;
+
+        return {
+          id: typeof navItem.id === "string" && navItem.id ? navItem.id : `nav-${index}`,
+          label,
+          pageType,
+          targetType,
+          url,
+        };
+      })
+      .filter(Boolean);
+
+    if (navItems.length > 0) {
+      return navItems;
+    }
+  }
+
+  return [
+    settings.showHomeLink === false ? null : { id: "nav-home", label: textSetting(settings.labelHome, "Home"), targetType: "page", pageType: "home" },
+    settings.showCollectionLink === false ? null : { id: "nav-shop", label: textSetting(settings.labelCollection, "Shop"), targetType: "page", pageType: "collection" },
+    settings.showAboutLink === false ? null : { id: "nav-about", label: textSetting(settings.labelAbout, "About"), targetType: "page", pageType: "about" },
+    settings.showContactLink === false ? null : { id: "nav-contact", label: textSetting(settings.labelContact, "Contact"), targetType: "page", pageType: "contact" },
+  ].filter(Boolean);
+}
+
+function textSetting(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value : fallback;
 }

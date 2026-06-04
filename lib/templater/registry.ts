@@ -18,7 +18,7 @@ export const sectionRegistry: Record<SectionType, SectionCapability> = {
     type: "header",
     label: "Header",
     description: "Logo, links, and primary navigation.",
-    editableSettings: ["logo", "links"],
+    editableSettings: ["logo", "navItems", "labelCart"],
   },
   hero: {
     type: "hero",
