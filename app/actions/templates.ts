@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { getDb, hasDatabaseUrl } from "@/lib/db";
 import { templates } from "@/lib/db/schema";
+import { betaLimits, productLimitMessage, publishedTemplateLimitMessage, templateLimitMessage } from "@/lib/templater/limits";
 import type { StoreTemplate } from "@/lib/templater/schema";
 import { parseTemplate, versionTemplate } from "@/lib/templater/validation";
 
@@ -100,9 +101,22 @@ export async function saveAccountTemplateAction(template: StoreTemplate): Promis
       return { error: "Template data is invalid.", isDatabaseConfigured: true };
     }
 
+    if (parsedTemplate.products.length > betaLimits.maxProductsPerTemplate) {
+      return { error: productLimitMessage(), isDatabaseConfigured: true };
+    }
+
     const versionedTemplate = versionTemplate(parsedTemplate);
     const db = getDb();
     const now = new Date();
+    const existingRows = await db
+      .select({ id: templates.id })
+      .from(templates)
+      .where(eq(templates.userId, userId));
+    const isExistingTemplate = existingRows.some((row) => row.id === versionedTemplate.id);
+
+    if (!isExistingTemplate && existingRows.length >= betaLimits.maxTemplatesPerUser) {
+      return { error: templateLimitMessage(), isDatabaseConfigured: true };
+    }
 
     await db
       .insert(templates)
@@ -217,6 +231,18 @@ export async function setTemplateShareEnabledAction(
 
     if (!row) {
       return { error: "Save this template before sharing it.", isDatabaseConfigured: true };
+    }
+
+    if (shareEnabled) {
+      const publishedRows = await db
+        .select({ id: templates.id })
+        .from(templates)
+        .where(and(eq(templates.userId, userId), eq(templates.shareEnabled, true)));
+      const isAlreadyPublished = publishedRows.some((publishedRow) => publishedRow.id === templateId);
+
+      if (!isAlreadyPublished && publishedRows.length >= betaLimits.maxPublishedTemplates) {
+        return { error: publishedTemplateLimitMessage(), isDatabaseConfigured: true };
+      }
     }
 
     const shareId = row.shareId ?? createShareId();

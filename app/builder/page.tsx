@@ -17,6 +17,7 @@ import { SectionSidebar } from "@/components/builder/section-sidebar";
 import { GuidedTour, type GuidedTourStep } from "@/components/guided-tour";
 import { useI18n } from "@/lib/i18n";
 import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport } from "@/lib/templater/export";
+import { betaLimits, productLimitMessage, templateLimitMessage } from "@/lib/templater/limits";
 import { createPage } from "@/lib/templater/page-defaults";
 import { sampleTemplate } from "@/lib/templater/sample-template";
 import { createSection } from "@/lib/templater/section-defaults";
@@ -455,6 +456,12 @@ export default function Home() {
   }
 
   function addProduct() {
+    if (template.products.length >= betaLimits.maxProductsPerTemplate) {
+      setSaveState("failed");
+      setSaveStatusMessage(productLimitMessage());
+      return;
+    }
+
     const product = {
       id: `product-${Date.now()}`,
       name: "New product",
@@ -474,6 +481,12 @@ export default function Home() {
   }
 
   function duplicateProduct(productId: string) {
+    if (template.products.length >= betaLimits.maxProductsPerTemplate) {
+      setSaveState("failed");
+      setSaveStatusMessage(productLimitMessage());
+      return;
+    }
+
     commitTemplateUpdate((current) => {
       const currentIndex = current.products.findIndex((product) => product.id === productId);
       const product = current.products[currentIndex];
@@ -695,6 +708,12 @@ export default function Home() {
   }
 
   function createTemplate(options: TemplateCreationOptions) {
+    if (templates.length >= betaLimits.maxTemplatesPerUser) {
+      setSaveState("failed");
+      setSaveStatusMessage(templateLimitMessage());
+      return;
+    }
+
     const nextTemplate = createTemplateFromStarter(options);
     const nextTemplates = [...templates, nextTemplate];
 
@@ -705,6 +724,12 @@ export default function Home() {
   }
 
   function duplicateTemplate() {
+    if (templates.length >= betaLimits.maxTemplatesPerUser) {
+      setSaveState("failed");
+      setSaveStatusMessage(templateLimitMessage());
+      return;
+    }
+
     const nextTemplate = {
       ...structuredClone(template),
       id: `${template.id}-copy-${Date.now()}`,

@@ -6,6 +6,7 @@ import { ColorTokenControl, GradientField, NumberField, RangeControl, TextField 
 import { SectionInspector } from "@/components/builder/section-inspector";
 import { sectionRegistry } from "@/lib/templater/registry";
 import { useI18n } from "@/lib/i18n";
+import { betaLimits, productLimitMessage } from "@/lib/templater/limits";
 import type { Product, StoreTemplate, TemplateSection, ThemeTokens } from "@/lib/templater/schema";
 import { themePresets } from "@/lib/templater/theme-presets";
 import { typographyPresets } from "@/lib/templater/typography-presets";
@@ -58,6 +59,7 @@ export function InspectorPanel({
   const { t } = useI18n();
   const [imageProductId, setImageProductId] = useState<string | null>(null);
   const imageProduct = template.products.find((product) => product.id === imageProductId);
+  const hasReachedProductLimit = template.products.length >= betaLimits.maxProductsPerTemplate;
 
   return (
     <aside className="relative z-30 flex min-h-0 flex-col border-[#d8dde5] border-l bg-[#f8fafc]" data-tour="builder-inspector">
@@ -208,8 +210,10 @@ export function InspectorPanel({
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.products")}</h3>
               <button
-                className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+                className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={hasReachedProductLimit}
                 onClick={addProduct}
+                title={hasReachedProductLimit ? productLimitMessage() : undefined}
                 type="button"
               >
                 {t("inspector.addProduct")}
@@ -304,8 +308,10 @@ export function InspectorPanel({
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <button
-                        className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+                        className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
+                        disabled={hasReachedProductLimit}
                         onClick={() => duplicateProduct(product.id)}
+                        title={hasReachedProductLimit ? productLimitMessage() : undefined}
                         type="button"
                       >
                         {t("common.duplicate")}

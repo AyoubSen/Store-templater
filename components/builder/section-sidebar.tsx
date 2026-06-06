@@ -7,6 +7,7 @@ import { AuthControls } from "@/components/auth-controls";
 import { ContextualHelp } from "@/components/contextual-help";
 import { TemplateCreationFlow } from "@/components/template-creation-flow";
 import { useI18n } from "@/lib/i18n";
+import { betaLimits, templateLimitMessage } from "@/lib/templater/limits";
 import { pageTypeLabels, pageTypes } from "@/lib/templater/page-defaults";
 import { sectionRegistry } from "@/lib/templater/registry";
 import type { PageType, SectionType, StoreTemplate, TemplatePage, TemplateSection } from "@/lib/templater/schema";
@@ -69,6 +70,7 @@ export function SectionSidebar({
   const sectionIds = sections.map((section) => section.id);
   const selectedPage = pages.find((page) => page.id === selectedPageId);
   const selectedSection = sections.find((section) => section.id === selectedSectionId);
+  const hasReachedTemplateLimit = templates.length >= betaLimits.maxTemplatesPerUser;
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -153,15 +155,19 @@ export function SectionSidebar({
                   {t("common.open")}
                 </Link>
                 <button
-                  className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+                  className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={hasReachedTemplateLimit}
                   onClick={() => setIsStarterPickerOpen(true)}
+                  title={hasReachedTemplateLimit ? templateLimitMessage() : undefined}
                   type="button"
                 >
                   {t("builder.new")}
                 </button>
                 <button
-                  className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+                  className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={hasReachedTemplateLimit}
                   onClick={duplicateTemplate}
+                  title={hasReachedTemplateLimit ? templateLimitMessage() : undefined}
                   type="button"
                 >
                   {t("common.copy")}

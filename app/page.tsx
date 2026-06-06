@@ -42,7 +42,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <section className="mx-auto grid min-h-[calc(100vh-65px)] max-w-6xl items-center gap-10 px-5 py-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(460px,1.1fr)]">
+      <section className="mx-auto grid min-h-[calc(100vh-145px)] max-w-6xl items-center gap-10 px-5 py-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(460px,1.1fr)]">
         <div className="py-6">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#1d4ed8]">Ecommerce template builder</p>
           <h1 className="mt-4 max-w-2xl text-5xl font-semibold leading-[1.05] text-[#111827]">
@@ -127,6 +127,23 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <footer className="border-[#d8dde5] border-t bg-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-5 text-sm text-[#64748b]">
+          <p>Private beta software for ecommerce template creation.</p>
+          <nav className="flex flex-wrap items-center gap-4">
+            <Link className="hover:text-[#111827]" href="/privacy">
+              Privacy
+            </Link>
+            <Link className="hover:text-[#111827]" href="/terms">
+              Terms
+            </Link>
+            <Link className="hover:text-[#111827]" href="/contact">
+              Contact
+            </Link>
+          </nav>
+        </div>
+      </footer>
     </main>
   );
 }

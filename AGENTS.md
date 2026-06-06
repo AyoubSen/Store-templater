@@ -134,10 +134,12 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Independent scrolling for left sidebar, center canvas, and inspector
 - Radix Popover for the custom color picker dropdown
 - Clerk sign-in/sign-up pages with proxy-level route protection for the editor and dashboard
+- Public landing page includes basic private-beta privacy, terms, and contact pages
 - Account template persistence actions backed by `DATABASE_URL`, with localStorage fallback when the database is not configured
 - Builder sync status distinguishes loading, saving, saved-to-account, local-only, and failed account sync states
 - Local browser templates can be imported into the signed-in account from the builder sync prompt
 - `/templates` dashboard create, duplicate, delete, import, and share flows report account sync results instead of silently ignoring failures
+- Private beta limits are centralized in `lib/templater/limits.ts` and enforced in account server actions plus main builder/dashboard creation flows
 - First-run welcome checklist with compact guidance for section, theme, item, device, and preview workflows
 - Replayable guided tours in the builder and `/templates` dashboard using highlighted targets and short tooltips
 - Lightweight English/French app UI translations for shared auth controls, guided tours, key builder/dashboard labels, and contextual help
@@ -148,6 +150,7 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Left sidebar separates Pages, Sections, and Add-section workflows so users are not shown every navigation/editing control at once
 - Left sidebar keeps template actions, add-page controls, and secondary add-section groups collapsed or compact so the current page/section remains prominent
 - Lightweight Playwright visual QA captures public, authenticated, share-preview, mobile, desktop, and French states when the required auth/share setup is present
+- `docs/PRIVATE_BETA_CHECKLIST.md` tracks the minimum release checks for inviting private beta users
 
 ## Builder UX Direction
 
@@ -211,9 +214,10 @@ Expected section types over time:
   - `@neondatabase/serverless` for the Neon serverless driver
   - `drizzle-kit` for migration generation/application
 - Storage dependencies:
-  - `@aws-sdk/client-s3` for Cloudflare R2 uploads through the S3-compatible API
+- `@aws-sdk/client-s3` for Cloudflare R2 uploads through the S3-compatible API
 - Likely future dependencies:
   - Zustand for editor state
+- Private beta caps should stay centralized in `lib/templater/limits.ts`; avoid hard-coding account/template limits in UI components or server actions.
 
 ## Visual Constraints
 

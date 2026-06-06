@@ -10,11 +10,13 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 
 - Continue simplifying first-use UX with clearer primary actions, better empty states, and fewer visible controls by default.
 - Continue reducing always-visible builder/dashboard controls through progressive disclosure.
+- Work through `docs/PRIVATE_BETA_CHECKLIST.md` before inviting new testers.
 - Keep improving sidebar ergonomics with keyboard navigation and richer section row actions once needed.
 - Refine guided tours with better mobile positioning and optional per-step deep links as the app grows.
 - Refine guided template creation with more industry variants, better section-variant previews, and optional AI-assisted briefs later.
 - Expand French i18n coverage from key app chrome/help text to more dashboard, inspector, and settings labels.
 - Improve the public landing page with stronger examples once generated/storefront visuals settle.
+- Replace placeholder contact copy with a real support address or support workflow before opening beyond private beta.
 - Continue polishing storefront visuals so templates feel sellable, not just functional.
 - Deepen mock storefront interactions beyond navigation/cart, including filter state and checkout step state.
 - Add richer static export interactions beyond linked pages, such as optional lightweight cart JavaScript.
@@ -22,6 +24,7 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 - Continue polishing the `/templates` dashboard for larger libraries with bulk actions and stronger import review.
 - Polish hosted/shareable preview controls and status messaging.
 - Continue refining share panels with stronger disabled states, optional expiry, and publish history.
+- Revisit private beta limits after real usage data; current caps are centralized in `lib/templater/limits.ts`.
 - Add richer controls for responsive layout variants beyond visibility.
 - Improve account persistence polish with manual retry controls and last-synced timestamps.
 - Continue image upload polish with generated thumbnails, better crop presets, and upload observability.
@@ -61,3 +64,4 @@ For broader non-binding product direction, see `PRODUCT_MAP.md`.
 - Saved template validation/migration exists and should grow with future schema versions.
 - App UI has a lightweight English/French dictionary, but user-authored template/storefront content is not auto-translated.
 - Visual QA skips Clerk-protected pages unless `tests/.auth/user.json` or `PLAYWRIGHT_STORAGE_STATE` is available, and skips public share screenshots unless `VISUAL_QA_SHARE_PATH` is provided.
+- Private beta limits currently cap account templates, products per template, and published templates, but there is no billing/plan system yet.

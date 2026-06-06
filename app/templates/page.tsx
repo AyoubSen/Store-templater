@@ -18,6 +18,7 @@ import { TemplateCreationFlow } from "@/components/template-creation-flow";
 import { TemplateThumbnail } from "@/components/template-thumbnail";
 import { useI18n } from "@/lib/i18n";
 import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport, parseTemplateExport } from "@/lib/templater/export";
+import { betaLimits, productLimitMessage, templateLimitMessage } from "@/lib/templater/limits";
 import type { StoreTemplate } from "@/lib/templater/schema";
 import { createTemplateFromStarter, type TemplateCreationOptions } from "@/lib/templater/starter-templates";
 import {
@@ -42,6 +43,7 @@ export default function TemplatesPage() {
   const [publishFilter, setPublishFilter] = useState<"all" | "published" | "private">("all");
   const [sortMode, setSortMode] = useState<"recent" | "name" | "products">("recent");
   const [isTourOpen, setIsTourOpen] = useState(false);
+  const hasReachedTemplateLimit = templates.length >= betaLimits.maxTemplatesPerUser;
   const dashboardTourSteps = useMemo<GuidedTourStep[]>(
     () => [
       {
@@ -160,6 +162,13 @@ export default function TemplatesPage() {
   }
 
   async function createTemplate(options: TemplateCreationOptions) {
+    if (templates.length >= betaLimits.maxTemplatesPerUser) {
+      setSyncState("failed");
+      setSyncMessage(templateLimitMessage());
+      setIsStarterPickerOpen(false);
+      return;
+    }
+
     const template = createTemplateFromStarter(options);
     const nextTemplates = [...templates, template];
 
@@ -172,6 +181,12 @@ export default function TemplatesPage() {
   }
 
   async function duplicateTemplate(template: StoreTemplate) {
+    if (templates.length >= betaLimits.maxTemplatesPerUser) {
+      setSyncState("failed");
+      setSyncMessage(templateLimitMessage());
+      return;
+    }
+
     const copy = {
       ...structuredClone(template),
       // eslint-disable-next-line react-hooks/purity -- Client event handler needs a unique local template id.
@@ -256,6 +271,19 @@ export default function TemplatesPage() {
           id: `${parsedTemplate.id}-import-${Date.now()}`,
           name: `${parsedTemplate.name} import`,
         };
+
+        if (templates.length >= betaLimits.maxTemplatesPerUser) {
+          setSyncState("failed");
+          setSyncMessage(templateLimitMessage());
+          return;
+        }
+
+        if (importedTemplate.products.length > betaLimits.maxProductsPerTemplate) {
+          setSyncState("failed");
+          setSyncMessage(productLimitMessage());
+          return;
+        }
+
         const nextTemplates = [...templates, importedTemplate];
 
         writeStoredTemplates(nextTemplates);
@@ -367,8 +395,10 @@ export default function TemplatesPage() {
             </label>
             <button
               data-tour="dashboard-new-template"
-              className="min-h-10 whitespace-nowrap rounded-md bg-[#111827] px-3 py-2 text-sm font-medium text-white hover:bg-[#1f2937]"
+              className="min-h-10 whitespace-nowrap rounded-md bg-[#111827] px-3 py-2 text-sm font-medium text-white hover:bg-[#1f2937] disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={hasReachedTemplateLimit}
               onClick={() => setIsStarterPickerOpen(true)}
+              title={hasReachedTemplateLimit ? templateLimitMessage() : undefined}
               type="button"
             >
               {t("dashboard.newTemplate")}
@@ -464,6 +494,7 @@ export default function TemplatesPage() {
                 shareState={shareState}
                 template={template}
                 toggleShare={() => toggleShare(template.id)}
+                hasReachedTemplateLimit={hasReachedTemplateLimit}
               />
             );
           })}
@@ -516,6 +547,7 @@ function TemplateCard({
   shareState,
   template,
   toggleShare,
+  hasReachedTemplateLimit,
 }: {
   canDelete: boolean;
   copyShare: (shareId: string) => void;
@@ -529,6 +561,7 @@ function TemplateCard({
   shareState: TemplateShareState;
   template: StoreTemplate;
   toggleShare: () => void;
+  hasReachedTemplateLimit: boolean;
 }) {
   const { t } = useI18n();
   const [isActionsOpen, setIsActionsOpen] = useState(false);
@@ -616,6 +649,7 @@ function TemplateCard({
             exportNext={exportNext}
             exportStatic={exportStatic}
             exportTemplate={exportTemplate}
+            hasReachedTemplateLimit={hasReachedTemplateLimit}
           />
         </div>
       ) : null}
@@ -729,6 +763,7 @@ function TemplateActions({
   exportNext,
   exportStatic,
   exportTemplate,
+  hasReachedTemplateLimit,
 }: {
   canDelete: boolean;
   deleteTemplate: () => void;
@@ -736,6 +771,7 @@ function TemplateActions({
   exportNext: () => void;
   exportStatic: () => void;
   exportTemplate: () => void;
+  hasReachedTemplateLimit: boolean;
 }) {
   const { t } = useI18n();
 
@@ -743,8 +779,10 @@ function TemplateActions({
     <div className="grid gap-2 rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-2">
       <div className="grid grid-cols-2 gap-2">
         <button
-          className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium leading-5 text-[#334155] hover:bg-[#f1f5f9]"
+          className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium leading-5 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={hasReachedTemplateLimit}
           onClick={duplicateTemplate}
+          title={hasReachedTemplateLimit ? templateLimitMessage() : undefined}
           type="button"
         >
           {t("common.duplicate")}
