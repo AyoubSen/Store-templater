@@ -2,11 +2,13 @@ import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } f
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { AuthControls } from "@/components/auth-controls";
 import { ContextualHelp } from "@/components/contextual-help";
 import { TemplateCreationFlow } from "@/components/template-creation-flow";
+import type { InspectorTab } from "@/components/builder/inspector-panel";
 import { useI18n } from "@/lib/i18n";
+import { useOnClickOutside } from "@/lib/use-on-click-outside";
 import { betaLimits, templateLimitMessage } from "@/lib/templater/limits";
 import { pageTypeLabels, pageTypes } from "@/lib/templater/page-defaults";
 import { sectionRegistry } from "@/lib/templater/registry";
@@ -32,6 +34,7 @@ export function SectionSidebar({
   selectedPageId,
   selectedSectionId,
   selectPage,
+  setInspectorTab,
   setSelectedSectionId,
   selectTemplate,
   template,
@@ -55,6 +58,7 @@ export function SectionSidebar({
   selectedPageId: string;
   selectedSectionId: string;
   selectPage: (pageId: string) => void;
+  setInspectorTab: (tab: InspectorTab) => void;
   setSelectedSectionId: (sectionId: string) => void;
   selectTemplate: (templateId: string) => void;
   template: StoreTemplate;
@@ -71,6 +75,10 @@ export function SectionSidebar({
   const selectedPage = pages.find((page) => page.id === selectedPageId);
   const selectedSection = sections.find((section) => section.id === selectedSectionId);
   const hasReachedTemplateLimit = templates.length >= betaLimits.maxTemplatesPerUser;
+  const templateActionsRef = useRef<HTMLDivElement | null>(null);
+  const closeTemplateActions = useCallback(() => setIsTemplateActionsOpen(false), []);
+  const templateActionRefs = useMemo(() => [templateActionsRef], []);
+  useOnClickOutside(isTemplateActionsOpen, closeTemplateActions, templateActionRefs);
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -91,29 +99,36 @@ export function SectionSidebar({
 
   return (
     <aside className="flex min-h-0 flex-col border-[#d8dde5] border-r bg-[#f8fafc]" data-tour="builder-sidebar">
-      <div className="shrink-0 border-[#e2e8f0] border-b px-4 py-3">
+      <div className="shrink-0 border-[#e2e8f0] border-b px-3 py-3">
         <div className="flex items-center gap-2">
           <div className="grid h-7 w-7 place-items-center rounded-md bg-[#111827] text-[11px] font-semibold text-white">
             ST
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="text-sm font-semibold">Store Templater</h1>
             <p className="text-[11px] text-[#64748b]">{t("builder.templateWorkspace")}</p>
           </div>
+          <AuthControls />
         </div>
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           <button
-            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2.5 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+            className="inline-flex min-h-9 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+            onClick={() => setIsTemplateActionsOpen((current) => !current)}
+            type="button"
+          >
+            {t("builder.manageTemplatesShort")}
+          </button>
+          <button
+            className="inline-flex min-h-9 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-center text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
             onClick={onStartTour}
             type="button"
           >
             {t("builder.tour")}
           </button>
-          <AuthControls />
         </div>
       </div>
 
-      <div className="shrink-0 border-[#e2e8f0] border-b px-4 py-3">
+      <div className="shrink-0 border-[#e2e8f0] border-b px-3 py-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{template.name}</p>
@@ -123,20 +138,12 @@ export function SectionSidebar({
             {syncStatusLabel(saveState, t)}
           </span>
         </div>
-        {saveStatusMessage ? <p className="mt-2 text-[11px] leading-4 text-[#64748b]">{saveStatusMessage}</p> : null}
-        <div className="mt-3">
-          <button
-            className="flex min-h-9 w-full items-center justify-between gap-3 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
-            onClick={() => setIsTemplateActionsOpen((current) => !current)}
-            type="button"
-          >
-            <span className="min-w-0 truncate">{t("builder.manageTemplates")}</span>
-            <span className="shrink-0 text-[#94a3b8]">{isTemplateActionsOpen ? t("builder.hide") : t("builder.show")}</span>
-          </button>
-          {isTemplateActionsOpen ? (
-            <div className="mt-2 space-y-2 rounded-md border border-[#e2e8f0] bg-white p-2">
+        {isTemplateActionsOpen ? (
+          <div className="mt-3" ref={templateActionsRef}>
+            <p className="mb-2 text-[11px] font-semibold uppercase text-[#64748b]">{t("builder.manageTemplates")}</p>
+            <div className="space-y-2 rounded-md border border-[#e2e8f0] bg-white p-2">
               <select
-                className="w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium text-[#334155]"
+                className="w-full rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155]"
                 onChange={(event) => selectTemplate(event.target.value)}
                 value={activeTemplateId}
               >
@@ -148,14 +155,14 @@ export function SectionSidebar({
               </select>
               <div className="grid grid-cols-2 gap-1.5">
                 <Link
-                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-center text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+                  className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-center text-sm font-semibold leading-5 text-[#334155] hover:bg-[#f1f5f9]"
                   href="/templates"
                   title={t("builder.manageTemplates")}
                 >
                   {t("common.open")}
                 </Link>
                 <button
-                  className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-semibold leading-5 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
                   disabled={hasReachedTemplateLimit}
                   onClick={() => setIsStarterPickerOpen(true)}
                   title={hasReachedTemplateLimit ? templateLimitMessage() : undefined}
@@ -164,7 +171,7 @@ export function SectionSidebar({
                   {t("builder.new")}
                 </button>
                 <button
-                  className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-[11px] font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-semibold leading-5 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
                   disabled={hasReachedTemplateLimit}
                   onClick={duplicateTemplate}
                   title={hasReachedTemplateLimit ? templateLimitMessage() : undefined}
@@ -174,7 +181,7 @@ export function SectionSidebar({
                 </button>
                 <button
                   aria-disabled={templates.length <= 1}
-                  className={`min-h-8 rounded-md border border-[#fecaca] bg-white px-2 py-1.5 text-[11px] font-medium leading-4 text-[#b91c1c] hover:bg-[#fef2f2] ${
+                  className={`min-h-10 rounded-md border border-[#fecaca] bg-white px-3 py-2 text-sm font-semibold leading-5 text-[#b91c1c] hover:bg-[#fef2f2] ${
                     templates.length <= 1 ? "cursor-not-allowed opacity-40" : ""
                   }`}
                   onClick={() => {
@@ -188,8 +195,8 @@ export function SectionSidebar({
                 </button>
               </div>
             </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="shrink-0 border-[#e2e8f0] border-b bg-white px-3 py-2" data-tour="builder-sidebar-modes">
@@ -229,7 +236,10 @@ export function SectionSidebar({
                 isSelected={selectedPageId === page.id}
                 key={page.id}
                 onDelete={() => deletePage(page.id)}
-                onSelect={() => selectPage(page.id)}
+                onSelect={() => {
+                  selectPage(page.id);
+                  setSidebarMode("sections");
+                }}
                 page={page}
               />
             ))}
@@ -242,7 +252,7 @@ export function SectionSidebar({
 
                 return (
                   <button
-                    className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
+                    className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9]"
                     key={type}
                     onClick={() => addPage(type)}
                     type="button"
@@ -273,13 +283,6 @@ export function SectionSidebar({
             <h2 className="text-xs font-semibold uppercase text-[#475569]">{t("builder.sections")}</h2>
             <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#64748b]">{sections.length}</span>
           </div>
-          {selectedSection ? (
-            <div className="mb-3 rounded-md border border-[#bfdbfe] bg-[#eff6ff] px-3 py-2">
-              <p className="text-[11px] font-semibold uppercase text-[#2563eb]">{t("builder.selectedSection")}</p>
-              <p className="mt-0.5 truncate text-sm font-semibold text-[#1e293b]">{sectionRegistry[selectedSection.type].label}</p>
-              <p className="mt-0.5 truncate text-xs text-[#64748b]">{sectionPreviewLabel(selectedSection)}</p>
-            </div>
-          ) : null}
           <DndContext id="section-sidebar-sortable" onDragEnd={handleDragEnd} sensors={sensors}>
             <SortableContext items={sectionIds} strategy={verticalListSortingStrategy}>
               <div className="space-y-1">
@@ -288,7 +291,10 @@ export function SectionSidebar({
                     isSelected={selectedSectionId === section.id}
                     key={section.id}
                     section={section}
-                    setSelectedSectionId={setSelectedSectionId}
+                    onSelect={() => {
+                      setSelectedSectionId(section.id);
+                      setInspectorTab("section");
+                    }}
                   />
                 ))}
               </div>
@@ -318,6 +324,7 @@ export function SectionSidebar({
                         onClick={() => {
                           addSection(type);
                           setSidebarMode("sections");
+                          setInspectorTab("section");
                         }}
                         type="button"
                       >
@@ -378,7 +385,7 @@ function PageRow({
       </button>
       <button
         aria-disabled={!canDelete}
-        className={`mr-1 rounded px-2 py-1 text-[11px] font-semibold text-[#b91c1c] hover:bg-[#fef2f2] ${
+        className={`mr-1 min-h-8 rounded px-2 py-1.5 text-xs font-semibold text-[#b91c1c] hover:bg-[#fef2f2] ${
           canDelete ? "" : "cursor-not-allowed opacity-35"
         }`}
         onClick={() => {
@@ -405,34 +412,34 @@ function PageSettings({
     <div className="mt-4 rounded-md border border-[#e2e8f0] bg-white p-3">
       <p className="text-xs font-semibold uppercase text-[#475569]">Page settings</p>
       <div className="mt-3 space-y-2">
-        <label className="block text-[11px] font-medium text-[#64748b]">
+        <label className="block text-xs font-medium text-[#64748b]">
           Name
           <input
-            className="mt-1 w-full rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs text-[#111827]"
+            className="mt-1.5 w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-sm text-[#111827]"
             onChange={(event) => updatePageField(page.id, "name", event.target.value)}
             value={page.name}
           />
         </label>
-        <label className="block text-[11px] font-medium text-[#64748b]">
+        <label className="block text-xs font-medium text-[#64748b]">
           Slug
           <input
-            className="mt-1 w-full rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 font-mono text-xs text-[#111827]"
+            className="mt-1.5 w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 font-mono text-sm text-[#111827]"
             onChange={(event) => updatePageField(page.id, "slug", normalizeSlug(event.target.value))}
             value={page.slug}
           />
         </label>
-        <label className="block text-[11px] font-medium text-[#64748b]">
+        <label className="block text-xs font-medium text-[#64748b]">
           SEO title
           <input
-            className="mt-1 w-full rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs text-[#111827]"
+            className="mt-1.5 w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-sm text-[#111827]"
             onChange={(event) => updatePageField(page.id, "seoTitle", event.target.value)}
             value={page.seoTitle}
           />
         </label>
-        <label className="block text-[11px] font-medium text-[#64748b]">
+        <label className="block text-xs font-medium text-[#64748b]">
           Status
           <select
-            className="mt-1 w-full rounded-md border border-[#d8dde5] bg-white px-2 py-1.5 text-xs text-[#111827]"
+            className="mt-1.5 w-full rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-sm text-[#111827]"
             onChange={(event) => updatePageField(page.id, "status", event.target.value as TemplatePage["status"])}
             value={page.status}
           >
@@ -457,12 +464,12 @@ function normalizeSlug(value: string) {
 
 function SortableSectionRow({
   isSelected,
+  onSelect,
   section,
-  setSelectedSectionId,
 }: {
   isSelected: boolean;
+  onSelect: () => void;
   section: TemplateSection;
-  setSelectedSectionId: (sectionId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
   const registryItem = sectionRegistry[section.type];
@@ -483,7 +490,7 @@ function SortableSectionRow({
             ? "border-[#2563eb] bg-[#eff6ff] shadow-[inset_3px_0_0_#2563eb]"
             : "border-transparent bg-transparent hover:border-[#e2e8f0] hover:bg-white"
         }`}
-        onClick={() => setSelectedSectionId(section.id)}
+        onClick={onSelect}
         type="button"
       >
         <span className="flex items-start gap-2">

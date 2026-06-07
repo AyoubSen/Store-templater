@@ -21,6 +21,7 @@ import { betaLimits, productLimitMessage, templateLimitMessage } from "@/lib/tem
 import { createPage } from "@/lib/templater/page-defaults";
 import { sampleTemplate } from "@/lib/templater/sample-template";
 import { createSection } from "@/lib/templater/section-defaults";
+import type { ShareActionState } from "@/lib/templater/share-actions";
 import type { PageType, Product, SectionType, StoreTemplate, TemplatePage, ThemeTokens } from "@/lib/templater/schema";
 import { createTemplateFromStarter, type TemplateCreationOptions } from "@/lib/templater/starter-templates";
 import { syncStatusDescription, type TemplateSyncState } from "@/lib/templater/sync-status";
@@ -82,6 +83,7 @@ export default function Home() {
   const [previewCartItems, setPreviewCartItems] = useState<PreviewCartItem[]>([]);
   const [shareState, setShareState] = useState<TemplateShareState>({ shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null });
   const [shareStatus, setShareStatus] = useState(t("status.shareOff"));
+  const [shareActionState, setShareActionState] = useState<ShareActionState>("idle");
   const hasLoadedStoredTemplate = useRef(false);
 
   const selectedPage = template.pages.find((page) => page.id === selectedPageId) ?? template.pages[0];
@@ -800,15 +802,19 @@ export default function Home() {
   }
 
   async function toggleShareLink() {
+    const nextActionState = shareState.shareEnabled ? "unpublishing" : "publishing";
+    setShareActionState(nextActionState);
     setShareStatus(shareState.shareEnabled ? t("status.disablingShare") : t("status.publishingShare"));
     const result = await setTemplateShareEnabledAction(template.id, !shareState.shareEnabled);
 
     if (!result.isDatabaseConfigured) {
+      setShareActionState("failed");
       setShareStatus(t("status.shareNeedsAccount"));
       return;
     }
 
     if (result.error) {
+      setShareActionState("failed");
       setShareStatus(result.error);
       return;
     }
@@ -816,6 +822,7 @@ export default function Home() {
     const nextShareState = result.data ?? { shareEnabled: false, shareId: null, sharedAt: null, updatedAt: null };
     setShareState(nextShareState);
     setShareStatus(nextShareState.shareEnabled ? t("status.shareLive") : t("status.shareDisabled"));
+    setShareActionState("idle");
   }
 
   async function copyShareLink() {
@@ -823,8 +830,16 @@ export default function Home() {
       return;
     }
 
-    await navigator.clipboard.writeText(`${window.location.origin}/s/${shareState.shareId}`);
-    setShareStatus(t("status.copiedShare"));
+    setShareActionState("copying");
+
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/s/${shareState.shareId}`);
+      setShareActionState("copied");
+      setShareStatus(t("status.copiedShare"));
+    } catch {
+      setShareActionState("failed");
+      setShareStatus(t("status.copyShareFailed"));
+    }
   }
 
   function importLocalTemplatesToAccount() {
@@ -908,6 +923,7 @@ export default function Home() {
           selectedPageId={selectedPage?.id ?? ""}
           selectedSectionId={selectedSectionId}
           selectPage={selectPage}
+          setInspectorTab={setInspectorTab}
           setSelectedSectionId={setSelectedSectionId}
           selectTemplate={selectTemplate}
           template={template}
@@ -933,9 +949,14 @@ export default function Home() {
           selectedSection={selectedSection}
           selectedSectionId={selectedSectionId}
           selectPage={selectPage}
+          selectSection={(sectionId) => {
+            setSelectedSectionId(sectionId);
+            setInspectorTab("section");
+          }}
           setDevice={setDevice}
           shareEnabled={shareState.shareEnabled}
           shareLink={shareState.shareId ? `/s/${shareState.shareId}` : undefined}
+          shareActionState={shareActionState}
           sharedAt={shareState.sharedAt}
           shareStatus={shareStatus}
           shareUpdatedAt={shareState.updatedAt}

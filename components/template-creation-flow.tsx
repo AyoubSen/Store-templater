@@ -6,6 +6,7 @@ import type { StoreCategory } from "@/lib/templater/schema";
 import {
   pageStructureOptions,
   resolveStarterPalette,
+  starterStructureHighlights,
   starterTemplates,
   type TemplateCreationOptions,
   type TemplatePageStructure,
@@ -43,6 +44,7 @@ export function TemplateCreationFlow({
   const selectedStructure = pageStructureOptions.find((option) => option.id === structure) ?? pageStructureOptions[0];
   const previewColors = resolveStarterPalette(starter.colors, visualStyle);
   const includedSections = useMemo(() => getIncludedSections(selectedStructure.pages), [selectedStructure.pages]);
+  const structureHighlights = useMemo(() => starterStructureHighlights(starter.category), [starter.category]);
 
   function createTemplate() {
     onCreate({
@@ -206,6 +208,9 @@ export function TemplateCreationFlow({
                     </SummaryPanel>
                     <SummaryPanel title={t("starter.summarySections")}>
                       <ChipList items={includedSections} />
+                    </SummaryPanel>
+                    <SummaryPanel title={t("starter.summaryStructure")}>
+                      <ChipList items={structureHighlights} />
                     </SummaryPanel>
                     <SummaryPanel title={t("starter.summaryContent")}>
                       <ChipList items={starter.categories.concat(starter.featurePoints.slice(0, 2))} />

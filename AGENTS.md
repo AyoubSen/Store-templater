@@ -97,7 +97,7 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 
 - Local multi-template library stored in localStorage
 - Guided template creation flow for choosing store type, visual direction, starting page structure, and optional template name
-- Starter generator with category-specific products, palettes, page copy, page sets, section defaults, and digital-product starter content
+- Starter generator with category-specific products, palettes, page copy, page sets, section ordering, and layout variants for hero, product grids, reviews, FAQ, and trust bands
 - Explicit `/preview/[templateId]` preview URLs with selected-page query support
 - Public `/s/[shareId]` and `/s/[shareId]/[page-slug]` share links backed by account templates in Neon
 - Compact publish/share panels in the builder and `/templates` dashboard with private/published state, copy/open/unpublish actions, and saved/published timestamps
@@ -120,6 +120,8 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Richer ecommerce controls for product count, product card style, quick-add visibility, collection filter/sort visibility, product media layout, and product detail media emphasis
 - Page-specific ecommerce preview polish for editable collection description/status chips, filter states, editable product social proof/trust details, editable cart shipping incentives, and editable checkout express payment options
 - Public storefront polish for commerce pages, including richer product cards, product inventory cues, cart trust signals, and checkout step framing
+- Conversion sections such as reviews, FAQ, and trust band should render as polished ecommerce blocks with social proof, reassurance, and purchase-objection handling, not plain placeholder lists
+- Reviews, FAQ, and trust band sections support `layoutVariant` controls so users can choose between featured/grid/editorial, support/compact/help-desk, and cards/strip/panel compositions
 - Mobile, tablet, and wide desktop storefront fixes for hero composition, product grids, collection filters, product detail pages, quick-add buttons, cart line items, sticky purchase panels, and checkout summaries
 - Section add/duplicate/delete/hide/show
 - Drag-and-drop section reorder using `@dnd-kit`
@@ -139,6 +141,7 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Builder sync status distinguishes loading, saving, saved-to-account, local-only, and failed account sync states
 - Local browser templates can be imported into the signed-in account from the builder sync prompt
 - `/templates` dashboard create, duplicate, delete, import, and share flows report account sync results instead of silently ignoring failures
+- `/templates` waits for account templates and share metadata before rendering template cards, then shows a lightweight loading skeleton while resolving
 - Private beta limits are centralized in `lib/templater/limits.ts` and enforced in account server actions plus main builder/dashboard creation flows
 - First-run welcome checklist with compact guidance for section, theme, item, device, and preview workflows
 - Replayable guided tours in the builder and `/templates` dashboard using highlighted targets and short tooltips
@@ -149,6 +152,9 @@ Avoid duplicating storefront rendering logic between the builder and preview pag
 - Right inspector uses compact summaries for advanced layout/theme/product-card controls so common content edits stay prominent
 - Left sidebar separates Pages, Sections, and Add-section workflows so users are not shown every navigation/editing control at once
 - Left sidebar keeps template actions, add-page controls, and secondary add-section groups collapsed or compact so the current page/section remains prominent
+- Selecting sections from the left sidebar opens the Section inspector; the sidebar should stay focused on choosing pages, choosing sections, or adding blocks
+- Clicking a section in the builder preview selects that section and opens the Section inspector; non-builder preview routes should remain normal storefront browsing surfaces
+- Custom builder/dashboard panels close on outside click; Radix popovers handle this natively
 - Lightweight Playwright visual QA captures public, authenticated, share-preview, mobile, desktop, and French states when the required auth/share setup is present
 - `docs/PRIVATE_BETA_CHECKLIST.md` tracks the minimum release checks for inviting private beta users
 

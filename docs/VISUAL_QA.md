@@ -28,7 +28,7 @@ pnpm qa:visual:report
 
 ```bash
 pnpm dev
-pnpm exec playwright codegen http://127.0.0.1:3000/builder --save-storage=tests/.auth/user.json
+pnpm exec playwright codegen http://localhost:3000/builder --save-storage=tests/.auth/user.json
 pnpm qa:visual
 ```
 
@@ -38,12 +38,26 @@ The protected checks are skipped when `tests/.auth/user.json` is missing. You ca
 PLAYWRIGHT_STORAGE_STATE=tests/.auth/other-user.json pnpm qa:visual
 ```
 
+Use the same host for capture and test runs. Clerk localhost cookies are host-specific, so if the storage state was captured on `localhost`, run the suite with:
+
+```bash
+PLAYWRIGHT_BASE_URL=http://localhost:3000 pnpm qa:visual
+```
+
 ## Include Public Share Preview
 
 Public share previews depend on a real published template id from the database. Pass a share path when you want those screenshots:
 
 ```bash
 VISUAL_QA_SHARE_PATH=/s/your-share-id pnpm qa:visual
+```
+
+For the full local pass on Windows PowerShell, use the same host as the saved Clerk storage state and include a real share path:
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL='http://localhost:3000'
+$env:VISUAL_QA_SHARE_PATH='/s/your-share-id'
+pnpm qa:visual
 ```
 
 ## Notes

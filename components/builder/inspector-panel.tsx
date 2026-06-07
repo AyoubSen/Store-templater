@@ -74,7 +74,7 @@ export function InspectorPanel({
         <div className="flex rounded-md bg-[#f1f5f9] p-0.5">
           {(["store", "theme", "products", "section"] as const).map((tab) => (
             <button
-              className={`min-h-7 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] font-medium capitalize leading-4 ${
+              className={`min-h-9 min-w-0 flex-1 rounded px-2 py-2 text-xs font-medium capitalize leading-4 ${
                 inspectorTab === tab ? "bg-white text-[#111827] shadow-sm" : "text-[#64748b] hover:text-[#111827]"
               }`}
               key={tab}
@@ -210,7 +210,7 @@ export function InspectorPanel({
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.products")}</h3>
               <button
-                className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
+                className="min-h-9 rounded-md border border-[#d8dde5] bg-white px-2.5 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] disabled:cursor-not-allowed disabled:opacity-40"
                 disabled={hasReachedProductLimit}
                 onClick={addProduct}
                 title={hasReachedProductLimit ? productLimitMessage() : undefined}
@@ -361,7 +361,7 @@ export function InspectorPanel({
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-medium text-[#475569]">{t("inspector.sectionActions")}</span>
                 <button
-                  className={`min-h-8 rounded-md px-2.5 py-1.5 text-xs font-medium leading-4 ${
+                  className={`min-h-9 rounded-md px-2.5 py-2 text-xs font-medium leading-4 ${
                     selectedSection.enabled ? "bg-[#dcfce7] text-[#166534] hover:bg-[#bbf7d0]" : "bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]"
                   }`}
                   onClick={() => toggleSection(selectedSection.id)}

@@ -14,6 +14,7 @@ export function StorefrontPreview({
   onAddToCart,
   onNavigatePage,
   onOpenProduct,
+  onSelectSection,
   pageId,
   previewDevice,
   selectedSectionId,
@@ -24,6 +25,7 @@ export function StorefrontPreview({
   onAddToCart?: (productId: string) => void;
   onNavigatePage?: (pageId: string) => void;
   onOpenProduct?: (productId: string) => void;
+  onSelectSection?: (sectionId: string) => void;
   pageId?: string;
   previewDevice?: "desktop" | "tablet" | "mobile";
   selectedSectionId?: string;
@@ -63,12 +65,22 @@ export function StorefrontPreview({
 
   return (
     <div className="store-preview overflow-hidden bg-[var(--store-canvas)] text-[var(--store-text)]" style={previewStyle}>
-      {enabledSections.map((section) => (
-        <div className={sectionVisibilityClass(section.settings)} data-store-section-id={section.id} key={section.id}>
+      {enabledSections.map((section) => {
+        const isSelected = section.id === selectedSectionId;
+
+        return (
+        <div
+          className={[sectionVisibilityClass(section.settings), onSelectSection ? "group/store-section relative cursor-pointer" : ""]
+            .filter(Boolean)
+            .join(" ")}
+          data-store-section-id={section.id}
+          key={section.id}
+          onClickCapture={() => onSelectSection?.(section.id)}
+        >
           <PreviewSection
             isForcedMobile={isForcedMobile}
             isForcedTablet={isForcedTablet}
-            isSelected={section.id === selectedSectionId}
+            isSelected={isSelected}
             section={section}
             template={template}
             activeProductId={activeProductId}
@@ -78,8 +90,14 @@ export function StorefrontPreview({
             onNavigatePage={onNavigatePage}
             onOpenProduct={onOpenProduct}
           />
+          {onSelectSection && isSelected ? (
+            <span className="pointer-events-none absolute right-3 top-3 z-[8] rounded-full bg-[var(--store-primary)] px-3 py-1 text-[11px] font-black text-white shadow-lg shadow-black/15">
+              Editing
+            </span>
+          ) : null}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -214,7 +232,7 @@ function PreviewSection({
               <h2 className="mt-2 text-[calc(1.875rem*var(--store-heading-scale))] font-black text-[var(--store-text)]">{String(settings.title)}</h2>
             </div>
             <button
-              className="rounded-full border border-[var(--store-border)] px-4 py-2 text-sm font-bold text-[var(--store-text)]"
+              className={primaryButtonClass}
               onClick={() => navigateToPageType(template, "collection", onNavigatePage)}
               type="button"
             >
@@ -713,21 +731,108 @@ function PreviewSection({
   }
 
   if (section.type === "reviews") {
+    const reviews = stringArraySetting(settings.reviews, ["Beautiful quality and fast shipping.", "Clean design with all the sections we needed."]);
+    const reviewVariant = styleValue(settings.layoutVariant, "featured");
+    const featuredReview = reviews[0];
+    const supportingReviews = reviews.slice(1);
+
+    if (reviewVariant === "grid") {
+      return (
+        <section className={sectionShell(settings, "surface", "balanced", selectedClass)}>
+          <div className="mx-auto max-w-[var(--store-max-width)]">
+            <div className={`mx-auto max-w-2xl ${alignmentClass}`}>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">Customer proof</p>
+              <h2 className="mt-2 text-[calc(2rem*var(--store-heading-scale))] font-black leading-tight text-[var(--store-text)]">{String(settings.title)}</h2>
+            </div>
+            <div className={`mt-8 grid gap-4 ${isForcedMobile ? "" : isForcedTablet ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
+              {reviews.map((review, index) => (
+                <figure className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-5" key={`${review}-${index}`}>
+                  <div className="text-xs font-black text-[var(--store-primary)]">★★★★★</div>
+                  <blockquote className="mt-3 text-sm font-semibold leading-6 text-[var(--store-text)]">&ldquo;{review}&rdquo;</blockquote>
+                  <figcaption className="mt-4 text-xs font-semibold text-[var(--store-muted)]">Verified buyer</figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    if (reviewVariant === "wall") {
+      return (
+        <section className={sectionShell(settings, "canvas", "spacious", selectedClass)}>
+          <div className="mx-auto max-w-[var(--store-max-width)]">
+            <div className={`grid gap-8 ${isForcedMobile ? "" : "md:grid-cols-[0.85fr_1.15fr] md:items-start"}`}>
+              <div className="md:sticky md:top-24">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">Customer proof</p>
+                <h2 className="mt-2 text-[calc(2.4rem*var(--store-heading-scale))] font-black leading-tight text-[var(--store-text)]">{String(settings.title)}</h2>
+                <p className="mt-4 text-sm leading-6 text-[var(--store-muted)]">A denser review wall for brands that want social proof to become part of the visual story.</p>
+              </div>
+              <div className={`columns-1 gap-4 ${isForcedMobile ? "" : isForcedTablet ? "sm:columns-2" : "sm:columns-2 lg:columns-3"}`}>
+                {reviews.concat(reviews.slice(0, 2)).map((review, index) => (
+                  <figure className="mb-4 break-inside-avoid rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-5 shadow-sm" key={`${review}-${index}`}>
+                    <div className="text-xs font-black text-[var(--store-primary)]">★★★★★</div>
+                    <blockquote className={`${index % 2 === 0 ? "text-base" : "text-sm"} mt-3 font-semibold leading-7 text-[var(--store-text)]`}>&ldquo;{review}&rdquo;</blockquote>
+                    <figcaption className="mt-5 text-xs font-semibold text-[var(--store-muted)]">Customer story 0{(index % 5) + 1}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className={sectionShell(settings, "surface", "balanced", selectedClass)}>
         <div className="mx-auto max-w-[var(--store-max-width)]">
-          <div className={`max-w-2xl ${alignmentClass}`}>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">Customer proof</p>
-            <h2 className="mt-2 text-[calc(1.875rem*var(--store-heading-scale))] font-black text-[var(--store-text)]">{String(settings.title)}</h2>
+          <div
+            className={`grid gap-6 ${
+              isForcedMobile ? "" : isForcedTablet ? "md:grid-cols-[0.9fr_1.1fr]" : "md:grid-cols-[0.75fr_1.25fr] md:items-end"
+            }`}
+          >
+            <div className={alignmentClass}>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">Customer proof</p>
+              <h2 className="mt-2 text-[calc(2rem*var(--store-heading-scale))] font-black leading-tight text-[var(--store-text)]">{String(settings.title)}</h2>
+              <div className="mt-5 grid max-w-sm grid-cols-3 gap-2">
+                {[
+                  ["4.9", "Rating"],
+                  ["2k+", "Orders"],
+                  ["98%", "Would buy again"],
+                ].map(([value, label]) => (
+                  <div className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] px-3 py-2" key={label}>
+                    <p className="text-lg font-black text-[var(--store-text)]">{value}</p>
+                    <p className="mt-1 text-[11px] font-semibold leading-4 text-[var(--store-muted)]">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <figure className="rounded-[calc(var(--store-radius)+10px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-6 shadow-xl shadow-black/5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-sm font-black text-[var(--store-primary)]">★★★★★</span>
+                <span className="rounded-full bg-[var(--store-surface)] px-3 py-1 text-xs font-black text-[var(--store-muted)]">Featured review</span>
+              </div>
+              <blockquote className="mt-5 text-[calc(1.45rem*var(--store-body-scale))] font-black leading-tight text-[var(--store-text)]">
+                &ldquo;{featuredReview}&rdquo;
+              </blockquote>
+              <figcaption className="mt-5 flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--store-primary)] text-xs font-black text-white">VC</span>
+                <span>
+                  <span className="block text-sm font-black text-[var(--store-text)]">Verified customer</span>
+                  <span className="mt-0.5 block text-xs font-semibold text-[var(--store-muted)]">Purchased this season</span>
+                </span>
+              </figcaption>
+            </figure>
           </div>
-          <div className={`mt-8 grid gap-5 ${isForcedMobile ? "" : isForcedTablet ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3"}`}>
-            {(settings.reviews as string[]).map((review, index) => (
+          <div className={`mt-5 grid gap-4 ${isForcedMobile ? "" : isForcedTablet ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3"}`}>
+            {supportingReviews.map((review, index) => (
               <figure className="rounded-[calc(var(--store-radius)+6px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-5" key={`${review}-${index}`}>
-                <div className="text-sm font-black text-[var(--store-primary)]">★★★★★</div>
-                <blockquote className="mt-4 text-base font-semibold leading-7 text-[var(--store-text)]">
-                  &ldquo;{review}&rdquo;
-                </blockquote>
-                <figcaption className="mt-5 text-sm text-[var(--store-muted)]">Verified customer</figcaption>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-black text-[var(--store-primary)]">★★★★★</span>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--store-muted)]">0{index + 2}</span>
+                </div>
+                <blockquote className="mt-4 text-sm font-semibold leading-6 text-[var(--store-text)]">&ldquo;{review}&rdquo;</blockquote>
+                <figcaption className="mt-5 text-xs font-semibold text-[var(--store-muted)]">Verified customer</figcaption>
               </figure>
             ))}
           </div>
@@ -737,15 +842,63 @@ function PreviewSection({
   }
 
   if (section.type === "trustBand") {
+    const items = stringArraySetting(settings.items, ["Free shipping over $75", "30-day returns", "Secure checkout", "Human support"]);
+    const trustVariant = styleValue(settings.layoutVariant, "cards");
+
+    if (trustVariant === "strip") {
+      return (
+        <section className={sectionShell(settings, "surface", "compact", selectedClass, "border-[var(--store-border)] border-y")}>
+          <div className="mx-auto flex max-w-[var(--store-max-width)] flex-wrap items-center justify-center gap-x-6 gap-y-3 text-center text-xs font-black uppercase tracking-[0.14em] text-[var(--store-muted)]">
+            {items.map((item, index) => (
+              <span className="inline-flex items-center gap-2" key={`${item}-${index}`}>
+                <span className="h-2 w-2 rounded-full bg-[var(--store-primary)]" />
+                {item}
+              </span>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    if (trustVariant === "panel") {
+      return (
+        <section className={sectionShell(settings, "canvas", "balanced", selectedClass)}>
+          <div className={`mx-auto grid max-w-[var(--store-max-width)] gap-5 rounded-[calc(var(--store-radius)+12px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-6 shadow-xl shadow-black/5 ${isForcedMobile ? "" : "md:grid-cols-[0.8fr_1.2fr] md:items-center"}`}>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">Guarantee</p>
+              <h2 className="mt-2 text-[calc(1.85rem*var(--store-heading-scale))] font-black leading-tight text-[var(--store-text)]">Built for confident checkout.</h2>
+              <p className="mt-3 text-sm leading-6 text-[var(--store-muted)]">Use this block when reassurance should feel like a brand promise, not a row of small notes.</p>
+            </div>
+            <div className={`grid gap-3 ${isForcedMobile ? "" : "sm:grid-cols-2"}`}>
+              {items.map((item, index) => (
+                <div className="rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-4" key={`${item}-${index}`}>
+                  <p className="text-sm font-black text-[var(--store-text)]">{item}</p>
+                  <p className="mt-2 text-xs font-medium leading-5 text-[var(--store-muted)]">{trustDescription(index)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className={sectionShell(settings, "surface", "compact", selectedClass, "border-[var(--store-border)] border-y")}>
         <div className={`mx-auto grid max-w-[var(--store-max-width)] gap-3 ${isForcedMobile ? "" : isForcedTablet ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
-          {(settings.items as string[]).map((item, index) => (
-            <div className="flex items-center gap-3 rounded-[var(--store-radius)] bg-[var(--store-canvas)] p-4" key={`${item}-${index}`}>
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--store-primary)] text-sm font-black text-white">
-                {index + 1}
+          {items.map((item, index) => (
+            <div
+              className="group flex min-h-28 items-start gap-3 rounded-[calc(var(--store-radius)+4px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-4 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5"
+              key={`${item}-${index}`}
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--store-primary)] text-sm font-black text-white shadow-lg shadow-black/10">
+                {trustIcon(index)}
               </span>
-              <p className="text-sm font-bold text-[var(--store-text)]">{item}</p>
+              <span className="min-w-0">
+                <span className="block text-sm font-black leading-5 text-[var(--store-text)]">{item}</span>
+                <span className="mt-2 block text-xs font-medium leading-5 text-[var(--store-muted)]">
+                  {trustDescription(index)}
+                </span>
+              </span>
             </div>
           ))}
         </div>
@@ -754,25 +907,85 @@ function PreviewSection({
   }
 
   if (section.type === "faq") {
+    const questions = stringArraySetting(settings.questions, ["How fast is shipping?", "Can I return my order?", "Do you ship internationally?"]);
+    const faqVariant = styleValue(settings.layoutVariant, "support");
+
+    if (faqVariant === "compact") {
+      return (
+        <section className={sectionShell(settings, "surface", "compact", selectedClass)}>
+          <div className="mx-auto max-w-3xl">
+            <div className={`mb-5 ${alignmentClass}`}>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">FAQ</p>
+              <h2 className="mt-2 text-[calc(1.85rem*var(--store-heading-scale))] font-black leading-tight text-[var(--store-text)]">{String(settings.title)}</h2>
+            </div>
+            <div className="divide-y divide-[var(--store-border)] rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-canvas)]">
+              {questions.map((question, index) => (
+                <details className="group p-4" key={`${question}-${index}`} open={index === 0}>
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-black text-[var(--store-text)]">
+                    <span>{question}</span>
+                    <span className="text-[var(--store-primary)]">+</span>
+                  </summary>
+                  <p className="mt-3 text-sm leading-6 text-[var(--store-muted)]">{faqAnswer(index)}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    if (faqVariant === "helpDesk") {
+      return (
+        <section className={sectionShell(settings, "surface", "balanced", selectedClass)}>
+          <div className="mx-auto max-w-[var(--store-max-width)]">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">Help desk</p>
+              <h2 className="mt-2 text-[calc(2.15rem*var(--store-heading-scale))] font-black leading-tight text-[var(--store-text)]">{String(settings.title)}</h2>
+              <p className="mt-4 text-sm leading-6 text-[var(--store-muted)]">A centered support-style FAQ for calm product education and post-purchase clarity.</p>
+            </div>
+            <div className={`mt-8 grid gap-4 ${isForcedMobile ? "" : isForcedTablet ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+              {questions.map((question, index) => (
+                <div className="rounded-[calc(var(--store-radius)+8px)] border border-[var(--store-border)] bg-[var(--store-canvas)] p-5 text-center" key={`${question}-${index}`}>
+                  <span className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-[var(--store-primary)] text-sm font-black text-white">{index + 1}</span>
+                  <h3 className="mt-4 text-sm font-black leading-5 text-[var(--store-text)]">{question}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[var(--store-muted)]">{faqAnswer(index)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className={sectionShell(settings, "canvas", "balanced", selectedClass)}>
         <div className={`mx-auto grid max-w-[var(--store-max-width)] gap-8 ${isForcedMobile ? "" : "md:grid-cols-[0.8fr_1.2fr]"}`}>
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--store-primary)]">FAQ</p>
             <h2 className="mt-2 text-[calc(1.875rem*var(--store-heading-scale))] font-black leading-tight text-[var(--store-text)]">{String(settings.title)}</h2>
+            <p className="mt-4 max-w-sm text-sm leading-6 text-[var(--store-muted)]">
+              Answer purchase blockers before they reach checkout. Edit these questions from the section inspector.
+            </p>
+            <div className="mt-5 rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--store-muted)]">Need more help?</p>
+              <p className="mt-2 text-sm font-bold text-[var(--store-text)]">Add contact, shipping, or return details here.</p>
+            </div>
           </div>
           <div className="space-y-3">
-            {(settings.questions as string[]).map((question, index) => (
+            {questions.map((question, index) => (
               <details
-                className="group rounded-[var(--store-radius)] border border-[var(--store-border)] bg-[var(--store-surface)] p-4"
+                className="group rounded-[calc(var(--store-radius)+4px)] border border-[var(--store-border)] bg-[var(--store-surface)] p-4 shadow-sm"
                 key={`${question}-${index}`}
                 open={index === 0}
               >
-                <summary className="cursor-pointer list-none text-sm font-black text-[var(--store-text)]">
-                  {question}
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-black text-[var(--store-text)]">
+                  <span>{question}</span>
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--store-canvas)] text-[var(--store-primary)]">
+                    +
+                  </span>
                 </summary>
                 <p className="mt-3 text-sm leading-6 text-[var(--store-muted)]">
-                  This section can be edited to answer common customer concerns before purchase.
+                  {faqAnswer(index)}
                 </p>
               </details>
             ))}
@@ -1585,6 +1798,33 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
       <span className="font-bold text-[var(--store-text)]">{value}</span>
     </div>
   );
+}
+
+function trustIcon(index: number) {
+  const icons = ["✓", "↺", "◆", "?"];
+  return icons[index % icons.length];
+}
+
+function trustDescription(index: number) {
+  const descriptions = [
+    "Clear policies help customers buy with confidence.",
+    "Flexible post-purchase support reduces hesitation.",
+    "Protected payment and order handling stay visible.",
+    "Real support details make the store feel reliable.",
+  ];
+
+  return descriptions[index % descriptions.length];
+}
+
+function faqAnswer(index: number) {
+  const answers = [
+    "Most orders are prepared quickly, with tracking details sent as soon as the order leaves the studio.",
+    "Returns and exchanges can be handled within the policy window as long as the item is in eligible condition.",
+    "International availability, delivery speed, and duties can be adjusted to match the final store policy.",
+    "Use this block to clarify sizing, materials, downloads, care, warranty, or subscription details.",
+  ];
+
+  return answers[index % answers.length];
 }
 
 function densityGap(density: string) {

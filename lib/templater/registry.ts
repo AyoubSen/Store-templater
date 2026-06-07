@@ -72,19 +72,19 @@ export const sectionRegistry: Record<SectionType, SectionCapability> = {
     type: "reviews",
     label: "Reviews",
     description: "Customer quotes and social proof.",
-    editableSettings: ["title", "reviews"],
+    editableSettings: ["layoutVariant", "title", "reviews"],
   },
   trustBand: {
     type: "trustBand",
     label: "Trust band",
     description: "Shipping, returns, guarantees, and support.",
-    editableSettings: ["items"],
+    editableSettings: ["layoutVariant", "items"],
   },
   faq: {
     type: "faq",
     label: "FAQ",
     description: "Common questions before checkout.",
-    editableSettings: ["title", "questions"],
+    editableSettings: ["layoutVariant", "title", "questions"],
   },
   featureBand: {
     type: "featureBand",

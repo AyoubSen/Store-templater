@@ -1,6 +1,7 @@
 import { sampleTemplate } from "./sample-template";
 import { createPage } from "./page-defaults";
-import type { PageType, StoreCategory, StoreTemplate, TemplatePage, TemplateSection } from "./schema";
+import { createSection } from "./section-defaults";
+import type { PageType, SectionType, StoreCategory, StoreTemplate, TemplatePage, TemplateSection } from "./schema";
 
 export type StarterTemplateConfig = {
   id: string;
@@ -62,6 +63,14 @@ export type TemplateCreationOptions = {
   category?: StoreCategory;
   structure: TemplatePageStructure;
   visualStyle: TemplateVisualStyle;
+};
+
+type StarterStructureProfile = {
+  faqVariant: "compact" | "helpDesk" | "support";
+  heroVariant: "centered" | "productSpotlight" | "split";
+  productGridLayout: "compact" | "editorial" | "grid";
+  reviewVariant: "featured" | "grid" | "wall";
+  trustVariant: "cards" | "panel" | "strip";
 };
 
 export const visualStyleOptions: Array<{ id: TemplateVisualStyle; name: string; description: string }> = [
@@ -573,7 +582,7 @@ export function createTemplateFromStarter(input: string | TemplateCreationOption
       return {
         ...page,
         seoTitle: page.type === "home" ? `${templateName} storefront` : page.seoTitle,
-        sections: customizeSectionsForStructure(page, options.structure).map((section) =>
+        sections: customizeSectionsForStructure(page, starter.category, options.structure).map((section) =>
           customizeSection(section, {
             productCardStyle: style.productCardStyle,
             starter,
@@ -594,44 +603,43 @@ function defaultCreationOptions(starterId: string): TemplateCreationOptions {
   };
 }
 
-function customizeSectionsForStructure(page: TemplatePage, structure: TemplatePageStructure): TemplateSection[] {
-  if (structure !== "landing" || page.type !== "home") {
-    return page.sections;
+function customizeSectionsForStructure(page: TemplatePage, category: StoreCategory, structure: TemplatePageStructure): TemplateSection[] {
+  let sections = page.sections;
+
+  if (structure === "landing" && page.type === "home") {
+    const landingSections = new Set(["announcement", "header", "hero", "productGrid", "reviews", "trustBand", "newsletter", "footer"]);
+    sections = sections.filter((section) => landingSections.has(section.type));
   }
 
-  const landingSections = new Set(["announcement", "header", "hero", "productGrid", "reviews", "trustBand", "newsletter", "footer"]);
+  sections = ensureRecommendedSectionsForStarter(page.type, category, sections);
 
-  return page.sections.filter((section) => landingSections.has(section.type));
+  return orderSectionsForStarter(page.type, category, sections);
 }
 
 function heroVariantForStyle(
+  category: StoreCategory,
   structure: TemplatePageStructure,
   productCardStyle: "elevated" | "minimal" | "editorial",
 ) {
+  const profile = starterStructureProfile(category);
+
   if (structure === "landing") {
-    return "centered";
+    return category === "electronics" || category === "digital" ? "productSpotlight" : "centered";
   }
 
-  if (productCardStyle === "minimal" || productCardStyle === "elevated") {
+  if (profile.heroVariant === "productSpotlight" || productCardStyle === "minimal" || productCardStyle === "elevated") {
     return "productSpotlight";
   }
 
-  return "split";
+  return profile.heroVariant;
 }
 
 function productGridLayoutForStarter(
   category: StoreCategory,
   productCardStyle: "elevated" | "minimal" | "editorial",
 ) {
-  if (category === "digital" || category === "electronics" || category === "food") {
-    return "compact";
-  }
-
-  if (productCardStyle === "editorial" || productCardStyle === "minimal") {
-    return "editorial";
-  }
-
-  return "grid";
+  const profile = starterStructureProfile(category);
+  return productCardStyle === "editorial" && category === "fashion" ? "editorial" : profile.productGridLayout;
 }
 
 function customizeSection(
@@ -665,7 +673,7 @@ function customizeSection(
   if (section.type === "hero") {
     return {
       ...section,
-      settings: { ...section.settings, ...starter.hero, variant: heroVariantForStyle(structure, productCardStyle) },
+      settings: { ...section.settings, ...starter.hero, variant: heroVariantForStyle(starter.category, structure, productCardStyle) },
     };
   }
 
@@ -684,10 +692,11 @@ function customizeSection(
         description: starter.pageCopy.collection.description,
         filters: starter.pageCopy.collection.filters,
         productCount: starter.products.length,
+        productCardStyle,
         productGridLayout: productGridLayoutForStarter(starter.category, productCardStyle),
         sortLabel: starter.pageCopy.collection.sortLabel,
         statusChips: starter.pageCopy.collection.statusChips,
-        title: `${starter.category} collection`,
+        title: collectionTitleForStarter(starter.category),
       },
     };
   }
@@ -697,11 +706,11 @@ function customizeSection(
       ...section,
       settings: {
         ...section.settings,
-        cardStyle: productCardStyle,
+        productCardStyle,
         productCount: starter.products.length,
         productGridLayout: productGridLayoutForStarter(starter.category, productCardStyle),
-        quickAdd: structure === "landing" ? "show" : section.settings.quickAdd,
-        title: `${starter.category} favorites`,
+        showQuickAdd: structure === "landing" ? true : section.settings.showQuickAdd,
+        title: productGridTitleForStarter(starter.category),
       },
     };
   }
@@ -756,8 +765,9 @@ function customizeSection(
       ...section,
       settings: {
         ...section.settings,
+        layoutVariant: starterStructureProfile(starter.category).reviewVariant,
         reviews: starter.pageCopy.reviews,
-        title: structure === "landing" ? "Why customers come back" : section.settings.title,
+        title: structure === "landing" ? landingReviewTitleForStarter(starter.category) : reviewTitleForStarter(starter.category),
       },
     };
   }
@@ -765,7 +775,11 @@ function customizeSection(
   if (section.type === "trustBand") {
     return {
       ...section,
-      settings: { ...section.settings, items: starter.pageCopy.trustItems },
+      settings: {
+        ...section.settings,
+        items: starter.pageCopy.trustItems,
+        layoutVariant: starterStructureProfile(starter.category).trustVariant,
+      },
     };
   }
 
@@ -774,6 +788,7 @@ function customizeSection(
       ...section,
       settings: {
         ...section.settings,
+        layoutVariant: starterStructureProfile(starter.category).faqVariant,
         questions: starter.pageCopy.contact.questions,
         title: starter.pageCopy.contact.faqTitle,
       },
@@ -788,6 +803,200 @@ function customizeSection(
   }
 
   return section;
+}
+
+function starterStructureProfile(category: StoreCategory): StarterStructureProfile {
+  const profiles: Record<StoreCategory, StarterStructureProfile> = {
+    beauty: {
+      faqVariant: "support",
+      heroVariant: "centered",
+      productGridLayout: "grid",
+      reviewVariant: "featured",
+      trustVariant: "panel",
+    },
+    digital: {
+      faqVariant: "helpDesk",
+      heroVariant: "productSpotlight",
+      productGridLayout: "compact",
+      reviewVariant: "grid",
+      trustVariant: "panel",
+    },
+    electronics: {
+      faqVariant: "helpDesk",
+      heroVariant: "productSpotlight",
+      productGridLayout: "compact",
+      reviewVariant: "grid",
+      trustVariant: "cards",
+    },
+    fashion: {
+      faqVariant: "support",
+      heroVariant: "split",
+      productGridLayout: "editorial",
+      reviewVariant: "wall",
+      trustVariant: "strip",
+    },
+    food: {
+      faqVariant: "compact",
+      heroVariant: "centered",
+      productGridLayout: "compact",
+      reviewVariant: "featured",
+      trustVariant: "strip",
+    },
+    home: {
+      faqVariant: "support",
+      heroVariant: "split",
+      productGridLayout: "editorial",
+      reviewVariant: "featured",
+      trustVariant: "panel",
+    },
+  };
+
+  return profiles[category];
+}
+
+function collectionTitleForStarter(category: StoreCategory) {
+  const titles: Record<StoreCategory, string> = {
+    beauty: "Shop by routine step",
+    digital: "Browse digital resources",
+    electronics: "Compare workspace gear",
+    fashion: "Shop the seasonal edit",
+    food: "Shop the pantry drop",
+    home: "Shop by room edit",
+  };
+
+  return titles[category];
+}
+
+function productGridTitleForStarter(category: StoreCategory) {
+  const titles: Record<StoreCategory, string> = {
+    beauty: "Routine favorites",
+    digital: "Creator tools to download",
+    electronics: "Workspace upgrades",
+    fashion: "Seasonal staples",
+    food: "Fresh pantry picks",
+    home: "Objects for the room",
+  };
+
+  return titles[category];
+}
+
+function reviewTitleForStarter(category: StoreCategory) {
+  const titles: Record<StoreCategory, string> = {
+    beauty: "Routine results customers mention",
+    digital: "Used by working creators",
+    electronics: "Setup notes from customers",
+    fashion: "Worn, styled, and reviewed",
+    food: "Pantry notes from repeat buyers",
+    home: "Styled in real rooms",
+  };
+
+  return titles[category];
+}
+
+function landingReviewTitleForStarter(category: StoreCategory) {
+  const titles: Record<StoreCategory, string> = {
+    beauty: "Why routines come back",
+    digital: "Why creators keep using it",
+    electronics: "Why setups convert",
+    fashion: "Why customers come back",
+    food: "Why pantry boxes repeat",
+    home: "Why rooms feel complete",
+  };
+
+  return titles[category];
+}
+
+function orderSectionsForStarter(pageType: PageType, category: StoreCategory, sections: TemplateSection[]) {
+  const categoryOrders: Partial<Record<StoreCategory, Partial<Record<PageType, SectionType[]>>>> = {
+    beauty: {
+      home: ["announcement", "header", "hero", "trustBand", "productGrid", "reviews", "faq", "newsletter", "footer"],
+      product: ["announcement", "header", "productDetail", "reviews", "faq", "trustBand", "footer"],
+    },
+    digital: {
+      home: ["announcement", "header", "hero", "productGrid", "trustBand", "faq", "newsletter", "footer"],
+      product: ["announcement", "header", "productDetail", "trustBand", "faq", "reviews", "footer"],
+    },
+    electronics: {
+      home: ["announcement", "header", "hero", "productGrid", "featureBand", "trustBand", "reviews", "footer"],
+      collection: ["announcement", "header", "collectionGrid", "trustBand", "faq", "footer"],
+    },
+    fashion: {
+      home: ["announcement", "header", "hero", "promoTiles", "productGrid", "reviews", "trustBand", "newsletter", "footer"],
+      about: ["announcement", "header", "hero", "reviews", "featureBand", "footer"],
+    },
+    food: {
+      home: ["announcement", "header", "hero", "productGrid", "trustBand", "reviews", "newsletter", "footer"],
+      checkout: ["header", "checkoutSummary", "trustBand", "faq", "footer"],
+    },
+    home: {
+      home: ["announcement", "header", "hero", "promoTiles", "productGrid", "reviews", "trustBand", "newsletter", "footer"],
+      collection: ["announcement", "header", "promoTiles", "collectionGrid", "trustBand", "newsletter", "footer"],
+    },
+  };
+  const order = categoryOrders[category]?.[pageType];
+
+  if (!order) {
+    return sections;
+  }
+
+  const rank = new Map(order.map((type, index) => [type, index]));
+
+  return [...sections].sort((left, right) => {
+    const leftRank = rank.get(left.type) ?? Number.MAX_SAFE_INTEGER;
+    const rightRank = rank.get(right.type) ?? Number.MAX_SAFE_INTEGER;
+    return leftRank - rightRank;
+  });
+}
+
+function ensureRecommendedSectionsForStarter(pageType: PageType, category: StoreCategory, sections: TemplateSection[]) {
+  const recommendedSections: Partial<Record<StoreCategory, Partial<Record<PageType, SectionType[]>>>> = {
+    beauty: {
+      home: ["trustBand", "faq"],
+      product: ["trustBand"],
+    },
+    digital: {
+      home: ["faq"],
+      product: ["trustBand"],
+    },
+    electronics: {
+      collection: ["trustBand", "faq"],
+      home: ["trustBand"],
+    },
+    fashion: {
+      home: ["promoTiles", "trustBand"],
+    },
+    food: {
+      home: ["trustBand"],
+    },
+    home: {
+      collection: ["trustBand"],
+      home: ["promoTiles", "trustBand"],
+    },
+  };
+  const existingTypes = new Set(sections.map((section) => section.type));
+  const missingSections = (recommendedSections[category]?.[pageType] ?? [])
+    .filter((sectionType) => !existingTypes.has(sectionType))
+    .map((sectionType) => createSection(sectionType));
+
+  return missingSections.length > 0 ? [...sections, ...missingSections] : sections;
+}
+
+export function starterStructureHighlights(category: StoreCategory) {
+  const profile = starterStructureProfile(category);
+
+  return [
+    `Hero: ${formatStructureLabel(profile.heroVariant)}`,
+    `Products: ${formatStructureLabel(profile.productGridLayout)}`,
+    `Reviews: ${formatStructureLabel(profile.reviewVariant)}`,
+    `FAQ: ${formatStructureLabel(profile.faqVariant)}`,
+    `Trust: ${formatStructureLabel(profile.trustVariant)}`,
+  ];
+}
+
+function formatStructureLabel(value: string) {
+  return value
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (character) => character.toUpperCase());
 }
 
 const visualStyles: Record<

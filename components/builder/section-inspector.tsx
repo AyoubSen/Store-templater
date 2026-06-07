@@ -91,19 +91,23 @@ export function SectionInspector({
   if (section.type === "categoryStrip") {
     return (
       <div className="mt-4 space-y-3">
-        <SectionStyleControls settings={settings} setValue={setValue} />
+        <SectionStyleControls settings={settings} setValue={setValue} supportsButtonStyle={false} />
         <ListEditor label={t("inspector.categories")} onChange={(value) => setValue("categories", value)} placeholder={t("inspector.category")} values={arraySetting(settings.categories)} />
       </div>
     );
   }
 
   if (section.type === "productGrid") {
+    const productGridLayout = styleSetting<"grid" | "editorial" | "compact">(settings.productGridLayout, "grid");
+
     return (
       <div className="mt-4 space-y-3">
         <SectionStyleControls settings={settings} setValue={setValue} />
         <ControlGroup title={t("inspector.content")}>
           <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
-          <RangeControl label={t("inspector.columns")} max={4} min={2} onChange={(value) => setValue("columns", value)} value={numberSetting(settings.columns, 3)} />
+          {productGridLayout === "grid" ? (
+            <RangeControl label={t("inspector.columns")} max={4} min={2} onChange={(value) => setValue("columns", value)} value={numberSetting(settings.columns, 3)} />
+          ) : null}
           <RangeControl label={t("inspector.productCount")} max={12} min={1} onChange={(value) => setValue("productCount", value)} value={numberSetting(settings.productCount, 3)} />
         </ControlGroup>
         <ProductCardControls settings={settings} setValue={setValue} />
@@ -112,9 +116,11 @@ export function SectionInspector({
   }
 
   if (section.type === "collectionGrid") {
+    const showFilters = settings.showFilters !== false;
+
     return (
       <div className="mt-4 space-y-3">
-        <SectionStyleControls settings={settings} setValue={setValue} />
+        <SectionStyleControls settings={settings} setValue={setValue} supportsButtonStyle={false} />
         <ControlGroup title={t("inspector.content")}>
           <TextField label={t("inspector.eyebrow")} onChange={(value) => setValue("eyebrow", value)} value={stringSetting(settings.eyebrow)} />
           <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
@@ -142,8 +148,12 @@ export function SectionInspector({
             ]}
             value={settings.showSort === false ? "hide" : "show"}
           />
-          <ListEditor label={t("inspector.filters")} onChange={(value) => setValue("filters", value)} placeholder={t("inspector.filters")} values={arraySetting(settings.filters)} />
-          <TextField label={t("inspector.sortLabel")} onChange={(value) => setValue("sortLabel", value)} value={stringSetting(settings.sortLabel)} />
+          {showFilters ? (
+            <ListEditor label={t("inspector.filters")} onChange={(value) => setValue("filters", value)} placeholder={t("inspector.filters")} values={arraySetting(settings.filters)} />
+          ) : null}
+          {settings.showSort !== false ? (
+            <TextField label={t("inspector.sortLabel")} onChange={(value) => setValue("sortLabel", value)} value={stringSetting(settings.sortLabel)} />
+          ) : null}
         </ControlGroup>
       </div>
     );
@@ -222,7 +232,7 @@ export function SectionInspector({
   if (section.type === "featureBand") {
     return (
       <div className="mt-4 space-y-3">
-        <SectionStyleControls settings={settings} setValue={setValue} />
+        <SectionStyleControls settings={settings} setValue={setValue} supportsButtonStyle={false} />
         <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
         <ListEditor label={t("inspector.points")} onChange={(value) => setValue("points", value)} placeholder={t("inspector.placeholder.point")} values={arraySetting(settings.points)} />
       </div>
@@ -232,7 +242,7 @@ export function SectionInspector({
   if (section.type === "promoTiles") {
     return (
       <div className="mt-4 space-y-3">
-        <SectionStyleControls settings={settings} setValue={setValue} />
+        <SectionStyleControls settings={settings} setValue={setValue} supportsButtonStyle={false} />
         <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
         <ListEditor label={t("inspector.tiles")} onChange={(value) => setValue("tiles", value)} placeholder={t("inspector.placeholder.promoTile")} values={arraySetting(settings.tiles)} />
       </div>
@@ -242,7 +252,17 @@ export function SectionInspector({
   if (section.type === "reviews") {
     return (
       <div className="mt-4 space-y-3">
-        <SectionStyleControls settings={settings} setValue={setValue} />
+        <SectionStyleControls settings={settings} setValue={setValue} supportsButtonStyle={false} />
+        <SelectControl
+          label={t("inspector.layoutVariant")}
+          onChange={(value) => setValue("layoutVariant", value)}
+          options={[
+            { label: t("inspector.variant.featuredQuote"), value: "featured" },
+            { label: t("inspector.variant.compactGrid"), value: "grid" },
+            { label: t("inspector.variant.editorialWall"), value: "wall" },
+          ]}
+          value={styleSetting(settings.layoutVariant, "featured")}
+        />
         <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
         <ListEditor label={t("inspector.reviews")} onChange={(value) => setValue("reviews", value)} placeholder={t("inspector.customerQuote")} values={arraySetting(settings.reviews)} />
       </div>
@@ -252,7 +272,17 @@ export function SectionInspector({
   if (section.type === "trustBand") {
     return (
       <div className="mt-4 space-y-3">
-        <SectionStyleControls settings={settings} setValue={setValue} />
+        <SectionStyleControls settings={settings} setValue={setValue} supportsButtonStyle={false} />
+        <SelectControl
+          label={t("inspector.layoutVariant")}
+          onChange={(value) => setValue("layoutVariant", value)}
+          options={[
+            { label: t("inspector.variant.iconCards"), value: "cards" },
+            { label: t("inspector.variant.thinStrip"), value: "strip" },
+            { label: t("inspector.variant.guaranteePanel"), value: "panel" },
+          ]}
+          value={styleSetting(settings.layoutVariant, "cards")}
+        />
         <ListEditor label={t("inspector.trustItems")} onChange={(value) => setValue("items", value)} placeholder={t("inspector.placeholder.trustItem")} values={arraySetting(settings.items)} />
       </div>
     );
@@ -261,7 +291,17 @@ export function SectionInspector({
   if (section.type === "faq") {
     return (
       <div className="mt-4 space-y-3">
-        <SectionStyleControls settings={settings} setValue={setValue} />
+        <SectionStyleControls settings={settings} setValue={setValue} supportsButtonStyle={false} />
+        <SelectControl
+          label={t("inspector.layoutVariant")}
+          onChange={(value) => setValue("layoutVariant", value)}
+          options={[
+            { label: t("inspector.variant.supportLayout"), value: "support" },
+            { label: t("inspector.variant.compactAccordion"), value: "compact" },
+            { label: t("inspector.variant.helpDesk"), value: "helpDesk" },
+          ]}
+          value={styleSetting(settings.layoutVariant, "support")}
+        />
         <TextField label={t("inspector.title")} onChange={(value) => setValue("title", value)} value={stringSetting(settings.title)} />
         <ListEditor label={t("inspector.questions")} onChange={(value) => setValue("questions", value)} placeholder={t("inspector.placeholder.question")} values={arraySetting(settings.questions)} />
       </div>
@@ -288,9 +328,11 @@ export function SectionInspector({
 function SectionStyleControls({
   settings,
   setValue,
+  supportsButtonStyle = true,
 }: {
   settings: TemplateSection["settings"];
   setValue: (key: string, value: unknown) => void;
+  supportsButtonStyle?: boolean;
 }) {
   const { t } = useI18n();
   const spacing = styleSetting(settings.spacing, "balanced");
@@ -351,16 +393,18 @@ function SectionStyleControls({
               ]}
               value={styleSetting(settings.alignment, "left")}
             />
-            <SelectControl
-              label={t("inspector.buttonStyle")}
-              onChange={(value) => setValue("buttonStyle", value)}
-              options={[
-                { label: t("inspector.variant.solid"), value: "solid" },
-                { label: t("inspector.variant.dark"), value: "dark" },
-                { label: t("inspector.variant.outline"), value: "outline" },
-              ]}
-              value={styleSetting(settings.buttonStyle, "solid")}
-            />
+            {supportsButtonStyle ? (
+              <SelectControl
+                label={t("inspector.buttonStyle")}
+                onChange={(value) => setValue("buttonStyle", value)}
+                options={[
+                  { label: t("inspector.variant.solid"), value: "solid" },
+                  { label: t("inspector.variant.dark"), value: "dark" },
+                  { label: t("inspector.variant.outline"), value: "outline" },
+                ]}
+                value={styleSetting(settings.buttonStyle, "solid")}
+              />
+            ) : null}
             <div className="grid grid-cols-3 gap-2">
               <VisibilityControl
                 label={t("inspector.desktop")}
@@ -396,7 +440,7 @@ function VisibilityControl({
 }) {
   return (
     <button
-      className={`rounded-md border px-2 py-1.5 text-[11px] font-semibold ${
+      className={`min-h-9 rounded-md border px-2.5 py-2 text-xs font-semibold leading-4 ${
         value
           ? "border-[#bfdbfe] bg-[#eff6ff] text-[#1d4ed8]"
           : "border-[#e2e8f0] bg-white text-[#94a3b8]"
@@ -492,7 +536,7 @@ function NavItemsEditor({
         <div className="mt-3 flex flex-wrap gap-2">
           {(["commerce", "minimal", "content"] as const).map((preset) => (
             <button
-              className="min-h-8 min-w-[5.5rem] flex-1 rounded-md border border-[#d8dde5] bg-white px-3 py-1.5 text-center text-xs font-semibold text-[#334155] hover:bg-[#f1f5f9]"
+              className="min-h-9 min-w-[5.5rem] flex-1 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-center text-xs font-semibold leading-4 text-[#334155] hover:bg-[#f1f5f9]"
               key={preset}
               onClick={() => applyPreset(preset)}
               type="button"
@@ -613,8 +657,9 @@ function ProductCardControls({
   setValue: (key: string, value: unknown) => void;
 }) {
   const { t } = useI18n();
-  const layout = styleSetting(settings.productGridLayout, "grid");
-  const cardStyle = styleSetting(settings.productCardStyle, "elevated");
+  const layout = styleSetting<"grid" | "editorial" | "compact">(settings.productGridLayout, "grid");
+  const cardStyle = styleSetting<"elevated" | "minimal" | "editorial">(settings.productCardStyle, "elevated");
+  const supportsCardStyle = layout !== "compact";
 
   return (
     <details className="rounded-md border border-[#e2e8f0] bg-white p-3 shadow-sm">
@@ -622,7 +667,7 @@ function ProductCardControls({
         <span className="flex items-center justify-between gap-3">
           <span className="text-xs font-semibold uppercase text-[#475569]">{t("inspector.productCards")}</span>
           <span className="truncate text-[11px] font-medium text-[#64748b]">
-            {layout} / {cardStyle}
+            {supportsCardStyle ? `${layout} / ${cardStyle}` : layout}
           </span>
         </span>
       </summary>
@@ -637,16 +682,18 @@ function ProductCardControls({
           ]}
           value={styleSetting(settings.productGridLayout, "grid")}
         />
-        <SelectControl
-          label={t("inspector.cardStyle")}
-          onChange={(value) => setValue("productCardStyle", value)}
-          options={[
-            { label: t("inspector.variant.elevated"), value: "elevated" },
-            { label: t("inspector.variant.minimal"), value: "minimal" },
-            { label: t("inspector.variant.editorial"), value: "editorial" },
-          ]}
-          value={styleSetting(settings.productCardStyle, "elevated")}
-        />
+        {supportsCardStyle ? (
+          <SelectControl
+            label={t("inspector.cardStyle")}
+            onChange={(value) => setValue("productCardStyle", value)}
+            options={[
+              { label: t("inspector.variant.elevated"), value: "elevated" },
+              { label: t("inspector.variant.minimal"), value: "minimal" },
+              { label: t("inspector.variant.editorial"), value: "editorial" },
+            ]}
+            value={styleSetting(settings.productCardStyle, "elevated")}
+          />
+        ) : null}
         <SelectControl
           label={t("inspector.quickAdd")}
           onChange={(value) => setValue("showQuickAdd", value === "show")}

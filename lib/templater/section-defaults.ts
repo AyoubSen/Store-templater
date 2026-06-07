@@ -106,15 +106,18 @@ const defaultSettingsByType: Record<SectionType, TemplateSection["settings"]> = 
   },
   reviews: {
     ...defaultStyle,
+    layoutVariant: "featured",
     title: "Loved by customers",
     reviews: ["Beautiful quality and fast shipping.", "The template made our launch feel premium.", "Clean design with all the sections we needed."],
   },
   trustBand: {
     ...defaultStyle,
+    layoutVariant: "cards",
     items: ["Free shipping over $75", "30-day returns", "Secure checkout", "Human support"],
   },
   faq: {
     ...defaultStyle,
+    layoutVariant: "support",
     title: "Questions before checkout",
     questions: ["How fast is shipping?", "Can I return my order?", "Do you ship internationally?"],
   },

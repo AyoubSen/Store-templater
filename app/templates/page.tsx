@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteAccountTemplateAction,
   getTemplateShareStateAction,
@@ -17,8 +17,10 @@ import { GuidedTour, type GuidedTourStep } from "@/components/guided-tour";
 import { TemplateCreationFlow } from "@/components/template-creation-flow";
 import { TemplateThumbnail } from "@/components/template-thumbnail";
 import { useI18n } from "@/lib/i18n";
+import { useOnClickOutside } from "@/lib/use-on-click-outside";
 import { downloadNextProject, downloadStaticStorefront, downloadTemplateExport, parseTemplateExport } from "@/lib/templater/export";
 import { betaLimits, productLimitMessage, templateLimitMessage } from "@/lib/templater/limits";
+import { isShareActionBusy, type ShareActionState } from "@/lib/templater/share-actions";
 import type { StoreTemplate } from "@/lib/templater/schema";
 import { createTemplateFromStarter, type TemplateCreationOptions } from "@/lib/templater/starter-templates";
 import {
@@ -39,6 +41,7 @@ export default function TemplatesPage() {
   const [syncState, setSyncState] = useState<TemplateSyncState>("loading");
   const [syncMessage, setSyncMessage] = useState(t("status.loadingTemplates"));
   const [shareStates, setShareStates] = useState<Record<string, TemplateShareState>>({});
+  const [shareActionStates, setShareActionStates] = useState<Record<string, ShareActionState>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [publishFilter, setPublishFilter] = useState<"all" | "published" | "private">("all");
   const [sortMode, setSortMode] = useState<"recent" | "name" | "products">("recent");
@@ -103,57 +106,74 @@ export default function TemplatesPage() {
   }, [publishFilter, searchQuery, shareStates, sortMode, templates]);
 
   useEffect(() => {
+    let isMounted = true;
+
     if (window.localStorage.getItem(dashboardTourStorageKey) !== "true") {
       window.setTimeout(() => setIsTourOpen(true), 400);
     }
 
-    window.setTimeout(() => {
-      setTemplates(readStoredTemplates());
+    function loadLocalTemplates(message: string) {
+      const localTemplates = readStoredTemplates();
+
+      if (!isMounted) {
+        return;
+      }
+
+      setTemplates(localTemplates);
       setActiveTemplateId(readActiveTemplateId());
       setSyncState("local-only");
-      setSyncMessage(t("status.loadedLocal"));
-    }, 0);
+      setSyncMessage(message);
+    }
 
-    listAccountTemplatesAction().then((result) => {
+    listAccountTemplatesAction().then(async (result) => {
+      if (!isMounted) {
+        return;
+      }
+
       if (!result.isDatabaseConfigured) {
-        setSyncState("local-only");
-        setSyncMessage(t("status.databaseMissing"));
+        loadLocalTemplates(t("status.databaseMissing"));
         return;
       }
 
       if (result.error) {
+        loadLocalTemplates(result.error);
         setSyncState("failed");
-        setSyncMessage(result.error);
         return;
       }
 
       if (!result.data?.length) {
-        setSyncState("local-only");
-        setSyncMessage(t("status.noAccountTemplates"));
+        loadLocalTemplates(t("status.noAccountTemplates"));
         return;
       }
 
       const storedActiveTemplateId = readActiveTemplateId();
       const nextActiveTemplateId =
         result.data.find((template) => template.id === storedActiveTemplateId)?.id ?? result.data[0]?.id ?? "";
+      const shareEntries = await Promise.all(
+        result.data.map(async (template) => {
+          const shareResult = await getTemplateShareStateAction(template.id);
+          return [template.id, shareResult.data ?? emptyShareState()] as const;
+        }),
+      );
+
+      if (!isMounted) {
+        return;
+      }
 
       writeStoredTemplates(result.data);
       if (nextActiveTemplateId) {
         writeActiveTemplateId(nextActiveTemplateId);
       }
+      setShareStates(Object.fromEntries(shareEntries));
       setTemplates(result.data);
       setActiveTemplateId(nextActiveTemplateId);
       setSyncState("saved");
       setSyncMessage(t("status.loadedAccount"));
-      Promise.all(
-        result.data.map(async (template) => {
-          const shareResult = await getTemplateShareStateAction(template.id);
-          return [template.id, shareResult.data ?? emptyShareState()] as const;
-        }),
-      ).then((entries) => {
-        setShareStates(Object.fromEntries(entries));
-      });
     });
+
+    return () => {
+      isMounted = false;
+    };
   }, [t]);
 
   function openTemplate(templateId: string) {
@@ -326,18 +346,22 @@ export default function TemplatesPage() {
 
   async function toggleShare(templateId: string) {
     const currentShareState = shareStates[templateId] ?? emptyShareState();
+    const nextActionState: ShareActionState = currentShareState.shareEnabled ? "unpublishing" : "publishing";
 
+    setShareActionStates((current) => ({ ...current, [templateId]: nextActionState }));
     setSyncState("saving");
     setSyncMessage(currentShareState.shareEnabled ? t("status.disablingShare") : t("status.publishingShare"));
     const result = await setTemplateShareEnabledAction(templateId, !currentShareState.shareEnabled);
 
     if (!result.isDatabaseConfigured) {
+      setShareActionStates((current) => ({ ...current, [templateId]: "failed" }));
       setSyncState("local-only");
       setSyncMessage(t("status.shareNeedsAccount"));
       return;
     }
 
     if (result.error) {
+      setShareActionStates((current) => ({ ...current, [templateId]: "failed" }));
       setSyncState("failed");
       setSyncMessage(result.error);
       return;
@@ -347,14 +371,24 @@ export default function TemplatesPage() {
       ...current,
       [templateId]: result.data ?? emptyShareState(),
     }));
+    setShareActionStates((current) => ({ ...current, [templateId]: "idle" }));
     setSyncState("saved");
     setSyncMessage(result.data?.shareEnabled ? t("status.shareLive") : t("status.shareDisabled"));
   }
 
-  async function copyShare(shareId: string) {
-    await navigator.clipboard.writeText(`${window.location.origin}/s/${shareId}`);
-    setSyncState("saved");
-    setSyncMessage(t("status.copiedShare"));
+  async function copyShare(templateId: string, shareId: string) {
+    setShareActionStates((current) => ({ ...current, [templateId]: "copying" }));
+
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/s/${shareId}`);
+      setShareActionStates((current) => ({ ...current, [templateId]: "copied" }));
+      setSyncState("saved");
+      setSyncMessage(t("status.copiedShare"));
+    } catch {
+      setShareActionStates((current) => ({ ...current, [templateId]: "failed" }));
+      setSyncState("failed");
+      setSyncMessage(t("status.copyShareFailed"));
+    }
   }
 
   function closeTour() {
@@ -432,6 +466,24 @@ export default function TemplatesPage() {
           </div>
         </div>
 
+        <div className="mb-5 rounded-lg border border-[#d8dde5] bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-[#111827]">{t("dashboard.nextSteps.title")}</h2>
+            <button
+              className="min-h-8 rounded-md border border-[#d8dde5] bg-white px-2.5 py-1.5 text-xs font-medium text-[#334155] hover:bg-[#f1f5f9]"
+              onClick={() => setIsTourOpen(true)}
+              type="button"
+            >
+              {t("builder.tour")}
+            </button>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <WorkflowStep body={t("dashboard.nextStep.create.body")} title={t("dashboard.nextStep.create.title")} />
+            <WorkflowStep body={t("dashboard.nextStep.edit.body")} title={t("dashboard.nextStep.edit.title")} />
+            <WorkflowStep body={t("dashboard.nextStep.publish.body")} title={t("dashboard.nextStep.publish.title")} />
+          </div>
+        </div>
+
         <div className="mb-5 rounded-lg border border-[#d8dde5] bg-white p-3 shadow-sm" data-tour="dashboard-filters">
           <div className="mb-3 flex items-center gap-2 px-1">
             <h2 className="text-xs font-semibold uppercase text-[#475569]">{t("dashboard.filters")}</h2>
@@ -475,14 +527,22 @@ export default function TemplatesPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {visibleTemplates.map((template) => {
+          {syncState === "loading" ? (
+            <TemplatesLoadingState />
+          ) : null}
+          {syncState !== "loading" ? visibleTemplates.map((template) => {
             const shareState = shareStates[template.id] ?? emptyShareState();
+            const shareActionState = shareActionStates[template.id] ?? "idle";
             const isActive = activeTemplateId === template.id;
 
             return (
               <TemplateCard
                 canDelete={templates.length > 1}
-                copyShare={copyShare}
+                copyShare={() => {
+                  if (shareState.shareId) {
+                    copyShare(template.id, shareState.shareId);
+                  }
+                }}
                 deleteTemplate={() => deleteTemplate(template.id)}
                 duplicateTemplate={() => duplicateTemplate(template)}
                 exportNext={() => exportNext(template)}
@@ -491,15 +551,16 @@ export default function TemplatesPage() {
                 isActive={isActive}
                 key={template.id}
                 openTemplate={() => openTemplate(template.id)}
+                shareActionState={shareActionState}
                 shareState={shareState}
                 template={template}
                 toggleShare={() => toggleShare(template.id)}
                 hasReachedTemplateLimit={hasReachedTemplateLimit}
               />
             );
-          })}
+          }) : null}
         </div>
-        {visibleTemplates.length === 0 ? (
+        {syncState !== "loading" && visibleTemplates.length === 0 ? (
           <div className="rounded-lg border border-[#d8dde5] bg-white p-8 text-center shadow-sm">
             <h2 className="text-base font-semibold text-[#111827]">{t("dashboard.noTemplates.title")}</h2>
             <p className="mt-2 text-sm text-[#64748b]">{t("dashboard.noTemplates.body")}</p>
@@ -517,6 +578,29 @@ export default function TemplatesPage() {
       ) : null}
       <GuidedTour isOpen={isTourOpen} onClose={closeTour} steps={dashboardTourSteps} />
     </main>
+  );
+}
+
+function TemplatesLoadingState() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div className="rounded-lg border border-[#d8dde5] bg-white p-4 shadow-sm" key={index}>
+          <div className="flex aspect-[16/10] items-center justify-center rounded-md border border-[#e2e8f0] bg-[#f8fafc]">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-[#cbd5e1] border-t-[#2563eb]" />
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="h-4 w-2/3 rounded bg-[#e2e8f0]" />
+            <div className="h-3 w-1/3 rounded bg-[#eef2f7]" />
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="h-10 rounded bg-[#f1f5f9]" />
+            <div className="h-10 rounded bg-[#f1f5f9]" />
+            <div className="h-10 rounded bg-[#f1f5f9]" />
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -544,13 +628,14 @@ function TemplateCard({
   exportTemplate,
   isActive,
   openTemplate,
+  shareActionState,
   shareState,
   template,
   toggleShare,
   hasReachedTemplateLimit,
 }: {
   canDelete: boolean;
-  copyShare: (shareId: string) => void;
+  copyShare: () => void;
   deleteTemplate: () => void;
   duplicateTemplate: () => void;
   exportNext: () => void;
@@ -558,6 +643,7 @@ function TemplateCard({
   exportTemplate: () => void;
   isActive: boolean;
   openTemplate: () => void;
+  shareActionState: ShareActionState;
   shareState: TemplateShareState;
   template: StoreTemplate;
   toggleShare: () => void;
@@ -565,6 +651,10 @@ function TemplateCard({
 }) {
   const { t } = useI18n();
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
+  const closeActions = useCallback(() => setIsActionsOpen(false), []);
+  const actionRefs = useMemo(() => [actionsRef], []);
+  useOnClickOutside(isActionsOpen, closeActions, actionRefs);
   const statusLabel = shareState.shareEnabled ? t("builder.published") : t("common.private");
   const statusClassName = shareState.shareEnabled
     ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]"
@@ -613,65 +703,89 @@ function TemplateCard({
         </div>
       </dl>
 
-      <div className="mt-5 grid grid-cols-[1fr_1fr_auto] gap-2">
-        <Link
-          className="inline-flex min-h-10 items-center justify-center rounded-md bg-[#111827] px-3 py-2 text-center text-sm font-medium text-white hover:bg-[#1f2937]"
-          href="/builder"
-          onClick={openTemplate}
-        >
-          {t("common.edit")}
-        </Link>
-        <Link
-          className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-center text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
-          href={`/preview/${template.id}`}
-          target="_blank"
-        >
-          {t("builder.preview")}
-        </Link>
-        <button
-          aria-expanded={isActionsOpen}
-          className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
-          data-tour="dashboard-share"
-          onClick={() => setIsActionsOpen((current) => !current)}
-          type="button"
-        >
-          {isActionsOpen ? t("dashboard.hideActions") : t("common.more")}
-        </button>
-      </div>
-
-      {isActionsOpen ? (
-        <div className="mt-3 grid gap-3 border-[#e2e8f0] border-t pt-3">
-          <TemplateSharePanel copyShare={copyShare} shareState={shareState} toggleShare={toggleShare} />
-          <TemplateActions
-            canDelete={canDelete}
-            deleteTemplate={deleteTemplate}
-            duplicateTemplate={duplicateTemplate}
-            exportNext={exportNext}
-            exportStatic={exportStatic}
-            exportTemplate={exportTemplate}
-            hasReachedTemplateLimit={hasReachedTemplateLimit}
-          />
+      <div ref={actionsRef}>
+        <div className="mt-5 grid grid-cols-[1fr_1fr_auto] gap-2">
+          <Link
+            className="inline-flex min-h-10 items-center justify-center rounded-md bg-[#111827] px-3 py-2 text-center text-sm font-medium text-white hover:bg-[#1f2937]"
+            href="/builder"
+            onClick={openTemplate}
+          >
+            {t("common.edit")}
+          </Link>
+          <Link
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-center text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
+            href={`/preview/${template.id}`}
+            target="_blank"
+          >
+            {t("builder.preview")}
+          </Link>
+          <button
+            aria-expanded={isActionsOpen}
+            className="min-h-10 rounded-md border border-[#d8dde5] bg-white px-3 py-2 text-sm font-medium text-[#334155] hover:bg-[#f1f5f9]"
+            data-tour="dashboard-share"
+            onClick={() => setIsActionsOpen((current) => !current)}
+            type="button"
+          >
+            {isActionsOpen ? t("dashboard.hideActions") : t("common.more")}
+          </button>
         </div>
-      ) : null}
+
+        {isActionsOpen ? (
+          <div className="mt-3 grid gap-3 border-[#e2e8f0] border-t pt-3">
+            <TemplateSharePanel
+              copyShare={copyShare}
+              shareActionState={shareActionState}
+              shareState={shareState}
+              toggleShare={toggleShare}
+            />
+            <TemplateActions
+              canDelete={canDelete}
+              deleteTemplate={deleteTemplate}
+              duplicateTemplate={duplicateTemplate}
+              exportNext={exportNext}
+              exportStatic={exportStatic}
+              exportTemplate={exportTemplate}
+              hasReachedTemplateLimit={hasReachedTemplateLimit}
+            />
+          </div>
+        ) : null}
+      </div>
     </article>
   );
 }
 
 function TemplateSharePanel({
   copyShare,
+  shareActionState,
   shareState,
   toggleShare,
 }: {
-  copyShare: (shareId: string) => void;
+  copyShare: () => void;
+  shareActionState: ShareActionState;
   shareState: TemplateShareState;
   toggleShare: () => void;
 }) {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const shareLink = shareState.shareId ? `/s/${shareState.shareId}` : "";
+  const isBusy = isShareActionBusy(shareActionState);
+  const toggleLabel =
+    shareActionState === "publishing"
+      ? t("share.publishing")
+      : shareActionState === "unpublishing"
+        ? t("share.unpublishing")
+        : shareState.shareEnabled
+          ? t("share.unpublish")
+          : t("share.publish");
+  const copyLabel =
+    shareActionState === "copying" ? t("share.copying") : shareActionState === "copied" ? t("share.copied") : t("common.copy");
+  const shareControlsRef = useRef<HTMLDivElement | null>(null);
+  const closeShareControls = useCallback(() => setIsOpen(false), []);
+  const shareControlRefs = useMemo(() => [shareControlsRef], []);
+  useOnClickOutside(isOpen, closeShareControls, shareControlRefs);
 
   return (
-    <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3" data-tour="dashboard-share">
+    <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3" data-tour="dashboard-share" ref={shareControlsRef}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold text-[#111827]">{t("share.publicSharing")}</p>
@@ -711,25 +825,27 @@ function TemplateSharePanel({
                 shareState.shareEnabled
                   ? "border border-[#fecaca] bg-white text-[#b91c1c] hover:bg-[#fef2f2]"
                   : "bg-[#111827] text-white hover:bg-[#1f2937]"
-              }`}
+              } ${isBusy ? "cursor-not-allowed opacity-60" : ""}`}
+              disabled={isBusy}
               onClick={toggleShare}
               type="button"
             >
-              {shareState.shareEnabled ? t("share.unpublish") : t("share.publish")}
+              {toggleLabel}
             </button>
             <button
-              aria-disabled={!shareState.shareEnabled || !shareState.shareId}
+              aria-disabled={!shareState.shareEnabled || !shareState.shareId || isBusy}
               className={`min-h-9 rounded-md border border-[#d8dde5] bg-white px-2 py-2 text-xs font-medium leading-4 text-[#334155] hover:bg-[#f1f5f9] ${
-                !shareState.shareEnabled || !shareState.shareId ? "cursor-not-allowed opacity-40" : ""
+                !shareState.shareEnabled || !shareState.shareId || isBusy ? "cursor-not-allowed opacity-40" : ""
               }`}
+              disabled={!shareState.shareEnabled || !shareState.shareId || isBusy}
               onClick={() => {
-                if (shareState.shareId) {
-                  copyShare(shareState.shareId);
+                if (shareState.shareId && !isBusy) {
+                  copyShare();
                 }
               }}
               type="button"
             >
-              {t("common.copy")}
+              {copyLabel}
             </button>
             {shareState.shareEnabled && shareLink ? (
               <Link
@@ -861,6 +977,15 @@ function formatDashboardDate(value: string | null | undefined, fallback = "Not y
   }
 
   return value.replace("T", " ").slice(0, 10);
+}
+
+function WorkflowStep({ body, title }: { body: string; title: string }) {
+  return (
+    <div className="rounded-md border border-[#e2e8f0] bg-[#f8fafc] p-3">
+      <p className="text-xs font-semibold uppercase text-[#475569]">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-[#64748b]">{body}</p>
+    </div>
+  );
 }
 
 function Metric({ label, value }: { label: string; value: number | string }) {
